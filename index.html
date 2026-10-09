@@ -306,7 +306,7 @@
     <p class="cart-shipping-note">O frete é calculado com o CEP informado. Se você mora na cidade de São Paulo, também pode escolher retirada.</p>
     <button class="btn cart-checkout" id="cart-checkout" type="button">Informar entrega e preferências <span>↗</span></button>
     <form class="cart-checkout-form" id="cart-checkout-form" hidden>
-      <p class="form-note">Preencha os dados para montar seu pedido e enviá-lo à Mimbox pelo WhatsApp. Esta etapa não cobra nem confirma o pagamento.</p>
+      <p class="form-note">Preencha seus dados para gerar o checkout seguro da InfinitePay. O pagamento será finalizado na página da InfinitePay.</p>
       <label>Nome completo<input name="customerName" autocomplete="name" required maxlength="100"></label>
       <label>WhatsApp com DDD
         <input name="customerPhone" id="checkout-phone" type="tel" autocomplete="tel-national" inputmode="numeric" required minlength="14" maxlength="15" pattern="\(\d{2}\) \d{4,5}-\d{4}" title="Informe o telefone com DDD. Ex.: (11) 91234-5678" placeholder="(11) 91234-5678" aria-describedby="phone-status">
@@ -340,9 +340,9 @@
         </div>
       </fieldset>
       <button class="btn cart-send-order" type="submit">Continuar para pagamento ↗</button>
-      <p class="form-note">Após preencher os dados, você seleciona Pix ou cartão. Os links de pagamento ainda precisam ser conectados à InfinitePay; este formulário não cobra nem confirma o pedido enquanto essa integração não estiver ativa.</p>
+      <p class="form-note">Você será direcionado à InfinitePay para concluir o pagamento. O pedido só será considerado pago após a confirmação da transação.</p>
     </form>
-    <p class="cart-demo-note">Os links de pagamento InfinitePay precisam ser configurados. Não há cobrança recorrente nos planos do clube.</p>
+    <p class="cart-demo-note">Pagamento processado pela InfinitePay. Os planos do Clube Mimbox são cobranças únicas, sem recorrência automática.</p>
     <button class="cart-clear" id="clear-cart" type="button">Esvaziar carrinho</button>
   </div>
 </aside>
@@ -508,9 +508,8 @@
       .catch(() => { if (token === cepRequestToken) cepStatus.textContent = 'Não foi possível consultar agora. Preencha o endereço manualmente.'; });
   });
 
-  // Configure os links reais da InfinitePay aqui quando estiverem disponíveis.
-  // Para carrinho com vários itens/valores variáveis, o ideal é criar a cobrança via integração segura no servidor.
-  const PAYMENT_LINKS = { pix: '', credit: '' };
+  // Checkout integrado à API segura hospedada no Vercel.
+  // Os preços são validados novamente no servidor; os valores do navegador não são confiáveis.
   // Máscara e validação de telefone brasileiro: DDD obrigatório + 10 ou 11 dígitos.
   const phoneInput = document.getElementById('checkout-phone');
   const phoneStatus = document.getElementById('phone-status');
@@ -542,28 +541,89 @@
     }
   });
 
-  checkoutForm.addEventListener('submit', event => {
+  function showCheckoutMessage(message) {
+    let toast = document.querySelector('.cart-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'cart-toast';
+      toast.setAttribute('role', 'status');
+      document.body.append(toast);
+    }
+    toast.textContent = message;
+    window.setTimeout(() => toast.remove(), 6000);
+  }
+
+  checkoutForm.addEventListener('submit', async event => {
     event.preventDefault();
-    if (!cart.length) return;
+    if (!cart.length) {
+      showCheckoutMessage('Seu carrinho está vazio.');
+      return;
+    }
+
     const method = checkoutForm.querySelector('input[name="paymentMethod"]:checked')?.value;
-    if (deliveryMethod.value === 'pickup' && !/são paulo|sao paulo/i.test(document.getElementById('checkout-city').value || '')) {
-      let toast = document.querySelector('.cart-toast');
-      if (!toast) { toast = document.createElement('div'); toast.className='cart-toast'; toast.setAttribute('role','status'); document.body.append(toast); }
-      toast.textContent = 'A retirada está disponível somente para a cidade de São Paulo.';
-      window.setTimeout(() => toast.remove(), 5000);
+    if (!method || !['pix', 'credit'].includes(method)) {
+      showCheckoutMessage('Selecione Pix ou cartão de crédito.');
       return;
     }
-    const paymentUrl = PAYMENT_LINKS[method];
-    if (!paymentUrl) {
-      let toast = document.querySelector('.cart-toast');
-      if (!toast) { toast = document.createElement('div'); toast.className = 'cart-toast'; toast.setAttribute('role','status'); document.body.append(toast); }
-      toast.textContent = method === 'pix'
-        ? 'O link Pix da InfinitePay ainda precisa ser configurado.'
-        : 'O link de cartão da InfinitePay ainda precisa ser configurado.';
-      window.setTimeout(() => toast.remove(), 5000);
+
+    const city = document.getElementById('checkout-city').value || '';
+    if (deliveryMethod.value === 'pickup' && !/são paulo|sao paulo/i.test(city)) {
+      showCheckoutMessage('A retirada está disponível somente para a cidade de São Paulo.');
       return;
     }
-    window.location.href = paymentUrl;
+
+    const submitButton = checkoutForm.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Gerando pagamento…';
+
+    const valueOf = name => (checkoutForm.elements.namedItem(name)?.value || '').trim();
+    const digits = valueOf('customerPhone').replace(/\D/g, '');
+    const payload = {
+      items: cart.map(item => ({
+        id: String(item.id || ''),
+        description: String(item.name || ''),
+        quantity: Number(item.qty)
+      })),
+      paymentMethod: method,
+      customer: {
+        name: valueOf('customerName'),
+        phone_number: '+55' + digits
+      },
+      address: {
+        cep: valueOf('cep').replace(/\D/g, ''),
+        street: valueOf('street'),
+        neighborhood: valueOf('neighborhood'),
+        number: valueOf('number'),
+        complement: valueOf('complement'),
+        city: valueOf('city'),
+        state: valueOf('state').toUpperCase()
+      },
+      deliveryMethod: deliveryMethod.value,
+      preferences: valueOf('preferences'),
+      avoid: valueOf('avoid')
+    };
+
+    try {
+      const response = await fetch('/api/criar-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'Não foi possível gerar o pagamento. Confira os dados e tente novamente.');
+      }
+      const paymentUrl = result.url || result.checkout_url || result.payment_url || result.link;
+      if (!paymentUrl || typeof paymentUrl !== 'string' || !/^https:\/\/[^ ]+/i.test(paymentUrl)) {
+        throw new Error('A InfinitePay respondeu, mas não recebemos um link de pagamento válido. Nenhuma cobrança foi confirmada.');
+      }
+      window.location.assign(paymentUrl);
+    } catch (error) {
+      showCheckoutMessage(error.message || 'Falha ao conectar à InfinitePay. Tente novamente.');
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+    }
   });
   document.addEventListener('keydown', e => { if (e.key==='Escape' && !panel.hidden) closeCart(); });
   render();
