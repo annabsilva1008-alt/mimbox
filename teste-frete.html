@@ -1,1 +1,144 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste de Frete | Mimbox</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #ffdf00;
+      margin: 0;
+      padding: 30px 16px;
+      color: #171717;
+    }
+    main {
+      max-width: 460px;
+      margin: 50px auto;
+      background: #fffdf4;
+      border: 3px solid #171717;
+      border-radius: 18px;
+      padding: 25px;
+      box-shadow: 7px 7px 0 #171717;
+    }
+    h1 { margin-top: 0; }
+    input, button {
+      width: 100%;
+      padding: 14px;
+      box-sizing: border-box;
+      font-size: 16px;
+      border: 2px solid #171717;
+      border-radius: 8px;
+    }
+    button {
+      background: #1262e8;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    #resultado {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.6;
+    }
+    .opcao {
+      background: #f2f2f2;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>📦 Teste de Frete Mimbox</h1>
+    <p>Vamos verificar os preços do Melhor Envio.</p>
+
+    <form id="formFrete">
+      <label for="cep">CEP de destino:</label>
+      <input
+        id="cep"
+        value="01310-100"
+        maxlength="9"
+        inputmode="numeric"
+        required
+      >
+      <button type="submit">Calcular frete</button>
+    </form>
+
+    <div id="resultado" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const form = document.getElementById("formFrete");
+    const resultado = document.getElementById("resultado");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const cep = document.getElementById("cep").value
+        .replace(/\D/g, "");
+
+      if (!/^\d{8}$/.test(cep)) {
+        resultado.textContent = "Digite um CEP válido.";
+        return;
+      }
+
+      resultado.textContent = "Consultando o Melhor Envio...";
+
+      try {
+        const resposta = await fetch("/api/calcular-frete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ cep })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          resultado.textContent =
+            "Erro " + resposta.status + ": " +
+            (dados.error || "Não foi possível calcular.");
+          return;
+        }
+
+        resultado.textContent = "";
+
+        if (!dados.opcoes || dados.opcoes.length === 0) {
+          resultado.textContent =
+            "Nenhuma transportadora disponível para este CEP.";
+          return;
+        }
+
+        dados.opcoes.forEach((opcao) => {
+          const div = document.createElement("div");
+          div.className = "opcao";
+
+          const preco = Number(opcao.valor).toLocaleString(
+            "pt-BR",
+            { style: "currency", currency: "BRL" }
+          );
+
+          div.textContent =
+            opcao.transportadora + " — " + opcao.servico +
+            "\nValor: " + preco +
+            "\nPrazo estimado: " +
+            (opcao.prazo ?? "Não informado") + " dias";
+
+          resultado.appendChild(div);
+        });
+
+      } catch (erro) {
+        resultado.textContent =
+          "Falha na comunicação com a API de frete.";
+      }
+    });
+  </script>
+</body>
+</html>
+
