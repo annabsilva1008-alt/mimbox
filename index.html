@@ -1,3 +1,350 @@
+
+Carregando mensagens mais antigas…
+Feito.
+Agora vamos conferir se o index.html está enviando o e-mail corretamente para a API.
+
+Faça este teste:
+
+Abra 
+mimbox.com.br
+ em uma guia anônima.
+
+Adicione um kit ao carrinho.
+
+Selecione Retirada gratuita.
+
+Preencha seus dados e clique para pagar.
+
+O que aconteceu?
+
+
+A InfinitePay abriu com meus dados preenchidos.
+
+A InfinitePay abriu, mas pediu meus dados novamente.
+
+Apareceu um erro e não consegui avançar.
+Não precisa concluir o pagamento. Com o resultado, identificamos o próximo ajuste sem mexer no carrinho que já voltou a funcionar.
+
+Nosso site que não pediu o e-mail. Além disso, quando o cliente não opta pela entrega, como fazemos?
+Precisamos ajustar o index.html, porque agora a API exige um e-mail, mas o site ainda não solicita essa informação.
+
+Como ficará o checkout da Mimbox
+1. Dados do comprador
+
+O cliente informa apenas:
+
+Nome completo
+
+WhatsApp
+
+E-mail
+
+2. Como deseja receber o pedido?
+
+
+Retirar no local — Grátis
+
+Sem necessidade de preencher endereço.
+
+
+Entrega na Zona Sul — R$ 14,90
+
+Para CEPs participantes.
+
+
+Receber por transportadora
+
+Frete calculado pelo CEP.
+
+Nenhum endereço necessário
+
+O cliente segue diretamente para o pagamento na InfinitePay.
+
+Sobre quem escolhe retirada
+Nesse caso, o cliente não precisa informar endereço nem pagar frete. Após preencher nome, WhatsApp e e-mail, segue para a InfinitePay.
+
+Próximo passo: me envie o index.html atualizado que está funcionando no GitHub.
+
+Vou acrescentar o campo de e-mail, ajustar a etapa de retirada e manter o carrinho funcionando. Não precisamos alterar novamente a API neste momento.
+
+const PRODUCTS = {
+  "vsf": {
+    description: "VSF — Vá Ser Feliz — Kit com 4 copos",
+    price: 5990
+  },
+  "pe-na-areia": {
+    description: "Pé na Areia — Kit com 4 copos",
+    price: 5990
+  },
+  "brasilidades": {
+    description: "Brasilidades — Kit com 4 copos",
+    price: 5990
+  },
+  "mimcine": {
+    description: "MimCine — Kit com 4 copos",
+    price: 5990
+  },
+  "clube-3-meses": {
+    description: "Clube Mimbox — 3 meses",
+    price: 24990
+  },
+  "clube-6-meses": {
+    description: "Clube Mimbox — 6 meses",
+    price: 44990
+  },
+  "clube-9-meses": {
+    description: "Clube Mimbox — 9 meses",
+    price: 69990
+  }
+};
+
+const PRODUCT_ALIASES = {
+  "VSF — Vá Ser Feliz": "vsf",
+  "Pé na Areia": "pe-na-areia",
+  "Brasilidades": "brasilidades",
+  "MimCine": "mimcine",
+  "Clube Mimbox — 3 meses": "clube-3-meses",
+  "Clube Mimbox — 6 meses": "clube-6-meses",
+  "Clube Mimbox — 9 meses": "clube-9-meses"
+};
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+
+    return res.status(405).json({
+      error: "Método não permitido."
+    });
+  }
+
+  try {
+    const {
+      items,
+      customer,
+      deliveryMethod
+    } = req.body || {};
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        error: "Carrinho vazio."
+      });
+    }
+
+    if (
+      !customer ||
+      typeof customer.name !== "string" ||
+      customer.name.trim().length < 2
+    ) {
+      return res.status(400).json({
+        error: "Informe o nome do comprador."
+      });
+    }
+
+    // Validação do telefone
+    const rawPhone = String(
+      customer.phone_number || customer.phone || ""
+    );
+
+    let phone = rawPhone.replace(/\D/g, "");
+
+    if (phone.startsWith("55") && phone.length > 11) {
+      phone = phone.slice(2);
+    }
+
+    if (phone.length < 10 || phone.length > 11) {
+      return res.status(400).json({
+        error: "Informe um telefone válido."
+      });
+    }
+
+    // Validação do e-mail
+    const email = String(
+      customer.email || ""
+    ).trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: "Informe um e-mail válido."
+      });
+    }
+
+    // Validação da entrega
+    if (!["shipping", "pickup"].includes(deliveryMethod)) {
+      return res.status(400).json({
+        error: "Forma de entrega inválida."
+      });
+    }
+
+    // Entrega permanece bloqueada até
+    // integrarmos o cálculo de frete.
+    if (deliveryMethod === "shipping") {
+      return res.status(400).json({
+        error: "O cálculo do frete ainda não está configurado. Selecione retirada para testar o checkout."
+      });
+    }
+
+    // Montagem dos produtos
+    const checkoutItems = [];
+
+    for (const item of items) {
+      if (!item || typeof item !== "object") {
+        return res.status(400).json({
+          error: "Há itens inválidos no carrinho."
+        });
+      }
+
+      const rawId = String(item.id || "").trim();
+
+      const productId = Object.prototype.hasOwnProperty.call(
+        PRODUCTS,
+        rawId
+      )
+        ? rawId
+        : PRODUCT_ALIASES[rawId];
+
+      const quantity = Number(
+        item.qty ?? item.quantity ?? 1
+      );
+
+      if (
+        !productId ||
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 20
+      ) {
+        return res.status(400).json({
+          error: "Há produtos ou quantidades inválidos no carrinho."
+        });
+      }
+
+      checkoutItems.push({
+        quantity,
+        price: PRODUCTS[productId].price,
+        description: PRODUCTS[productId].description
+      });
+    }
+
+    // Identificador único do pedido
+    const orderNsu = mimbox-${crypto.randomUUID()};
+
+    // Dados enviados à InfinitePay
+    const payload = {
+      handle: "mimbox",
+      order_nsu: orderNsu,
+      redirect_url:
+        "https://www.mimbox.com.br/pagamento-retorno.html",
+
+      customer: {
+        name: customer.name.trim(),
+        email: email,
+        phone_number: "+55" + phone
+      },
+
+      items: checkoutItems
+    };
+
+    const response = await fetch(
+      "https://api.checkout.infinitepay.io/links",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    const data = await response.json();
+
+    const checkoutUrl =
+      data.url ||
+      data.checkout_url ||
+      data.payment_url ||
+      data.link;
+
+    if (
+      !response.ok ||
+      typeof checkoutUrl !== "string" ||
+      !checkoutUrl.startsWith("https://")
+    ) {
+      console.error(
+        "Erro da InfinitePay:",
+        response.status,
+        data
+      );
+
+      return res.status(502).json({
+        error: "Não foi possível gerar o pagamento na InfinitePay."
+      });
+    }
+
+    return res.status(200).json({
+      url: checkoutUrl,
+      order_nsu: orderNsu
+    });
+
+  } catch (error) {
+    console.error("Erro ao criar checkout:", error);
+
+    return res.status(500).json({
+      error: "Não foi possível iniciar o pagamento."
+    });
+  }
+}
+…
+Esse é o código do api/criar-checkout.js, não do index.html.
+
+A API já está preparada para receber nome, telefone e e-mail. O problema é que o site ainda não tem o campo de e-mail para enviar essa informação.
+
+Agora precisamos alterar o index.html, sem mexer novamente na API.
+
+No GitHub:
+
+Abra o repositório mimbox.
+
+Clique no arquivo index.html, que fica na página principal.
+
+Clique em Download raw file (ícone de download).
+
+Anexe esse arquivo aqui na conversa.
+
+Vou ajustar o checkout para solicitar nome, WhatsApp e e-mail uma única vez. Quem escolher retirada gratuita não precisará preencher endereço e poderá seguir diretamente para a InfinitePay.
+
+Também vou preservar o carrinho e a navegação por etapas que acabamos de fazer funcionar.
+
+
+index-mimbox-carrinho-etapas(1).html
+HTML
+O que precisamos trocar além disso é a solicitação de endereço no link da infinity. O povo que vai retirar não precisa preencher
+Exatamente. Quem escolhe retirada não deve precisar informar endereço, nem no site da Mimbox nem, idealmente, na InfinitePay.
+
+Recebi o index.html e vou ajustar o campo de e-mail nele. A solicitação de endereço dentro da InfinitePay é uma questão separada: precisamos verificar se a plataforma permite desativá-la para pedidos com retirada, porque não conseguimos controlar diretamente os campos da página de pagamento.
+
+Atualizei o index.html que você enviou.
+
+Baixar index.html atualizado
+
+As alterações são:
+
+Adicionado campo de e-mail obrigatório.
+
+Nome, WhatsApp e e-mail enviados à API da InfinitePay.
+
+Para retirada, o site não solicita nem envia endereço.
+
+Carrinho e navegação por etapas preservados.
+
+Validei a sintaxe do JavaScript. Ainda precisamos testar o checkout publicado.
+
+Importante: a API atual já não envia endereço à InfinitePay. Portanto, se a página da InfinitePay continuar exigindo endereço mesmo para retirada, isso será uma exigência ou configuração do checkout da plataforma, não do formulário da Mimbox.
+
+Próximo passo: substitua o index.html no GitHub por esse arquivo. Depois, teste uma retirada e me envie um print da tela da InfinitePay. Assim verificaremos exatamente quais campos ainda aparecem.
+
+
+index-mimbox-email-retirada.html
+HTML
 <!DOCTYPE html>
 
 <html lang="pt-BR">
@@ -321,11 +668,12 @@
 <p class="cart-shipping-note">Escolha retirada para finalizar mais rápido. A entrega estará disponível quando o frete estiver configurado.</p>
 <button class="btn cart-checkout" id="cart-checkout" type="button">Continuar para recebimento →</button>
 <form class="cart-checkout-form" hidden="" id="cart-checkout-form"><button class="cart-clear" id="checkout-back" type="button">← Voltar ao pedido</button>
-<p class="form-note">Só precisamos do seu nome e WhatsApp. Você escolhe Pix ou cartão na InfinitePay.</p>
+<p class="form-note">Informe seus dados uma única vez. Para retirada, não é necessário endereço. Pix ou cartão são escolhidos na InfinitePay.</p>
 <label>Como deseja receber?
         <select id="delivery-method" name="deliveryMethod" required=""><option value="pickup">Retirada gratuita</option><option value="local">Entrega Zona Sul — R$ 14,90</option><option value="shipping">Transportadora — calcular por CEP</option></select>
 </label><p class="form-note" id="shipping-status">Retirada gratuita.</p>
 <label>Nome completo<input autocomplete="name" maxlength="100" name="customerName" required=""/></label>
+<label>E-mail<input autocomplete="email" maxlength="160" name="customerEmail" type="email" placeholder="voce@exemplo.com" required=""/></label>
 <label>WhatsApp com DDD
         <input aria-describedby="phone-status" autocomplete="tel-national" id="checkout-phone" inputmode="numeric" maxlength="15" minlength="14" name="customerPhone" pattern="\(\d{2}\) \d{4,5}-\d{4}" placeholder="(11) 91234-5678" required="" title="Informe o telefone com DDD. Ex.: (11) 91234-5678" type="tel"/>
 <span class="cep-status" id="phone-status" role="status">Informe o DDD e o número do telefone.</span>
@@ -604,9 +952,10 @@
       })),
       customer: {
         name: valueOf('customerName'),
+        email: valueOf('customerEmail'),
         phone_number: '+55' + digits
       },
-      address: {
+      ...(deliveryMethod.value !== 'pickup' ? { address: {
         cep: valueOf('cep').replace(/\D/g, ''),
         street: valueOf('street'),
         neighborhood: valueOf('neighborhood'),
@@ -614,7 +963,7 @@
         complement: valueOf('complement'),
         city: valueOf('city'),
         state: valueOf('state').toUpperCase()
-      },
+      }} : {}),
       deliveryMethod: deliveryMethod.value,
       preferences: valueOf('preferences'),
       avoid: valueOf('avoid')
@@ -647,3 +996,5 @@
 </script>
 </body>
 </html>
+
+
