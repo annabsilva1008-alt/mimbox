@@ -318,12 +318,12 @@
 <div class="cart-items" id="cart-items"></div>
 <div class="cart-summary" hidden="" id="cart-summary"><div class="checkout-steps" id="checkout-steps">1. Pedido   →   2. Recebimento   →   3. Pagamento</div>
 <div class="cart-line"><span>Subtotal</span><strong id="cart-subtotal">R$ 0,00</strong></div>
-<p class="cart-shipping-note">Escolha retirada para finalizar mais rápido. A entrega estará disponível quando o frete estiver configurado.</p>
+<p class="cart-shipping-note">Retirada gratuita ou envio por transportadora. Frete grátis em compras acima de R$ 300.</p>
 <button class="btn cart-checkout" id="cart-checkout" type="button">Continuar para recebimento →</button>
 <form class="cart-checkout-form" hidden="" id="cart-checkout-form"><button class="cart-clear" id="checkout-back" type="button">← Voltar ao pedido</button>
 <p class="form-note">Só precisamos do seu nome e WhatsApp. Você escolhe Pix ou cartão na InfinitePay.</p>
 <label>Como deseja receber?
-        <select id="delivery-method" name="deliveryMethod" required=""><option value="pickup">Retirada gratuita</option><option value="local">Entrega Zona Sul — R$ 14,90</option><option value="shipping">Transportadora — calcular por CEP</option></select>
+        <select id="delivery-method" name="deliveryMethod" required=""><option value="pickup">Retirada gratuita</option><option value="shipping">Transportadora — calcular por CEP</option></select>
 </label><p class="form-note" id="shipping-status">Retirada gratuita.</p>
 <label>Nome completo<input autocomplete="name" maxlength="100" name="customerName" required=""/></label>
 <label>E-mail<input autocomplete="email" maxlength="254" name="customerEmail" placeholder="voce@exemplo.com" required="" type="email"/></label>
@@ -333,6 +333,7 @@
 </label>
 <div hidden="" id="checkout-address-fields">
 <label>CEP<input aria-describedby="cep-status" autocomplete="postal-code" id="checkout-cep" inputmode="numeric" maxlength="9" name="cep" placeholder="00000-000" required=""/><span class="cep-status" id="cep-status" role="status">Digite o CEP para preencher rua, bairro e cidade.</span></label>
+<div id="freight-options" style="margin:10px 0 16px"><button type="button" id="quote-freight" class="btn" style="width:100%">Consultar opções de frete</button><div id="freight-results" aria-live="polite" style="margin-top:10px;font-size:13px"></div></div>
 <div class="address-row">
 <label>Rua / avenida<input autocomplete="address-line1" id="checkout-street" maxlength="140" name="street" required=""/></label>
 <label>Número<input id="checkout-number" inputmode="text" maxlength="20" name="number" required=""/></label>
@@ -486,7 +487,8 @@
   ];
   function updateDeliveryMethod() {
     const pickup = deliveryMethod.value === 'pickup';
-    document.getElementById('shipping-status').textContent = pickup ? 'Retirada grátis, sem endereço.' : deliveryMethod.value === 'local' ? 'Entrega local R$ 14,90 (sujeita à confirmação da região).' : 'Frete calculado por transportadora (integração pendente).';
+    document.getElementById('shipping-status').textContent = pickup ? 'Retirada grátis, sem endereço.' : 'Informe o CEP para consultar transportadoras. Frete grátis em compras acima de R$ 300.';
+    freightOptions.hidden = pickup;
     pickupNote.hidden = !pickup;
     document.getElementById('checkout-address-fields').hidden = pickup;
     addressFields.forEach(field => {
@@ -497,8 +499,43 @@
       ? 'Retirada selecionada: não é necessário informar o CEP.'
       : 'Digite o CEP para preencher rua, bairro e cidade.';
   }
+  const freightOptions = document.getElementById('freight-options');
+  let selectedFreight = null;
+  const originalUpdateDeliveryMethod = updateDeliveryMethod;
   deliveryMethod.addEventListener('change', updateDeliveryMethod);
   updateDeliveryMethod();
+
+  document.getElementById('quote-freight').addEventListener('click', async () => {
+    const cep = document.getElementById('checkout-cep').value.replace(/\D/g, '');
+    const results = document.getElementById('freight-results');
+    if (!/^\d{8}$/.test(cep)) { results.textContent = 'Digite um CEP válido com 8 números.'; return; }
+    results.textContent = 'Consultando transportadoras…';
+    selectedFreight = null;
+    try {
+      const response = await fetch('/api/calcular-frete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cep })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível consultar o frete.');
+      const options = Array.isArray(data) ? data : (data.options || data.services || data.quotes || []);
+      const valid = options.filter(x => x && !x.error && Number.isFinite(Number(x.price ?? x.custom_price)));
+      if (!valid.length) { results.textContent = 'Nenhuma transportadora disponível para esse CEP.'; return; }
+      results.replaceChildren();
+      valid.forEach((option, i) => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:block;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;cursor:pointer';
+        const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'freight-service'; radio.value = String(option.id ?? i);
+        radio.addEventListener('change', () => { selectedFreight = { id: option.id, name: option.name, company: option.company?.name }; });
+        const price = Number(option.custom_price ?? option.price);
+        const name = [option.company?.name || option.company, option.name].filter(x => typeof x === 'string').join(' — ');
+        const days = option.delivery_time ?? option.custom_delivery_time;
+        label.append(radio, document.createTextNode(' ' + (name || 'Transportadora') + ' · R$ ' + price.toFixed(2).replace('.', ',') + (days ? ' · ' + days + ' dias úteis estimados' : '')));
+        results.append(label);
+      });
+      const info = document.createElement('p'); info.textContent = 'O valor definitivo será validado antes do pagamento.'; results.append(info);
+    } catch (error) { results.textContent = error.message || 'Erro ao consultar frete.'; }
+  });
 
   // Consulta pública dos Correios via ViaCEP; endereço continua editável pelo cliente.
   const cepInput = document.getElementById('checkout-cep');
@@ -587,7 +624,7 @@
 
 
     if (deliveryMethod.value !== 'pickup') {
-      showCheckoutMessage('O frete ainda precisa ser integrado à API de pagamento. Para não cobrar um valor incorreto, por enquanto selecione retirada.');
+      showCheckoutMessage('A cotação já pode ser consultada, mas o pagamento com entrega aguarda a integração segura do frete. Por enquanto, selecione retirada.');
       return;
     }
     const submitButton = checkoutForm.querySelector('button[type="submit"]');
