@@ -5,30 +5,43 @@ export default async function handler(req, res) {
     });
   }
 
-  const { items } = req.body || {};
-
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({
-      error: "Carrinho vazio"
-    });
-  }
-
-  const validItems = items.every(item =>
-    typeof item.description === "string" &&
-    item.description.length > 0 &&
-    Number.isInteger(item.quantity) &&
-    item.quantity > 0 &&
-    Number.isInteger(item.price) &&
-    item.price > 0
-  );
-
-  if (!validItems) {
-    return res.status(400).json({
-      error: "Itens inválidos"
-    });
-  }
-
   try {
+    const { items } = req.body || {};
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        error: "Carrinho vazio"
+      });
+    }
+
+    const products = {
+      "Kit 4 Copos Mimbox": 5990,
+      "Clube Mimbox 3 meses": 24990,
+      "Clube Mimbox 6 meses": 44990,
+      "Clube Mimbox 9 meses": 69990
+    };
+
+    const validItems = items.every(item =>
+      item &&
+      typeof item.description === "string" &&
+      Object.hasOwn(products, item.description) &&
+      Number.isInteger(item.quantity) &&
+      item.quantity > 0 &&
+      item.quantity <= 20
+    );
+
+    if (!validItems) {
+      return res.status(400).json({
+        error: "Itens inválidos"
+      });
+    }
+
+    const checkoutItems = items.map(item => ({
+      quantity: item.quantity,
+      price: products[item.description],
+      description: item.description
+    }));
+
     const response = await fetch(
       "https://api.checkout.infinitepay.io/links",
       {
@@ -38,7 +51,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           handle: "mimbox",
-          items
+          items: checkoutItems
         })
       }
     );
@@ -54,7 +67,7 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   } catch {
     return res.status(502).json({
-      error: "Falha ao conectar com a InfinitePay"
+      error: "Falha ao processar o pagamento"
     });
   }
 }
