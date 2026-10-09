@@ -43,6 +43,7 @@ const PRODUCT_ALIASES = {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
+
     return res.status(405).json({
       error: "Método não permitido."
     });
@@ -71,6 +72,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // Validação do telefone
     const rawPhone = String(
       customer.phone_number || customer.phone || ""
     );
@@ -87,20 +89,35 @@ export default async function handler(req, res) {
       });
     }
 
+    // Validação do e-mail
+    const email = String(
+      customer.email || ""
+    ).trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: "Informe um e-mail válido."
+      });
+    }
+
+    // Validação da entrega
     if (!["shipping", "pickup"].includes(deliveryMethod)) {
       return res.status(400).json({
         error: "Forma de entrega inválida."
       });
     }
 
-    // O frete precisa ser configurado antes
-    // de permitir pagamentos com entrega.
+    // Entrega permanece bloqueada até
+    // integrarmos o cálculo de frete.
     if (deliveryMethod === "shipping") {
       return res.status(400).json({
         error: "O cálculo do frete ainda não está configurado. Selecione retirada para testar o checkout."
       });
     }
 
+    // Montagem dos produtos
     const checkoutItems = [];
 
     for (const item of items) {
@@ -112,7 +129,10 @@ export default async function handler(req, res) {
 
       const rawId = String(item.id || "").trim();
 
-      const productId = Object.hasOwn(PRODUCTS, rawId)
+      const productId = Object.prototype.hasOwnProperty.call(
+        PRODUCTS,
+        rawId
+      )
         ? rawId
         : PRODUCT_ALIASES[rawId];
 
@@ -138,17 +158,22 @@ export default async function handler(req, res) {
       });
     }
 
+    // Identificador único do pedido
     const orderNsu = `mimbox-${crypto.randomUUID()}`;
 
+    // Dados enviados à InfinitePay
     const payload = {
       handle: "mimbox",
       order_nsu: orderNsu,
       redirect_url:
         "https://www.mimbox.com.br/pagamento-retorno.html",
+
       customer: {
         name: customer.name.trim(),
+        email: email,
         phone_number: "+55" + phone
       },
+
       items: checkoutItems
     };
 
