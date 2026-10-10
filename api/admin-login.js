@@ -1,6 +1,6 @@
 
-import { serialize } from "cookie";
-
+res.setHeader("Set-Cookie", serialize(
+  
 const COOKIE_NAME = "mimbox_admin_session";
 
 export default async function handler(req, res) {
