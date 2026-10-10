@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     typeof senha !== "string" ||
     !email.includes("@") ||
     email.length > 254 ||
-    !senha ||
+    senha.length === 0 ||
     senha.length > 1024
   ) {
     return res.status(400).json({
@@ -57,6 +57,12 @@ export default async function handler(req, res) {
     }
 
     const sessao = await loginResposta.json();
+
+    if (!sessao.access_token) {
+      return res.status(401).json({
+        erro: "Não foi possível iniciar a sessão"
+      });
+    }
 
     const usuarioResposta = await fetch(
       `${base}/auth/v1/user`,
@@ -110,7 +116,7 @@ export default async function handler(req, res) {
     }
 
     const maxAge = Math.min(
-      sessao.expires_in || 3600,
+      Number(sessao.expires_in) || 3600,
       3600
     );
 
@@ -121,7 +127,7 @@ export default async function handler(req, res) {
         "HttpOnly",
         "Secure",
         "SameSite=Strict",
-        "Path=/api/admin",
+        "Path=/api/",
         `Max-Age=${maxAge}`
       ].join("; ")
     );
