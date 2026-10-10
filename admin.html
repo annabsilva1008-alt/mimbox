@@ -74,14 +74,21 @@
       cursor: pointer;
     }
 
-    button:hover { background: #efc52a; }
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
 
     .aviso {
       margin-top: 20px;
       font-size: 13px;
       color: #666;
       text-align: center;
+      min-height: 36px;
     }
+
+    .sucesso { color: #176b39; }
+    .erro { color: #b42318; }
   </style>
 </head>
 <body>
@@ -109,24 +116,63 @@
         placeholder="Sua senha"
       >
 
-      <button type="submit">
+      <button id="entrar" type="submit">
         Entrar no painel
       </button>
     </form>
 
-    <div class="aviso" id="aviso">
-      Login em configuração.
+    <div class="aviso" id="aviso" role="status">
+      Acesso exclusivo da administração Mimbox.
     </div>
   </main>
 
   <script>
-    document.getElementById("login")
-      .addEventListener("submit", function (event) {
-        event.preventDefault();
+    const formulario = document.getElementById("login");
+    const aviso = document.getElementById("aviso");
+    const botao = document.getElementById("entrar");
 
-        document.getElementById("aviso").textContent =
-          "O acesso será habilitado após a conexão segura com o Supabase.";
-      });
+    formulario.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const senha = document.getElementById("senha").value;
+
+      botao.disabled = true;
+      botao.textContent = "Verificando...";
+      aviso.className = "aviso";
+      aviso.textContent = "Verificando seu acesso...";
+
+      try {
+        const resposta = await fetch("/api/admin-login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, senha })
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+          throw new Error(
+            resultado.erro || "Não foi possível entrar."
+          );
+        }
+
+        aviso.className = "aviso sucesso";
+        aviso.textContent =
+          "Login validado! A área administrativa ainda está em construção.";
+
+        document.getElementById("senha").value = "";
+
+      } catch (erro) {
+        aviso.className = "aviso erro";
+        aviso.textContent = erro.message;
+      } finally {
+        botao.disabled = false;
+        botao.textContent = "Entrar no painel";
+      }
+    });
   </script>
 </body>
 </html>
