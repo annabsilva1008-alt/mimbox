@@ -8,171 +8,637 @@
   <style>
     * { box-sizing: border-box; }
 
+    :root {
+      --creme: #f5edda;
+      --amarelo: #f7d548;
+      --vermelho: #e33d32;
+      --azul: #2455a4;
+      --preto: #171717;
+    }
+
     body {
       margin: 0;
+      background: var(--creme);
+      color: var(--preto);
+      font-family: Arial, sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .escondido { display: none !important; }
+
+    .login-area {
       min-height: 100vh;
       display: grid;
       place-items: center;
       padding: 24px;
-      background: #f5edda;
-      font-family: Arial, sans-serif;
-      color: #171717;
     }
 
-    .login {
+    .login-card {
       width: 100%;
       max-width: 420px;
       background: #fffdf6;
-      border: 3px solid #171717;
+      border: 3px solid var(--preto);
       border-radius: 18px;
-      padding: 32px;
-      box-shadow: 8px 8px 0 #171717;
+      padding: 30px;
+      box-shadow: 8px 8px 0 var(--preto);
     }
 
     .marca {
-      font-size: 40px;
+      font-size: 36px;
       font-weight: 900;
       letter-spacing: -2px;
-      color: #e33d32;
-      margin-bottom: 6px;
+      color: var(--vermelho);
     }
 
-    h1 { font-size: 24px; margin: 0 0 8px; }
+    h1 { font-size: 25px; }
 
-    p {
-      color: #555;
+    .subtitulo {
+      color: #666;
       font-size: 14px;
-      margin-bottom: 28px;
+      line-height: 1.5;
     }
 
     label {
       display: block;
-      font-weight: bold;
       font-size: 14px;
-      margin-bottom: 8px;
+      font-weight: bold;
+      margin: 20px 0 8px;
     }
 
     input {
-      display: block;
       width: 100%;
-      padding: 14px;
-      margin-bottom: 20px;
-      border: 2px solid #171717;
+      padding: 13px;
+      border: 2px solid var(--preto);
       border-radius: 8px;
-      font-size: 16px;
-      background: white;
     }
 
-    button {
-      width: 100%;
-      padding: 15px;
-      border: 2px solid #171717;
-      border-radius: 8px;
-      background: #f7d548;
-      font-size: 16px;
+    .botao {
+      background: var(--amarelo);
+      border: 2px solid var(--preto);
+      border-radius: 9px;
+      padding: 13px 18px;
       font-weight: 800;
-      cursor: pointer;
     }
 
-    button:disabled {
+    .botao:disabled {
       opacity: .6;
       cursor: wait;
     }
 
-    .aviso {
-      margin-top: 20px;
-      font-size: 13px;
-      color: #666;
-      text-align: center;
-      min-height: 36px;
+    .entrar {
+      width: 100%;
+      margin-top: 24px;
     }
 
-    .sucesso { color: #176b39; }
-    .erro { color: #b42318; }
+    .aviso {
+      margin-top: 16px;
+      font-size: 13px;
+      min-height: 20px;
+    }
+
+    .painel {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 245px 1fr;
+    }
+
+    aside {
+      background: var(--preto);
+      color: white;
+      padding: 26px 18px;
+    }
+
+    aside .marca { color: var(--amarelo); }
+
+    .menu {
+      display: grid;
+      gap: 7px;
+      margin-top: 35px;
+    }
+
+    .menu button {
+      background: transparent;
+      color: white;
+      border: 0;
+      text-align: left;
+      padding: 13px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .menu button.ativo,
+    .menu button:hover {
+      background: var(--azul);
+    }
+
+    main.conteudo {
+      padding: 32px;
+      max-width: 1300px;
+      width: 100%;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .topo h1 { margin: 0 0 8px; }
+
+    .sair {
+      background: white;
+    }
+
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: #fffdf6;
+      border: 2px solid var(--preto);
+      border-radius: 15px;
+      padding: 22px;
+      box-shadow: 4px 4px 0 var(--preto);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+
+    .card p {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .etiqueta {
+      display: inline-block;
+      background: var(--amarelo);
+      border: 1px solid var(--preto);
+      border-radius: 20px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .destaque {
+      border-top: 7px solid var(--vermelho);
+    }
+
+    .secao { margin-top: 25px; }
+
+    .rodape {
+      margin-top: 35px;
+      color: #777;
+      font-size: 12px;
+    }
+
+    @media (max-width: 850px) {
+      .painel {
+        display: block;
+      }
+
+      aside { padding: 18px; }
+
+      .menu {
+        display: flex;
+        overflow-x: auto;
+        margin-top: 18px;
+      }
+
+      .menu button {
+        white-space: nowrap;
+      }
+
+      main.conteudo { padding: 22px; }
+
+      .grade { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <main class="login">
-    <div class="marca">mimbox.</div>
-    <h1>Painel administrativo</h1>
-    <p>Entre para gerenciar sua loja.</p>
 
-    <form id="login">
-      <label for="email">E-mail</label>
-      <input
-        id="email"
-        type="email"
-        autocomplete="username"
-        required
-        placeholder="Seu e-mail"
-      >
+  <section id="carregando" class="login-area">
+    <p>Verificando acesso ao Painel Mimbox...</p>
+  </section>
 
-      <label for="senha">Senha</label>
-      <input
-        id="senha"
-        type="password"
-        autocomplete="current-password"
-        required
-        placeholder="Sua senha"
-      >
+  <section id="login-area" class="login-area escondido">
+    <div class="login-card">
+      <div class="marca">mimbox.</div>
+      <h1>Painel administrativo</h1>
+      <p class="subtitulo">
+        Entre com seu acesso de administradora.
+      </p>
 
-      <button id="entrar" type="submit">
-        Entrar no painel
-      </button>
-    </form>
+      <form id="login">
+        <label for="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          autocomplete="username"
+          required
+        >
 
-    <div class="aviso" id="aviso" role="status">
-      Acesso exclusivo da administração Mimbox.
+        <label for="senha">Senha</label>
+        <input
+          id="senha"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+
+        <button id="entrar" class="botao entrar" type="submit">
+          Entrar no painel
+        </button>
+      </form>
+
+      <p id="aviso" class="aviso" role="status"></p>
     </div>
-  </main>
+  </section>
+
+  <div id="painel" class="painel escondido">
+    <aside>
+      <div class="marca">mimbox.</div>
+      <p>Painel administrativo</p>
+
+      <nav class="menu" aria-label="Menu administrativo">
+        <button class="ativo" data-pagina="dashboard">
+          📊 Dashboard
+        </button>
+        <button data-pagina="editor">
+          🎨 Editor do Site
+        </button>
+        <button data-pagina="produtos">
+          🛍️ Produtos
+        </button>
+        <button data-pagina="pedidos">
+          📦 Pedidos
+        </button>
+        <button data-pagina="clientes">
+          👥 Clientes
+        </button>
+        <button data-pagina="clube">
+          🎁 Clube Mimbox
+        </button>
+        <button data-pagina="estoque">
+          📋 Estoque
+        </button>
+        <button data-pagina="envios">
+          🚚 Envios
+        </button>
+      </nav>
+    </aside>
+
+    <main class="conteudo">
+      <header class="topo">
+        <div>
+          <h1 id="titulo-pagina">Dashboard</h1>
+          <span class="subtitulo">
+            Central de controle da Mimbox
+          </span>
+        </div>
+
+        <button id="sair" class="botao sair">
+          Sair do painel
+        </button>
+      </header>
+
+      <div id="conteudo-pagina"></div>
+
+      <p class="rodape">
+        Mimbox ADM — Estrutura inicial.
+        Os recursos de edição e os dados reais serão
+        conectados nas próximas etapas.
+      </p>
+    </main>
+  </div>
 
   <script>
-    const formulario = document.getElementById("login");
-    const aviso = document.getElementById("aviso");
-    const botao = document.getElementById("entrar");
+    const telas = {
+      dashboard: {
+        titulo: "Dashboard",
+        html: `
+          <div class="grade">
+            <div class="card">
+              <h2>💰 Faturamento</h2>
+              <p>Meta mensal</p>
+              <h1>R$ 8.500</h1>
+              <span class="etiqueta">Meta cadastrada</span>
+            </div>
 
-    formulario.addEventListener("submit", async (event) => {
-      event.preventDefault();
+            <div class="card">
+              <h2>📦 Kits vendidos</h2>
+              <p>Meta mensal</p>
+              <h1>144 kits</h1>
+              <span class="etiqueta">Meta cadastrada</span>
+            </div>
 
-      const email = document.getElementById("email").value.trim();
-      const senha = document.getElementById("senha").value;
+            <div class="card">
+              <h2>🎁 Clube Mimbox</h2>
+              <p>
+                Acompanhamento de assinaturas,
+                caixas mensais e brindes.
+              </p>
+              <span class="etiqueta">Em construção</span>
+            </div>
+          </div>
 
-      botao.disabled = true;
-      botao.textContent = "Verificando...";
-      aviso.className = "aviso";
-      aviso.textContent = "Verificando seu acesso...";
+          <div class="card secao destaque">
+            <h2>Bem-vinda ao Painel Mimbox!</h2>
+            <p>
+              Esta é a primeira versão da central
+              administrativa. As metas exibidas acima
+              são referências, não resultados de vendas.
+            </p>
+          </div>
+        `
+      },
 
-      try {
-        const resposta = await fetch("/api/admin-login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, senha })
-        });
+      editor: {
+        titulo: "Editor do Site",
+        html: `
+          <div class="card destaque">
+            <h2>🎨 Sua loja, do seu jeito</h2>
+            <p>
+              Aqui você poderá editar o site sem
+              precisar acessar o GitHub.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
 
-        const resultado = await resposta.json();
+          <div class="grade secao">
+            <div class="card">
+              <h2>🖼️ Imagens e banners</h2>
+              <p>Trocar fotos, banners e imagens.</p>
+            </div>
 
-        if (!resposta.ok) {
-          throw new Error(
-            resultado.erro || "Não foi possível entrar."
-          );
-        }
+            <div class="card">
+              <h2>✏️ Textos e botões</h2>
+              <p>Editar frases, títulos e chamadas.</p>
+            </div>
 
-        aviso.className = "aviso sucesso";
-        aviso.textContent =
-          "Login validado! A área administrativa ainda está em construção.";
+            <div class="card">
+              <h2>🧩 Seções do site</h2>
+              <p>Organizar e personalizar a página.</p>
+            </div>
+          </div>
+        `
+      },
 
-        document.getElementById("senha").value = "";
+      produtos: {
+        titulo: "Produtos",
+        html: `
+          <div class="card">
+            <h2>🛍️ Catálogo Mimbox</h2>
+            <p>
+              Aqui você poderá cadastrar produtos,
+              coleções, preços, fotos e disponibilidade.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
+        `
+      },
 
-      } catch (erro) {
-        aviso.className = "aviso erro";
-        aviso.textContent = erro.message;
-      } finally {
-        botao.disabled = false;
-        botao.textContent = "Entrar no painel";
+      pedidos: {
+        titulo: "Pedidos",
+        html: `
+          <div class="card">
+            <h2>📦 Gestão de pedidos</h2>
+            <p>
+              Vendas do site, Instagram, WhatsApp
+              e pedidos cadastrados manualmente.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
+        `
+      },
+
+      clientes: {
+        titulo: "Clientes",
+        html: `
+          <div class="card">
+            <h2>👥 Cadastro de clientes</h2>
+            <p>
+              Histórico de compras e informações
+              dos clientes, com acesso protegido.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
+        `
+      },
+
+      clube: {
+        titulo: "Clube Mimbox",
+        html: `
+          <div class="card">
+            <h2>🎁 Assinaturas</h2>
+            <p>
+              Planos de 3, 6 e 9 meses,
+              caixas enviadas, coleções e brindes.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
+        `
+      },
+
+      estoque: {
+        titulo: "Estoque",
+        html: `
+          <div class="card">
+            <h2>📋 Controle de estoque</h2>
+            <p>
+              Copos, adesivos, embalagens e
+              materiais usados nos kits.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
+        `
+      },
+
+      envios: {
+        titulo: "Envios",
+        html: `
+          <div class="card">
+            <h2>🚚 Calendário de despachos</h2>
+            <p>
+              Envios de terça a sexta-feira,
+              exceto feriados. Sem envios na terça
+              quando a segunda anterior for feriado.
+            </p>
+            <span class="etiqueta">Em construção</span>
+          </div>
+        `
       }
+    };
+
+    const carregando =
+      document.getElementById("carregando");
+    const loginArea =
+      document.getElementById("login-area");
+    const painel =
+      document.getElementById("painel");
+    const aviso =
+      document.getElementById("aviso");
+
+    function mostrarLogin() {
+      carregando.classList.add("escondido");
+      painel.classList.add("escondido");
+      loginArea.classList.remove("escondido");
+    }
+
+    function mostrarPainel() {
+      carregando.classList.add("escondido");
+      loginArea.classList.add("escondido");
+      painel.classList.remove("escondido");
+      abrirPagina("dashboard");
+    }
+
+    function abrirPagina(nome) {
+      const pagina = telas[nome];
+
+      if (!pagina) return;
+
+      document.getElementById(
+        "titulo-pagina"
+      ).textContent = pagina.titulo;
+
+      document.getElementById(
+        "conteudo-pagina"
+      ).innerHTML = pagina.html;
+
+      document.querySelectorAll(
+        ".menu button"
+      ).forEach(botao => {
+        botao.classList.toggle(
+          "ativo",
+          botao.dataset.pagina === nome
+        );
+      });
+    }
+
+    async function verificarSessao() {
+      try {
+        const resposta = await fetch(
+          "/api/admin-session",
+          {
+            credentials: "same-origin",
+            cache: "no-store"
+          }
+        );
+
+        const dados = await resposta.json();
+
+        if (resposta.ok && dados.autenticado === true) {
+          mostrarPainel();
+        } else {
+          mostrarLogin();
+        }
+      } catch {
+        mostrarLogin();
+      }
+    }
+
+    document.querySelectorAll(
+      ".menu button"
+    ).forEach(botao => {
+      botao.addEventListener("click", () => {
+        abrirPagina(botao.dataset.pagina);
+      });
     });
+
+    document.getElementById("login")
+      .addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const botao =
+          document.getElementById("entrar");
+
+        botao.disabled = true;
+        botao.textContent = "Verificando...";
+        aviso.textContent = "Verificando seu acesso...";
+
+        try {
+          const resposta = await fetch(
+            "/api/admin-login",
+            {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                email: document.getElementById(
+                  "email"
+                ).value.trim(),
+                senha: document.getElementById(
+                  "senha"
+                ).value
+              })
+            }
+          );
+
+          const dados = await resposta.json();
+
+          if (!resposta.ok) {
+            throw new Error(
+              dados.erro || "Falha no login"
+            );
+          }
+
+          document.getElementById(
+            "senha"
+          ).value = "";
+
+          await verificarSessao();
+
+        } catch (erro) {
+          aviso.textContent = erro.message;
+        } finally {
+          botao.disabled = false;
+          botao.textContent = "Entrar no painel";
+        }
+      });
+
+    document.getElementById("sair")
+      .addEventListener("click", async () => {
+        const botao = document.getElementById("sair");
+        botao.disabled = true;
+
+        try {
+          const resposta = await fetch(
+            "/api/admin-logout",
+            {
+              method: "POST",
+              credentials: "same-origin"
+            }
+          );
+
+          if (!resposta.ok) {
+            throw new Error("Não foi possível sair.");
+          }
+
+          mostrarLogin();
+          aviso.textContent = "Sessão encerrada.";
+
+        } catch {
+          alert(
+            "Não foi possível encerrar a sessão. Tente novamente."
+          );
+        } finally {
+          botao.disabled = false;
+        }
+      });
+
+    verificarSessao();
   </script>
 </body>
 </html>
