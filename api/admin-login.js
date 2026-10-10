@@ -1,6 +1,4 @@
 
-res.setHeader("Set-Cookie", serialize(
-  
 const COOKIE_NAME = "mimbox_admin_session";
 
 export default async function handler(req, res) {
@@ -78,6 +76,12 @@ export default async function handler(req, res) {
 
     const usuario = await usuarioResposta.json();
 
+    if (!usuario.id) {
+      return res.status(401).json({
+        erro: "Usuário inválido"
+      });
+    }
+
     const adminResposta = await fetch(
       `${base}/rest/v1/administradores?usuario_id=eq.${encodeURIComponent(usuario.id)}&select=usuario_id`,
       {
@@ -96,25 +100,31 @@ export default async function handler(req, res) {
 
     const administradores = await adminResposta.json();
 
-    if (!Array.isArray(administradores) ||
-        administradores.length !== 1) {
+    if (
+      !Array.isArray(administradores) ||
+      administradores.length !== 1
+    ) {
       return res.status(403).json({
         erro: "Usuário sem permissão administrativa"
       });
     }
 
-    // Cookie protegido, não acessível pelo JavaScript da página.
-    res.setHeader("Set-Cookie", serialize(
-      COOKIE_NAME,
-      sessao.access_token,
-      {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        path: "/api/admin",
-        maxAge: Math.min(sessao.expires_in || 3600, 3600)
-      }
-    ));
+    const maxAge = Math.min(
+      sessao.expires_in || 3600,
+      3600
+    );
+
+    res.setHeader(
+      "Set-Cookie",
+      [
+        `${COOKIE_NAME}=${encodeURIComponent(sessao.access_token)}`,
+        "HttpOnly",
+        "Secure",
+        "SameSite=Strict",
+        "Path=/api/admin",
+        `Max-Age=${maxAge}`
+      ].join("; ")
+    );
 
     return res.status(200).json({
       status: "autenticado",
