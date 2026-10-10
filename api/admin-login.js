@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   if (!url || !secret) {
     return res.status(503).json({
-      erro: "Login ainda não configurado"
+      erro: "Configuração do login incompleta"
     });
   }
 
@@ -23,8 +23,8 @@ export default async function handler(req, res) {
     typeof email !== "string" ||
     typeof senha !== "string" ||
     !email.includes("@") ||
-    senha.length === 0 ||
     email.length > 254 ||
+    senha.length === 0 ||
     senha.length > 1024
   ) {
     return res.status(400).json({
@@ -35,7 +35,8 @@ export default async function handler(req, res) {
   try {
     const base = url.replace(/\/$/, "");
 
-    const resposta = await fetch(
+    // Verifica o e-mail e a senha no Supabase Auth.
+    const loginResposta = await fetch(
       `${base}/auth/v1/token?grant_type=password`,
       {
         method: "POST",
@@ -50,14 +51,15 @@ export default async function handler(req, res) {
       }
     );
 
-    if (!resposta.ok) {
+    if (!loginResposta.ok) {
       return res.status(401).json({
         erro: "E-mail ou senha inválidos"
       });
     }
 
-    const sessao = await resposta.json();
+    const sessao = await loginResposta.json();
 
+    // Identifica o usuário autenticado.
     const usuarioResposta = await fetch(
       `${base}/auth/v1/user`,
       {
@@ -76,12 +78,20 @@ export default async function handler(req, res) {
 
     const usuario = await usuarioResposta.json();
 
+    if (!usuario.id) {
+      return res.status(401).json({
+        erro: "Usuário inválido"
+      });
+    }
+
+    // A chave secreta autoriza a consulta pelo servidor.
+    // Não usamos sb_secret_ como Bearer token.
     const adminResposta = await fetch(
-      `${base}/rest/v1/administradores?usuario_id=eq.${usuario.id}&select=usuario_id`,
+      `${base}/rest/v1/administradores?usuario_id=eq.${encodeURIComponent(usuario.id)}&select=usuario_id`,
       {
         headers: {
           apikey: secret,
-          Authorization: `Bearer ${secret}`
+          Accept: "application/json"
         }
       }
     );
@@ -94,13 +104,16 @@ export default async function handler(req, res) {
 
     const administradores = await adminResposta.json();
 
-    if (!Array.isArray(administradores) ||
-        administradores.length !== 1) {
+    if (
+      !Array.isArray(administradores) ||
+      administradores.length !== 1
+    ) {
       return res.status(403).json({
         erro: "Usuário sem permissão administrativa"
       });
     }
 
+    // Não devolvemos tokens nem chaves ao navegador.
     return res.status(200).json({
       status: "autenticado",
       mensagem: "Login administrativo validado"
