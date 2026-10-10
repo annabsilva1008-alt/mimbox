@@ -1,4 +1,8 @@
 
+import { serialize } from "cookie";
+
+const COOKIE_NAME = "mimbox_admin_session";
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -8,12 +12,12 @@ export default async function handler(req, res) {
     });
   }
 
-  const url = process.env.SUPABASE_URL;
+  const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
   const secret = process.env.SUPABASE_SECRET_KEY;
 
-  if (!url || !secret) {
+  if (!base || !secret) {
     return res.status(503).json({
-      erro: "Configuração do login incompleta"
+      erro: "Configuração incompleta"
     });
   }
 
@@ -24,7 +28,7 @@ export default async function handler(req, res) {
     typeof senha !== "string" ||
     !email.includes("@") ||
     email.length > 254 ||
-    senha.length === 0 ||
+    !senha ||
     senha.length > 1024
   ) {
     return res.status(400).json({
@@ -33,9 +37,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const base = url.replace(/\/$/, "");
-
-    // Verifica o e-mail e a senha no Supabase Auth.
     const loginResposta = await fetch(
       `${base}/auth/v1/token?grant_type=password`,
       {
@@ -59,7 +60,6 @@ export default async function handler(req, res) {
 
     const sessao = await loginResposta.json();
 
-    // Identifica o usuário autenticado.
     const usuarioResposta = await fetch(
       `${base}/auth/v1/user`,
       {
@@ -78,14 +78,6 @@ export default async function handler(req, res) {
 
     const usuario = await usuarioResposta.json();
 
-    if (!usuario.id) {
-      return res.status(401).json({
-        erro: "Usuário inválido"
-      });
-    }
-
-    // A chave secreta autoriza a consulta pelo servidor.
-    // Não usamos sb_secret_ como Bearer token.
     const adminResposta = await fetch(
       `${base}/rest/v1/administradores?usuario_id=eq.${encodeURIComponent(usuario.id)}&select=usuario_id`,
       {
@@ -104,16 +96,26 @@ export default async function handler(req, res) {
 
     const administradores = await adminResposta.json();
 
-    if (
-      !Array.isArray(administradores) ||
-      administradores.length !== 1
-    ) {
+    if (!Array.isArray(administradores) ||
+        administradores.length !== 1) {
       return res.status(403).json({
         erro: "Usuário sem permissão administrativa"
       });
     }
 
-    // Não devolvemos tokens nem chaves ao navegador.
+    // Cookie protegido, não acessível pelo JavaScript da página.
+    res.setHeader("Set-Cookie", serialize(
+      COOKIE_NAME,
+      sessao.access_token,
+      {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        path: "/api/admin",
+        maxAge: Math.min(sessao.expires_in || 3600, 3600)
+      }
+    ));
+
     return res.status(200).json({
       status: "autenticado",
       mensagem: "Login administrativo validado"
