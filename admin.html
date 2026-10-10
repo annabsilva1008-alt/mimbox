@@ -23,7 +23,7 @@
       font-family: Arial, sans-serif;
     }
 
-    button, input { font: inherit; }
+    button, input, textarea { font: inherit; }
 
     button { cursor: pointer; }
 
@@ -68,12 +68,20 @@
       margin: 20px 0 8px;
     }
 
-    input {
+    input:not([type="checkbox"]), textarea {
       width: 100%;
       padding: 13px;
       border: 2px solid var(--preto);
       border-radius: 8px;
     }
+
+    textarea { resize: vertical; }
+
+    .linha-check { display: flex; align-items: center; gap: 9px; margin: 16px 0; }
+    .linha-check input { width: auto; }
+    .produto-item { border-top: 1px solid #ddd; padding: 12px 0; }
+    .produto-item strong { display: block; }
+    .produto-item small { color: #555; }
 
     .botao {
       background: var(--amarelo);
@@ -397,13 +405,30 @@
       produtos: {
         titulo: "Produtos",
         html: `
-          <div class="card">
-            <h2>🛍️ Catálogo Mimbox</h2>
-            <p>
-              Aqui você poderá cadastrar produtos,
-              coleções, preços, fotos e disponibilidade.
-            </p>
-            <span class="etiqueta">Em construção</span>
+          <div class="card destaque">
+            <h2>🛍️ Cadastrar produto</h2>
+            <p>Cadastre produtos no Supabase. Eles ainda não aparecem automaticamente na loja.</p>
+            <form id="form-produto">
+              <label for="produto-nome">Nome do produto *</label>
+              <input id="produto-nome" maxlength="150" required>
+              <label for="produto-colecao">Coleção</label>
+              <input id="produto-colecao" maxlength="100">
+              <label for="produto-preco">Preço (R$) *</label>
+              <input id="produto-preco" type="number" min="0" max="99999999.99" step="0.01" placeholder="Ex.: 59,90" required>
+              <label for="produto-descricao">Descrição</label>
+              <textarea id="produto-descricao" maxlength="2000" rows="4"></textarea>
+              <label for="produto-imagem">Link HTTPS da imagem (opcional)</label>
+              <input id="produto-imagem" type="url" placeholder="https://..." maxlength="2048">
+              <label class="linha-check"><input id="produto-disponivel" type="checkbox" checked> Produto disponível</label>
+              <label class="linha-check"><input id="produto-destaque" type="checkbox"> Produto em destaque</label>
+              <button class="botao" type="submit" id="salvar-produto">Salvar produto</button>
+              <p id="mensagem-produto" class="aviso" role="status"></p>
+            </form>
+          </div>
+          <div class="card secao">
+            <h2>Produtos cadastrados</h2>
+            <p>Lista do banco de dados, ainda não conectada à vitrine da loja.</p>
+            <div id="lista-produtos" aria-live="polite">Carregando produtos...</div>
           </div>
         `
       },
@@ -523,7 +548,82 @@
           botao.dataset.pagina === nome
         );
       });
+      if (nome === "produtos") carregarProdutos();
     }
+
+    async function carregarProdutos() {
+      const lista = document.getElementById("lista-produtos");
+      if (!lista) return;
+      lista.textContent = "Carregando produtos...";
+      try {
+        const resposta = await fetch("/api/admin-produtos", {
+          credentials: "same-origin", cache: "no-store"
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok) throw new Error(dados.erro || "Falha ao consultar produtos");
+        if (!document.getElementById("lista-produtos")) return;
+        lista.replaceChildren();
+        if (!Array.isArray(dados.produtos) || dados.produtos.length === 0) {
+          lista.textContent = "Nenhum produto cadastrado ainda.";
+          return;
+        }
+        for (const produto of dados.produtos) {
+          const item = document.createElement("div");
+          item.className = "produto-item";
+          const nome = document.createElement("strong");
+          nome.textContent = produto.nome || "Sem nome";
+          const detalhes = document.createElement("small");
+          const preco = Number(produto.preco);
+          detalhes.textContent = `${produto.colecao || "Sem coleção"} · ${Number.isFinite(preco) ? preco.toLocaleString("pt-BR", {style:"currency",currency:"BRL"}) : "Preço indisponível"} · ${produto.disponivel ? "Disponível" : "Indisponível"}`;
+          item.append(nome, detalhes);
+          lista.append(item);
+        }
+      } catch (erro) {
+        lista.textContent = erro.message || "Erro ao carregar produtos.";
+      }
+    }
+
+    document.getElementById("conteudo-pagina")
+      .addEventListener("submit", async event => {
+        if (event.target.id !== "form-produto") return;
+        event.preventDefault();
+        const botao = document.getElementById("salvar-produto");
+        const mensagem = document.getElementById("mensagem-produto");
+        const form = event.target;
+        const precoTexto = document.getElementById("produto-preco").value;
+        const preco = Number(precoTexto);
+        if (!precoTexto || !Number.isFinite(preco)) {
+          mensagem.textContent = "Informe um preço válido.";
+          return;
+        }
+        botao.disabled = true;
+        mensagem.textContent = "Salvando produto...";
+        try {
+          const resposta = await fetch("/api/admin-salvar-produto", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              nome: document.getElementById("produto-nome").value.trim(),
+              colecao: document.getElementById("produto-colecao").value.trim(),
+              preco,
+              descricao: document.getElementById("produto-descricao").value.trim(),
+              imagem_url: document.getElementById("produto-imagem").value.trim(),
+              disponivel: document.getElementById("produto-disponivel").checked,
+              destaque: document.getElementById("produto-destaque").checked
+            })
+          });
+          const dados = await resposta.json();
+          if (!resposta.ok) throw new Error(dados.erro || "Erro ao salvar produto");
+          form.reset();
+          mensagem.textContent = "Produto cadastrado com sucesso!";
+          await carregarProdutos();
+        } catch (erro) {
+          mensagem.textContent = erro.message || "Não foi possível salvar.";
+        } finally {
+          if (document.getElementById("salvar-produto") === botao) botao.disabled = false;
+        }
+      });
 
     async function verificarSessao() {
       try {
