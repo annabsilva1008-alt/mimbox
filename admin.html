@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel ADM | Mimbox</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f5edda;
+      font-family: Arial, sans-serif;
+      color: #171717;
+    }
+
+    .login {
+      width: 100%;
+      max-width: 420px;
+      background: #fffdf6;
+      border: 3px solid #171717;
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 8px 8px 0 #171717;
+    }
+
+    .marca {
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: #e33d32;
+      margin-bottom: 6px;
+    }
+
+    h1 { font-size: 24px; margin: 0 0 8px; }
+
+    p {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 20px;
+      border: 2px solid #171717;
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #171717;
+      border-radius: 8px;
+      background: #f7d548;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover { background: #efc52a; }
+
+    .aviso {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="login">
+    <div class="marca">mimbox.</div>
+    <h1>Painel administrativo</h1>
+    <p>Entre para gerenciar sua loja.</p>
+
+    <form id="login">
+      <label for="email">E-mail</label>
+      <input
+        id="email"
+        type="email"
+        autocomplete="username"
+        required
+        placeholder="Seu e-mail"
+      >
+
+      <label for="senha">Senha</label>
+      <input
+        id="senha"
+        type="password"
+        autocomplete="current-password"
+        required
+        placeholder="Sua senha"
+      >
+
+      <button type="submit">
+        Entrar no painel
+      </button>
+    </form>
+
+    <div class="aviso" id="aviso">
+      Login em configuração.
+    </div>
+  </main>
+
+  <script>
+    document.getElementById("login")
+      .addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        document.getElementById("aviso").textContent =
+          "O acesso será habilitado após a conexão segura com o Supabase.";
+      });
+  </script>
+</body>
+</html>
