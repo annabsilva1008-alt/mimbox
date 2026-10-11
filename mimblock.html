@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mimbox | Mistura Não!</title>
+<style>
+:root{--ink:#211d25;--cream:#fff3d8;--yellow:#ffd447;--red:#fa6258;--blue:#5368e9}
+*{box-sizing:border-box}body{margin:0;background:#f8eacb;color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;background-image:radial-gradient(#735c4e 1px,transparent 1px);background-size:7px 7px}
+.wrap{max-width:970px;margin:auto;padding:22px 16px 48px;position:relative}
+nav{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}a{color:inherit;font-weight:900;text-decoration:none}.brand{font-size:1.35rem;background:var(--yellow);padding:8px 14px;border:3px solid var(--ink);border-radius:13px;box-shadow:4px 4px 0 var(--ink)}
+h1{font-size:clamp(2.5rem,8vw,5.5rem);letter-spacing:-.065em;line-height:.95;margin:24px 0 8px;text-transform:uppercase}
+h1 span{color:#e84540;text-shadow:3px 3px 0 var(--ink)}.sub{font-weight:650;max-width:640px;margin:0 0 18px}
+.panel{background:#fff9ea;border:3px solid var(--ink);border-radius:22px;box-shadow:7px 8px 0 var(--ink);padding:18px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.stats{display:flex;gap:9px;flex-wrap:wrap}.stat{border:2px solid var(--ink);border-radius:12px;padding:7px 12px;background:#fff;min-width:95px}.stat small{display:block;font-weight:750;font-size:.7rem;text-transform:uppercase}.stat strong{font-size:1.4rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap}button{cursor:pointer;font:inherit;font-weight:900;border:2px solid var(--ink);border-radius:12px;background:var(--yellow);padding:10px 14px;box-shadow:3px 3px 0 var(--ink)}button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}button:disabled{opacity:.4;cursor:not-allowed}button.secondary{background:#fff}
+#message{margin:16px 0 4px;font-weight:850;min-height:24px;color:#454053}
+.board{margin:16px 0 0;border:3px solid var(--ink);border-radius:18px;background:linear-gradient(180deg,#b4d8ef 0%,#e1f0f4 65%,#e0b889 65%,#b98252 100%);padding:22px 12px 32px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px 6px;position:relative;box-shadow:inset 0 7px 0 #ffffff66}
+.bottle-btn{background:none;border:0;box-shadow:none;padding:0;display:flex;align-items:center;justify-content:center;position:relative;min-height:146px;touch-action:manipulation}.bottle-btn:active{transform:none;box-shadow:none}.bottle-btn:focus-visible{outline:3px dashed #111;outline-offset:3px}
+.bottle{width:min(67px,85%);height:122px;position:relative;transition:transform .16s}.bottle-btn.selected .bottle{transform:translateY(-13px) rotate(-5deg)}.bottle-btn.selected:after{content:"▼";position:absolute;top:-17px;color:#df4040;font-size:21px}
+.neck{position:absolute;left:25%;right:25%;height:17px;top:0;border:4px solid #313444;border-bottom:0;border-radius:5px 5px 0 0;background:#ffffff88;z-index:2}
+.glass{position:absolute;inset:13px 0 0;border:4px solid #313444;border-top:0;border-radius:10px 10px 17px 17px;overflow:hidden;background:#ffffff88;box-shadow:inset 7px 0 #ffffff7a,inset -4px 0 #ffffff45}
+.liquid{position:absolute;left:0;right:0;height:25%;border-top:2px solid #ffffff88;box-shadow:inset 7px 0 #ffffff33;transition:background .2s}.liquid:after{content:"";position:absolute;top:5px;left:13%;width:7px;height:7px;border-radius:50%;background:#ffffff55}
+.num{position:absolute;bottom:-12px;font-size:11px;background:#fff;border:2px solid #242424;border-radius:99px;padding:1px 6px;font-weight:900}
+.bottle-btn.complete .glass{filter:drop-shadow(0 0 6px #ffdd45)}.bottle-btn.complete:before{content:"★";position:absolute;right:0;top:0;color:#e9a400;font-size:22px;text-shadow:1px 1px #111}
+.note{font-size:.87rem;font-weight:650;line-height:1.5;margin-top:16px}.footer{font-size:.78rem;color:#554c46;margin-top:20px}
+.overlay{position:fixed;inset:0;background:#201b25b9;display:none;place-items:center;padding:16px;z-index:10}.overlay.show{display:grid}.modal{max-width:410px;width:100%;background:#fff6dd;border:4px solid #211d25;border-radius:20px;padding:28px;text-align:center;box-shadow:9px 9px 0 #f8c847}.modal h2{font-size:2.5rem;margin:0}.modal p{font-weight:700}
+@media(max-width:580px){.board{grid-template-columns:repeat(4,minmax(0,1fr));padding:20px 4px 25px;gap:15px 0}.bottle-btn{min-height:126px}.bottle{height:107px;width:min(57px,84%)}.glass{inset:12px 0 0}.panel{padding:12px}.stat{min-width:76px;padding:5px 8px}.stat strong{font-size:1.1rem}h1{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head><body><main class="wrap">
+<nav><a class="brand" href="./index.html">📦 MIMBOX</a><a href="./index.html">← Voltar para a loja</a></nav>
+<h1>MISTURA <span>NÃO!</span> 🧪</h1>
+<p class="sub">O desafio das garrafas! Separe os líquidos por cor. Uma garrafa só pode receber líquido da <b>mesma cor</b> — ou estar vazia. Parece fácil? Tenta terminar sem travar.</p>
+<section class="panel" aria-label="Jogo de separar líquidos">
+<div class="top"><div class="stats"><div class="stat"><small>Nível</small><strong id="level">1</strong></div><div class="stat"><small>Movimentos</small><strong id="moves">0</strong></div><div class="stat"><small>Melhor nível</small><strong id="best">1</strong></div></div>
+<div class="actions"><button class="secondary" id="undo">↶ Desfazer</button><button class="secondary" id="restart">Reiniciar</button><button id="hint">💡 Dica</button></div></div>
+<p id="message" role="status" aria-live="polite">Toque em uma garrafa e depois naquela que vai receber o líquido.</p>
+<div id="board" class="board" aria-label="Garrafas de líquidos"></div>
+<p class="note">💡 <b>Regras:</b> o líquido de cima é despejado primeiro. Só é permitido despejar sobre a mesma cor ou em uma garrafa vazia. Cada garrafa comporta quatro camadas. Use as garrafas vazias para organizar tudo.</p>
+</section><p class="footer">Mimbox Arcade · Jogo gratuito. O melhor nível fica salvo neste navegador. Ranking mensal público ainda não disponível.</p>
+</main>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="win-title"><div class="modal"><h2 id="win-title">ARRASOU! 🎉</h2><p id="win-text"></p><button id="next">Próximo nível →</button></div></div>
+<script>
+(()=>{"use strict";
+const palette=["#F35E66","#F5BB32","#5273EA","#48BFA0","#B86BE0","#FF8A3D","#E15AAB","#62B9D9","#A7C953","#9267E5"];
+const capacity=4, $=id=>document.getElementById(id);
+let level=1,board=[],initial=[],selected=-1,moves=0,history=[],hintUses=0;
+try{level=Math.max(1,Math.min(999,Number(localStorage.getItem("mimbox_liquid_level"))||1))}catch(e){}
+function clone(a){return a.map(x=>x.slice())}
+function randomInt(n){return Math.floor(Math.random()*n)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=randomInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function generate(n){
+  // Reverse-play from a solved board. Reverse moves split one colour from a
+  // uniform stack and deposit it into an empty or mixed stack; the resulting
+  // board can always be returned to the solved state by reversing the steps.
+  // For predictable play, use randomly distributed layers and two spare bottles.
+  const colors=Math.min(4+Math.floor((n-1)/2),8);
+  let a=Array.from({length:colors},(_,i)=>Array(4).fill(i));
+  a.push([],[]);
+  // Shuffle layers across bottles. Restart always preserves the same board.
+  let flat=shuffle(Array.from({length:colors*4},(_,i)=>Math.floor(i/4)));
+  let tries=0;
+  do{
+    shuffle(flat);
+    for(let i=0;i<colors;i++)a[i]=flat.slice(i*4,i*4+4);
+    tries++;
+  }while(tries<30 && a.slice(0,colors).some(v=>v.every(x=>x===v[0])));
+  a[colors]=[];a[colors+1]=[];
+  return a;
+}
+function top(a){return a.length?a[a.length-1]:null}
+function countTop(a){if(!a.length)return 0;let c=1;for(let i=a.length-2;i>=0&&a[i]===top(a);i--)c++;return c}
+function canPour(a,i,j){if(i===j||!a[i].length||a[j].length>=capacity)return false;return !a[j].length||top(a[i])===top(a[j])}
+function solved(a){return a.every(v=>!v.length||(v.length===capacity&&v.every(x=>x===v[0])))}
+function render(){
+ $("level").textContent=level;$("moves").textContent=moves;
+ let best=level;try{best=Math.max(level,Number(localStorage.getItem("mimbox_liquid_best"))||1)}catch(e){}
+ $("best").textContent=best;$("undo").disabled=!history.length;
+ const root=$("board");root.replaceChildren();
+ board.forEach((v,i)=>{
+  const btn=document.createElement("button");btn.className="bottle-btn"+(selected===i?" selected":"")+(v.length===4&&v.every(x=>x===v[0])?" complete":"");
+  btn.setAttribute("aria-label","Garrafa "+(i+1)+": "+(v.length?v.length+" camadas":"vazia"));btn.title="Garrafa "+(i+1);
+  const bottle=document.createElement("div");bottle.className="bottle";
+  const neck=document.createElement("div");neck.className="neck";
+  const glass=document.createElement("div");glass.className="glass";
+  v.forEach((color,k)=>{let layer=document.createElement("div");layer.className="liquid";layer.style.background=palette[color];layer.style.bottom=(k*25)+"%";glass.append(layer)});
+  const num=document.createElement("span");num.className="num";num.textContent=i+1;
+  bottle.append(neck,glass);btn.append(bottle,num);btn.addEventListener("click",()=>pick(i));root.append(btn);
+ });
+}
+function status(t){$("message").textContent=t}
+function pick(i){
+ if(selected<0){if(!board[i].length){status("Escolha uma garrafa que tenha líquido.");return}selected=i;status("Agora escolha a garrafa de destino.");render();return}
+ if(selected===i){selected=-1;status("Seleção cancelada.");render();return}
+ let src=selected;selected=-1;
+ if(!canPour(board,src,i)){status("Não pode! O destino precisa estar vazio ou ter a mesma cor no topo.");render();return}
+ history.push(clone(board));let amount=Math.min(countTop(board[src]),capacity-board[i].length);
+ for(let k=0;k<amount;k++)board[i].push(board[src].pop());
+ moves++;status("Boa! "+amount+" camada"+(amount>1?"s":"")+" transferida"+(amount>1?"s":"")+".");render();
+ if(solved(board)){setTimeout(win,300)}
+}
+function win(){
+ $("win-text").textContent="Você separou todas as cores em "+moves+" movimentos. Pronta para o próximo desafio?";
+ $("overlay").classList.add("show");
+}
+function load(){board=generate(level);initial=clone(board);selected=-1;moves=0;history=[];hintUses=0;status("Separe todas as cores! Escolha uma garrafa para começar.");render()}
+$("undo").onclick=()=>{if(!history.length)return;board=history.pop();moves=Math.max(0,moves-1);selected=-1;status("Última jogada desfeita.");render()};
+$("restart").onclick=()=>{board=clone(initial);history=[];selected=-1;moves=0;status("Nível reiniciado.");render()};
+$("hint").onclick=()=>{
+ hintUses++;const movesPossible=[];
+ for(let i=0;i<board.length;i++)for(let j=0;j<board.length;j++){
+ if(!canPour(board,i,j))continue;
+ if(board[i].length===4&&board[i].every(x=>x===board[i][0]))continue;
+ if(board[j].length===0&&board[i].every(x=>x===board[i][0]))continue;
+ let priority=(board[j].length?10:0)+countTop(board[i])+(board[i].length===countTop(board[i])?-3:0);
+ movesPossible.push({i,j,priority});
+ }
+ movesPossible.sort((a,b)=>b.priority-a.priority);
+ if(!movesPossible.length){status("Não encontrei uma jogada útil. Tente desfazer.");return}
+ const m=movesPossible[0];status("💡 Experimente a garrafa "+(m.i+1)+" → "+(m.j+1)+".");
+};
+$("next").onclick=()=>{level++;try{localStorage.setItem("mimbox_liquid_level",String(level));localStorage.setItem("mimbox_liquid_best",String(level))}catch(e){}$("overlay").classList.remove("show");load()};
+load();
+})();
+</script></body></html>
