@@ -213,7 +213,7 @@ main{
       <button data-page="manual">➕ Pedido manual</button>
       <button data-page="produtos">🛍️ Produtos</button>
       <button data-page="estoque">📋 Estoque</button>
-      <button data-page="envios">🚚 Envios</button>
+      <button data-page="envios">🚚 Entregas pendentes</button>
       <button data-page="clientes">👥 Clientes</button>
     </nav>
   </aside>
@@ -253,7 +253,7 @@ const titles = {
   manual:"Cadastrar pedido manual",
   produtos:"Produtos",
   estoque:"Estoque",
-  envios:"Envios e retiradas",
+  envios:"Entregas pendentes",
   clientes:"Clientes"
 };
 
@@ -556,6 +556,69 @@ async function openPage(page){
 
     notify(error.message,true);
   }
+}
+
+
+// DADOS DO CLUBE: gravados nas observações do pedido já existente.
+// Não exige tabela nova nem altera o checkout.
+const CLUB_TAG = "[MIMBOX_CLUBE:";
+function clubInfo(notes){
+  const str=String(notes||"");
+  const start=str.indexOf(CLUB_TAG);
+  if(start<0)return null;
+  const end=str.indexOf("]",start);
+  if(end<0)return null;
+  try{
+    const v=JSON.parse(str.slice(start+CLUB_TAG.length,end));
+    if(![3,6,9].includes(Number(v.meses)))return null;
+    return {
+      nome:String(v.nome||""),
+      meses:Number(v.meses),
+      enviados:Math.min(Number(v.meses),Math.max(0,Math.floor(Number(v.enviados)||0))),
+      inicio:/^\d{4}-\d{2}-\d{2}$/.test(v.inicio||"")?v.inicio:""
+    };
+  }catch{return null;}
+}
+function cleanClubNotes(notes){
+  return String(notes||"").replace(/\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/g,"").trim();
+}
+function clubNotes(notes,club){
+  const normal=cleanClubNotes(notes);
+  return (normal?normal+"\n":"")+CLUB_TAG+JSON.stringify(club)+"]";
+}
+function clubDue(club){
+  if(!club?.inicio)return null;
+  const [year,month,day]=club.inicio.split("-").map(Number);
+  const target=new Date(year,month-1+club.enviados,1);
+  const lastDay=new Date(target.getFullYear(),target.getMonth()+1,0).getDate();
+  target.setDate(Math.min(day,lastDay));
+  return target;
+}
+function clubDateLabel(date){
+  return date?date.toLocaleDateString("pt-BR"):"Definir primeira data";
+}
+function clubState(club){
+  if(club.enviados>=club.meses)return "Concluído";
+  const due=clubDue(club);
+  if(!due)return "Sem data";
+  const today=new Date();today.setHours(0,0,0,0);
+  if(due<today)return "⚠️ Atrasado";
+  const days=Math.round((due-today)/86400000);
+  return days<=7?"Próximo envio":"Em dia";
+}
+async function saveClubOrder(p,club,visibleNotes){
+  const result=await operations("envio_editar",{
+    id:p.id,
+    envio:{
+      status_entrega:club.enviados>=club.meses?"entregue":"em_preparacao",
+      transportadora:p.transportadora||"",
+      rastreio:p.rastreio||"",
+      observacoes:clubNotes(visibleNotes??p.observacoes,club)
+    }
+  });
+  if(result.ok!==true)throw Error("Não foi possível salvar a assinatura");
+  p.observacoes=clubNotes(visibleNotes??p.observacoes,club);
+  p.status_entrega=club.enviados>=club.meses?"entregue":"em_preparacao";
 }
 
 // DASHBOARD
@@ -1035,83 +1098,101 @@ function stock(area){
 // ENVIOS E RETIRADAS
 
 function shipments(area){
-  const c=card("🚚 Acompanhar envios");
+  const intro=card("🚚 Entregas pendentes e Mimbox Clube");
+  intro.append(element("p","Os assinantes permanecem nesta aba até a última caixa. Os atrasos são calculados automaticamente pela data de envio."));
+  intro.append(action("Atualizar entregas",()=>openPage("envios")));
+  area.append(intro);
 
-  c.append(element(
-    "p",
-    "Gerencie preparação, retirada, "+
-    "transportadora e código de rastreio."
-  ));
-
-  area.append(c);
+  const clubs=state.envios.filter(p=>clubInfo(p.observacoes));
+  const pending=clubs.filter(p=>{
+    const c=clubInfo(p.observacoes);return c.enviados<c.meses;
+  });
+  const late=pending.filter(p=>clubState(clubInfo(p.observacoes)).includes("Atrasado"));
+  const summary=card("Resumo do clube");
+  summary.append(line("Assinaturas em andamento",pending.length));
+  summary.append(line("Entregas atrasadas",late.length));
+  area.append(summary);
 
   if(!state.envios.length){
-    area.append(card("Nenhum pedido encontrado"));
-    return;
+    const empty=card("Nenhum pedido encontrado");
+    empty.append(element("p","Cadastre primeiro o pedido do assinante. Depois ele aparecerá aqui para ativar o controle mensal."));
+    area.append(empty);return;
   }
 
-  for(const p of state.envios){
-    const item=card(
-      "Pedido "+(p.numero_pedido||p.id)
-    );
-
-    const customer=Array.isArray(p.clientes)
-      ?p.clientes[0]:p.clientes;
-
-    item.append(
-      line("Cliente",customer?.nome),
-      line("Entrega",p.forma_entrega)
-    );
-
-    const status=selectField(
-      "Andamento",
-      statuses,
-      p.status_entrega||"aguardando"
-    );
-
-    const carrier=field(
-      "Transportadora",p.transportadora
-    );
-
-    const tracking=field(
-      "Código de rastreio",p.rastreio
-    );
-
-    const notes=field(
-      "Observações",p.observacoes,"textarea"
-    );
-
-    item.append(
-      status.wrap,
-      carrier.wrap,
-      tracking.wrap,
-      notes.wrap
-    );
-
-    item.append(action(
-      "Salvar envio",
-      async()=>{
-        const result=await operations(
-          "envio_editar",
-          {
-            id:p.id,
-            envio:{
-              status_entrega:status.input.value,
-              transportadora:carrier.input.value,
-              rastreio:tracking.input.value,
-              observacoes:notes.input.value
-            }
-          }
-        );
-
-        if(result.ok!==true){
-          throw Error("Envio não foi atualizado");
-        }
-
-        notify("Envio atualizado.");
+  const ordered=[...state.envios].sort((a,b)=>{
+    const ca=clubInfo(a.observacoes),cb=clubInfo(b.observacoes);
+    const score=c=>!c?3:c.enviados>=c.meses?4:clubState(c).includes("Atrasado")?0:1;
+    return score(ca)-score(cb);
+  });
+  for(const p of ordered){
+    const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
+    const club=clubInfo(p.observacoes);
+    const item=card(club?(club.nome||customer?.nome||"Assinante")+" — Clube "+club.meses+" meses":"Pedido "+(p.numero_pedido||p.id));
+    if(club){
+      item.append(line("Caixas enviadas",club.enviados+"/"+String(club.meses).padStart(2,"0")));
+      item.append(line("Próximo envio",club.enviados>=club.meses?"Assinatura concluída":clubDateLabel(clubDue(club))));
+      item.append(line("Situação",clubState(club)));
+      if(club.enviados<club.meses){
+        item.append(action("✓ Confirmar envio da caixa "+(club.enviados+1),async()=>{
+          if(!confirm("Confirmar que a caixa "+(club.enviados+1)+" de "+club.meses+" foi enviada para "+(club.nome||customer?.nome||"o cliente")+"?"))return;
+          await saveClubOrder(p,{...club,enviados:club.enviados+1});
+          await openPage("envios");
+          notify("Envio registrado. Próxima data atualizada.");
+        }));
       }
-    ));
-
+      const edit=element("details");
+      edit.append(element("summary","Editar dados da assinatura"));
+      const name=field("Nome para exibição",club.nome||customer?.nome||"");
+      const first=field("Data do primeiro envio",club.inicio,"date");
+      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],["9","9 meses"]],String(club.meses));
+      const sent=field("Caixas já enviadas",club.enviados,"number");sent.input.step="1";
+      edit.append(name.wrap,first.wrap,plan.wrap,sent.wrap);
+      edit.append(action("Salvar assinatura",async()=>{
+        const meses=Number(plan.input.value),enviados=Number(sent.input.value);
+        if(!first.input.value)throw Error("Informe a data do primeiro envio.");
+        if(!Number.isInteger(enviados)||enviados<0||enviados>meses)throw Error("Quantidade enviada inválida.");
+        await saveClubOrder(p,{nome:name.input.value.trim(),inicio:first.input.value,meses,enviados});
+        await openPage("envios");notify("Assinatura atualizada.");
+      }));
+      item.append(edit);
+    }else{
+      item.append(line("Cliente",customer?.nome));
+      item.append(line("Andamento",p.status_entrega));
+      const setup=element("details");
+      setup.append(element("summary","Cadastrar este pedido no Mimbox Clube"));
+      const name=field("Nome do assinante",customer?.nome||"");
+      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],["9","9 meses"]],"9");
+      const first=field("Data do primeiro envio","","date");
+      setup.append(name.wrap,plan.wrap,first.wrap);
+      setup.append(action("Ativar acompanhamento mensal",async()=>{
+        if(!name.input.value.trim())throw Error("Informe o nome do assinante.");
+        if(!first.input.value)throw Error("Informe a data do primeiro envio.");
+        await saveClubOrder(p,{nome:name.input.value.trim(),meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
+        await openPage("envios");notify("Assinatura cadastrada no controle de entregas.");
+      }));
+      item.append(setup);
+    }
+    const details=element("details");
+    details.append(element("summary","Dados do envio e observações"));
+    const status=selectField("Andamento",statuses,p.status_entrega||"aguardando");
+    const carrier=field("Transportadora",p.transportadora);
+    const tracking=field("Código de rastreio",p.rastreio);
+    const notes=field("Observações",cleanClubNotes(p.observacoes),"textarea");
+    details.append(status.wrap,carrier.wrap,tracking.wrap,notes.wrap);
+    details.append(action("Salvar dados do envio",async()=>{
+      const data=await operations("envio_editar",{
+        id:p.id,
+        envio:{
+          status_entrega:status.input.value,
+          transportadora:carrier.input.value,
+          rastreio:tracking.input.value,
+          observacoes:club?clubNotes(notes.input.value,club):notes.input.value
+        }
+      });
+      if(data.ok!==true)throw Error("Envio não foi atualizado");
+      await openPage("envios");notify("Dados do envio atualizados.");
+    }));
+    item.append(details);
     area.append(item);
   }
 }
