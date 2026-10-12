@@ -4,1180 +4,893 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mimbox | Painel Administrativo</title>
+<title>Mimbox ADM</title>
 <style>
 :root{
-  --creme:#f5edda;
-  --amarelo:#f7d548;
-  --vermelho:#e33d32;
-  --azul:#2455a4;
-  --preto:#171717;
+  --amarelo:#f8d749;
+  --azul:#2456a6;
+  --vermelho:#e74739;
+  --creme:#f5eedf;
+  --preto:#181818;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
   background:var(--creme);
   color:var(--preto);
-  font-family:Arial,sans-serif;
+  font-family:Arial,Helvetica,sans-serif;
 }
-button,input,textarea,select{font:inherit}
+button,input,select,textarea{font:inherit}
 button{cursor:pointer}
-input,textarea,select{
+input,select,textarea{
+  display:block;
   width:100%;
   padding:12px;
-  border:2px solid var(--preto);
+  margin:7px 0 14px;
+  border:2px solid #222;
   border-radius:8px;
   background:white;
 }
-textarea{resize:vertical}
-label{
-  display:block;
-  font-size:14px;
-  font-weight:700;
-  margin:15px 0 7px;
+input[type=checkbox]{
+  display:inline-block;
+  width:auto;
+  margin:0 8px 0 0;
 }
+label{font-weight:700;font-size:14px}
+textarea{resize:vertical}
 h1,h2,h3{line-height:1.2}
 p{line-height:1.5}
-.escondido{display:none!important}
-.login-area{
+.hidden{display:none!important}
+.btn{
+  background:var(--amarelo);
+  border:2px solid var(--preto);
+  border-radius:9px;
+  padding:11px 16px;
+  font-weight:800;
+  margin:5px 5px 5px 0;
+}
+.btn.blue{background:var(--azul);color:white}
+.btn.white{background:white}
+.btn:disabled{opacity:.55}
+.login{
   min-height:100vh;
   display:grid;
   place-items:center;
   padding:20px;
 }
-.login-card{
-  width:100%;
-  max-width:430px;
+.login-box{
   background:#fffdf6;
   border:3px solid var(--preto);
   border-radius:18px;
-  padding:30px;
   box-shadow:7px 7px 0 var(--preto);
+  padding:30px;
+  width:100%;
+  max-width:420px;
 }
-.marca{
-  color:var(--vermelho);
-  font-size:35px;
+.logo{
+  font-size:34px;
   font-weight:900;
+  color:var(--vermelho);
   letter-spacing:-2px;
 }
-.botao{
-  display:inline-block;
-  padding:12px 17px;
-  background:var(--amarelo);
-  color:var(--preto);
-  border:2px solid var(--preto);
-  border-radius:9px;
-  font-weight:800;
-  margin:8px 6px 8px 0;
-}
-.botao.azul{background:var(--azul);color:white}
-.botao.vermelho{background:var(--vermelho);color:white}
-.botao.branco{background:white}
-.botao:disabled{opacity:.5;cursor:wait}
-.painel{
+.layout{
   display:grid;
-  grid-template-columns:240px minmax(0,1fr);
+  grid-template-columns:235px minmax(0,1fr);
   min-height:100vh;
 }
 aside{
   background:var(--preto);
   color:white;
-  padding:24px 16px;
+  padding:22px 14px;
 }
-aside .marca{color:var(--amarelo)}
-.menu{display:grid;gap:5px;margin-top:25px}
-.menu button{
-  background:transparent;
-  color:white;
+aside .logo{color:var(--amarelo)}
+nav{display:grid;gap:5px;margin-top:25px}
+nav button{
   text-align:left;
+  color:white;
+  background:transparent;
   border:0;
-  padding:13px;
   border-radius:8px;
+  padding:13px;
   font-weight:700;
 }
-.menu button.ativo,
-.menu button:hover{background:var(--azul)}
-main{
-  padding:30px;
-  min-width:0;
-  max-width:1450px;
-  width:100%;
-}
-.topo{
+nav button:hover,nav button.active{background:var(--azul)}
+main{padding:25px;min-width:0}
+.header{
   display:flex;
   justify-content:space-between;
   align-items:center;
   flex-wrap:wrap;
-  gap:12px;
-  margin-bottom:25px;
-}
-.topo h1{margin:0}
-.subtitulo{color:#666;font-size:14px}
-.grade{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:16px;
+  gap:10px;
 }
 .card{
-  background:#fffdf6;
+  background:#fffdf7;
   border:2px solid var(--preto);
-  border-radius:15px;
+  border-radius:14px;
   padding:20px;
-  margin-bottom:18px;
+  margin:18px 0;
   box-shadow:4px 4px 0 var(--preto);
-  min-width:0;
-}
-.card h2{margin:0 0 12px;font-size:19px}
-.destaque{border-top:7px solid var(--vermelho)}
-.metrica{font-size:27px;font-weight:900}
-.aviso{
-  font-size:14px;
-  min-height:20px;
   overflow-wrap:anywhere;
 }
-.linha{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
+.card h2{margin-top:0}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
 }
-.linha-check{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  margin:15px 0;
-}
-.linha-check input{width:auto}
+.metric{font-size:29px;font-weight:900}
 .item{
   border-top:1px solid #ddd;
-  padding:16px 0;
+  padding:17px 0;
+}
+.notice{
+  padding:12px;
+  border-left:5px solid var(--azul);
+  background:white;
+  margin:15px 0;
   overflow-wrap:anywhere;
 }
-.item strong{display:block}
-.item p{margin:7px 0}
-.etiqueta{
-  display:inline-block;
-  background:var(--amarelo);
-  border:1px solid var(--preto);
-  border-radius:20px;
-  padding:5px 9px;
-  font-size:12px;
-  font-weight:bold;
+.error{border-left-color:var(--vermelho)}
+.muted{color:#666;font-size:13px}
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
 }
-.campo-duplo{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:15px;
-}
-.rodape{
-  color:#777;
-  font-size:12px;
-  margin-top:30px;
-}
-@media(max-width:850px){
-  .painel{display:block}
-  aside{padding:18px}
-  .menu{
-    display:flex;
-    overflow-x:auto;
-    margin-top:15px;
-  }
-  .menu button{white-space:nowrap}
-  main{padding:18px}
-  .grade,.campo-duplo{grid-template-columns:1fr}
+@media(max-width:800px){
+  .layout{display:block}
+  aside{padding:15px}
+  nav{display:flex;overflow-x:auto;margin-top:12px}
+  nav button{white-space:nowrap}
+  main{padding:15px}
+  .grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 
-<section id="carregando" class="login-area">
-  <p>Verificando acesso ao Painel Mimbox...</p>
+<section id="loading" class="login">
+  Verificando sessão...
 </section>
 
-<section id="login-area" class="login-area escondido">
-  <div class="login-card">
-    <div class="marca">mimbox.</div>
+<section id="login-screen" class="login hidden">
+  <div class="login-box">
+    <div class="logo">mimbox.</div>
     <h1>Painel administrativo</h1>
-    <p class="subtitulo">
-      Acesso exclusivo da administração.
-    </p>
+    <form id="login-form">
+      <label>E-mail</label>
+      <input id="login-email" type="email" required
+        autocomplete="username">
 
-    <form id="login">
-      <label for="email">E-mail</label>
-      <input id="email" type="email"
-        autocomplete="username" required>
+      <label>Senha</label>
+      <input id="login-password" type="password" required
+        autocomplete="current-password">
 
-      <label for="senha">Senha</label>
-      <input id="senha" type="password"
-        autocomplete="current-password" required>
-
-      <button class="botao" id="entrar"
-        type="submit" style="width:100%">
-        Entrar no painel
-      </button>
+      <button class="btn" id="login-button"
+        type="submit">Entrar</button>
     </form>
-
-    <p id="aviso-login" class="aviso"></p>
+    <p id="login-message"></p>
   </div>
 </section>
 
-<div id="painel" class="painel escondido">
+<div id="app" class="layout hidden">
   <aside>
-    <div class="marca">mimbox.</div>
-    <p>Painel administrativo</p>
-
-    <nav class="menu">
-      <button class="ativo" data-pagina="dashboard">
-        📊 Dashboard
-      </button>
-      <button data-pagina="pedidos">
-        📦 Pedidos
-      </button>
-      <button data-pagina="novo-pedido">
-        ➕ Novo pedido
-      </button>
-      <button data-pagina="produtos">
-        🛍️ Produtos
-      </button>
-      <button data-pagina="clientes">
-        👥 Clientes
-      </button>
-      <button data-pagina="retirada">
-        📍 Retirada
-      </button>
-      <button data-pagina="configuracoes">
-        ⚙️ Configurações
-      </button>
-      <button data-pagina="clube">
-        🎁 Clube Mimbox
-      </button>
-      <button data-pagina="estoque">
-        📋 Estoque
-      </button>
-      <button data-pagina="envios">
-        🚚 Envios
-      </button>
+    <div class="logo">mimbox.</div>
+    <p>Central administrativa</p>
+    <nav id="navigation">
+      <button data-page="dashboard">📊 Dashboard</button>
+      <button data-page="pedidos">📦 Pedidos</button>
+      <button data-page="novo">➕ Novo pedido</button>
+      <button data-page="produtos">🛍️ Produtos</button>
+      <button data-page="clientes">👥 Clientes</button>
+      <button data-page="retirada">📍 Retirada</button>
+      <button data-page="loja">⚙️ Configurações</button>
     </nav>
   </aside>
 
   <main>
-    <header class="topo">
+    <div class="header">
       <div>
-        <h1 id="titulo-pagina">Dashboard</h1>
-        <span class="subtitulo">
-          Central de controle da Mimbox
-        </span>
+        <h1 id="page-title">Dashboard</h1>
+        <p class="muted">Mimbox ADM</p>
       </div>
-      <button class="botao branco" id="sair">
-        Sair
-      </button>
-    </header>
+      <button id="logout" class="btn white">Sair</button>
+    </div>
 
-    <div id="mensagem-global"
-      class="aviso" role="status"></div>
-
-    <div id="conteudo-pagina"></div>
-
-    <p class="rodape">
-      Mimbox ADM — Gerenciamento da loja.
-      Pagamentos devem ser conferidos na InfinitePay.
-    </p>
+    <div id="message" role="status"></div>
+    <div id="content"></div>
   </main>
 </div>
 
 <script>
 "use strict";
 
-const $ = id => document.getElementById(id);
+const el = id => document.getElementById(id);
 
-const estado = {
+const state = {
   pedidos: [],
   produtos: [],
   clientes: [],
-  config: {}
+  config: {},
+  gestaoDisponivel: false
 };
 
-const statusEntrega = [
-  ["aguardando", "Aguardando"],
-  ["em_preparacao", "Em preparação"],
-  ["pronto_retirada", "Pronto para retirada"],
-  ["enviado", "Enviado"],
-  ["entregue", "Entregue"],
-  ["cancelado", "Cancelado"]
+const pages = {
+  dashboard:"Dashboard",
+  pedidos:"Pedidos",
+  novo:"Novo pedido",
+  produtos:"Produtos",
+  clientes:"Clientes",
+  retirada:"Retirada",
+  loja:"Configurações"
+};
+
+const deliveryStatuses = [
+  ["aguardando","Aguardando"],
+  ["em_preparacao","Em preparação"],
+  ["pronto_retirada","Pronto para retirada"],
+  ["enviado","Enviado"],
+  ["entregue","Entregue"],
+  ["cancelado","Cancelado"]
 ];
 
-function texto(valor, alternativa = "Não informado") {
-  if (valor === null || valor === undefined ||
-      String(valor).trim() === "") {
-    return alternativa;
+function show(id) {
+  for(const key of ["loading","login-screen","app"]){
+    el(key).classList.toggle("hidden",key!==id);
   }
-  return String(valor);
 }
 
-function dinheiro(valor) {
-  const numero = Number(valor);
-  return Number.isFinite(numero)
-    ? numero.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-      })
-    : "Valor indisponível";
+function message(text,isError=false){
+  const area=el("message");
+  area.replaceChildren();
+  if(!text)return;
+  const box=document.createElement("div");
+  box.className="notice"+(isError?" error":"");
+  box.textContent=text;
+  area.append(box);
 }
 
-function mensagem(valor) {
-  $("mensagem-global").textContent = valor || "";
+function node(tag,text,cls){
+  const n=document.createElement(tag);
+  if(text!==undefined)n.textContent=String(text??"");
+  if(cls)n.className=cls;
+  return n;
 }
 
-function criar(tag, conteudo, classe) {
-  const el = document.createElement(tag);
-  if (conteudo !== undefined) {
-    el.textContent = texto(conteudo, "");
-  }
-  if (classe) el.className = classe;
-  return el;
+function card(title){
+  const c=node("section",undefined,"card");
+  c.append(node("h2",title));
+  return c;
 }
 
-function campo(rotulo, valor, tipo = "text") {
-  const div = criar("div");
-  const label = criar("label", rotulo);
-  let input;
-
-  if (tipo === "textarea") {
-    input = document.createElement("textarea");
-    input.rows = 3;
-  } else {
-    input = document.createElement("input");
-    input.type = tipo;
-    if (tipo === "number") {
-      input.min = "0";
-      input.step = "0.01";
-    }
-  }
-
-  input.value = valor ?? "";
-  div.append(label, input);
-
-  return { div, input };
-}
-
-function linha(rotulo, valor) {
-  const p = criar("p");
-  const strong = criar("strong", rotulo + ": ");
-  strong.style.display = "inline";
-  p.append(strong, document.createTextNode(texto(valor)));
+function line(title,value){
+  const p=node("p");
+  const b=node("strong",title+": ");
+  p.append(b,document.createTextNode(
+    String(value??"Não informado")
+  ));
   return p;
 }
 
-function cartao(titulo) {
-  const card = criar("div", undefined, "card");
-  card.append(criar("h2", titulo));
-  return card;
+function money(value){
+  return Number(value||0).toLocaleString(
+    "pt-BR",{style:"currency",currency:"BRL"}
+  );
 }
 
-function botao(textoBotao, acao, classe = "botao") {
-  const b = criar("button", textoBotao, classe);
-  b.type = "button";
-  b.addEventListener("click", async () => {
-    b.disabled = true;
-    try {
-      await acao();
-    } catch (erro) {
-      mensagem("Erro: " + erro.message);
-    } finally {
-      b.disabled = false;
-    }
-  });
+function field(title,value="",type="text"){
+  const wrapper=node("div");
+  const label=node("label",title);
+  const input=type==="textarea"
+    ?document.createElement("textarea")
+    :document.createElement("input");
+  if(type!=="textarea")input.type=type;
+  input.value=value??"";
+  if(type==="number"){
+    input.min="0";
+    input.step="0.01";
+  }
+  wrapper.append(label,input);
+  return {wrapper,input};
+}
+
+function button(title,callback){
+  const b=node("button",title,"btn");
+  b.type="button";
+  b.onclick=async()=>{
+    b.disabled=true;
+    try{await callback();}
+    catch(e){message(e.message,true);}
+    finally{b.disabled=false;}
+  };
   return b;
 }
 
-async function respostaJSON(resposta) {
-  let dados;
-  try {
-    dados = await resposta.json();
-  } catch {
-    throw new Error("Resposta inválida do servidor");
-  }
+async function request(url,options={}){
+  const response=await fetch(url,{
+    credentials:"same-origin",
+    cache:"no-store",
+    ...options
+  });
 
-  if (!resposta.ok) {
-    throw new Error(
-      dados.erro || dados.error ||
-      "Falha na comunicação com o servidor"
+  let data;
+  try{data=await response.json();}
+  catch{throw Error("Resposta inválida da API");}
+
+  if(!response.ok){
+    throw Error(
+      data.erro||data.error||"Erro HTTP "+response.status
     );
   }
-  return dados;
+  return data;
 }
 
-async function apiGerenciar(action, payload) {
-  const consulta = payload === undefined
-    ? "?action=" + encodeURIComponent(action)
-    : "";
+async function manage(action,data){
+  if(data===undefined){
+    return request(
+      "/api/admin-gerenciar?action="+
+      encodeURIComponent(action)
+    );
+  }
+  return request("/api/admin-gerenciar",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action,...data})
+  });
+}
 
-  const resposta = await fetch(
-    "/api/admin-gerenciar" + consulta,
-    {
-      method: payload === undefined ? "GET" : "POST",
-      credentials: "same-origin",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      ...(payload === undefined ? {} : {
-        body: JSON.stringify({ action, ...payload })
-      })
+async function checkSession(){
+  try{
+    const data=await request("/api/admin-session");
+    if(data.autenticado===true){
+      show("app");
+      openPage("dashboard");
+    }else{
+      show("login-screen");
     }
-  );
-
-  return respostaJSON(resposta);
+  }catch{
+    show("login-screen");
+  }
 }
 
-async function carregarDados() {
-  const dados = await apiGerenciar("overview");
-  estado.pedidos = dados.pedidos || [];
-  estado.produtos = dados.produtos || [];
-  estado.clientes = dados.clientes || [];
-  estado.config = dados.config || {};
-}
+el("login-form").onsubmit=async event=>{
+  event.preventDefault();
+  const b=el("login-button");
+  b.disabled=true;
+  el("login-message").textContent="Verificando...";
 
-function mostrarLogin() {
-  $("carregando").classList.add("escondido");
-  $("painel").classList.add("escondido");
-  $("login-area").classList.remove("escondido");
-}
-
-function mostrarPainel() {
-  $("carregando").classList.add("escondido");
-  $("login-area").classList.add("escondido");
-  $("painel").classList.remove("escondido");
-  abrirPagina("dashboard");
-}
-
-const titulos = {
-  dashboard: "Dashboard",
-  pedidos: "Pedidos",
-  "novo-pedido": "Cadastrar pedido",
-  produtos: "Produtos",
-  clientes: "Clientes",
-  retirada: "Configurar retirada",
-  configuracoes: "Configurações da loja",
-  clube: "Clube Mimbox",
-  estoque: "Estoque",
-  envios: "Envios"
+  try{
+    await request("/api/admin-login",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        email:el("login-email").value.trim(),
+        senha:el("login-password").value
+      })
+    });
+    el("login-password").value="";
+    await checkSession();
+  }catch(e){
+    el("login-message").textContent=e.message;
+  }finally{
+    b.disabled=false;
+  }
 };
 
-async function abrirPagina(nome) {
-  if (!titulos[nome]) return;
+el("logout").onclick=async()=>{
+  try{
+    await request("/api/admin-logout",{method:"POST"});
+    show("login-screen");
+  }catch(e){message(e.message,true);}
+};
 
-  $("titulo-pagina").textContent = titulos[nome];
-  $("conteudo-pagina").replaceChildren();
-  mensagem("");
+el("navigation").onclick=event=>{
+  const b=event.target.closest("[data-page]");
+  if(b)openPage(b.dataset.page);
+};
 
-  document.querySelectorAll(".menu button")
-    .forEach(b => {
-      b.classList.toggle(
-        "ativo",
-        b.dataset.pagina === nome
-      );
-    });
+async function loadOrders(){
+  const data=await request("/api/admin-pedidos");
+  state.pedidos=Array.isArray(data.pedidos)
+    ?data.pedidos:[];
+}
 
-  const area = $("conteudo-pagina");
+async function loadManagement(){
+  try{
+    const data=await manage("overview");
+    state.gestaoDisponivel=true;
 
-  if (["clube", "estoque", "envios"].includes(nome)) {
-    const c = cartao(titulos[nome]);
-    c.append(criar("p",
-      "Área reservada para a próxima integração. " +
-      "Nenhuma alteração será aplicada sem conexão " +
-      "com os dados reais."
-    ));
-    area.append(c);
-    return;
-  }
-
-  area.append(criar("p", "Carregando informações..."));
-
-  try {
-    await carregarDados();
-
-    if ($("titulo-pagina").textContent !== titulos[nome]) {
-      return;
+    if(Array.isArray(data.pedidos) &&
+       data.pedidos.length>=state.pedidos.length){
+      state.pedidos=data.pedidos;
     }
 
-    area.replaceChildren();
-
-    if (nome === "dashboard") montarDashboard(area);
-    if (nome === "pedidos") montarPedidos(area);
-    if (nome === "novo-pedido") montarNovoPedido(area);
-    if (nome === "produtos") montarProdutos(area);
-    if (nome === "clientes") montarClientes(area);
-    if (nome === "retirada") montarRetirada(area);
-    if (nome === "configuracoes") montarConfiguracoes(area);
-
-  } catch (erro) {
-    area.replaceChildren();
-
-    const c = cartao("Não foi possível carregar");
-    c.append(criar("p", erro.message));
-    c.append(botao("Tentar novamente", () => abrirPagina(nome)));
-    area.append(c);
-
-    mensagem(
-      "Não foi possível consultar o gerenciamento. " +
-      "Confira a autenticação da API."
-    );
+    state.produtos=Array.isArray(data.produtos)
+      ?data.produtos:[];
+    state.clientes=Array.isArray(data.clientes)
+      ?data.clientes:[];
+    state.config=data.config||{};
+  }catch(e){
+    state.gestaoDisponivel=false;
+    throw e;
   }
 }
 
-function montarDashboard(area) {
-  const grade = criar("div", undefined, "grade");
+async function openPage(name){
+  if(!pages[name])return;
 
-  const total = estado.pedidos.length;
-  const pendentes = estado.pedidos.filter(
-    p => p.status_pagamento === "pendente"
-  ).length;
+  el("page-title").textContent=pages[name];
+  message("");
 
-  const emPreparacao = estado.pedidos.filter(
-    p => p.status_entrega === "em_preparacao"
-  ).length;
+  document.querySelectorAll("[data-page]")
+    .forEach(b=>b.classList.toggle(
+      "active",b.dataset.page===name
+    ));
 
-  const metricas = [
-    ["📦 Pedidos registrados", total],
-    ["💳 Pagamentos pendentes", pendentes],
-    ["📦 Em preparação", emPreparacao],
-    ["🛍️ Produtos cadastrados", estado.produtos.length],
-    ["👥 Clientes cadastrados", estado.clientes.length],
-    ["📍 Retirada", estado.config.retirada_ativa
-      ? "Ativada no ADM"
-      : "Desativada no ADM"]
+  const area=el("content");
+  area.replaceChildren(node("p","Carregando..."));
+
+  let orderError=null;
+  let managementError=null;
+
+  if(name==="dashboard"||name==="pedidos"){
+    try{await loadOrders();}
+    catch(e){orderError=e;}
+  }
+
+  if(name!=="pedidos"){
+    try{await loadManagement();}
+    catch(e){managementError=e;}
+  }
+
+  // Se a API nova falhar, os pedidos continuam
+  // sendo consultados pela API antiga.
+  if(name==="pedidos"){
+    try{await loadManagement();}
+    catch(e){managementError=e;}
+  }
+
+  if(el("page-title").textContent!==pages[name])return;
+
+  area.replaceChildren();
+
+  if(orderError){
+    message(
+      "Não foi possível atualizar pedidos: "+
+      orderError.message,true
+    );
+  }else if(managementError){
+    message(
+      "Gerenciamento avançado indisponível: "+
+      managementError.message+
+      ". As funções existentes continuam acessíveis.",
+      true
+    );
+  }
+
+  if(name==="dashboard")dashboard(area);
+  if(name==="pedidos")orders(area);
+  if(name==="novo")newOrder(area);
+  if(name==="produtos")products(area);
+  if(name==="clientes")customers(area);
+  if(name==="retirada")pickup(area);
+  if(name==="loja")settings(area);
+}
+
+function dashboard(area){
+  const grid=node("div",undefined,"grid");
+  const metrics=[
+    ["📦 Pedidos",state.pedidos.length],
+    ["⏳ Pagamentos pendentes",
+      state.pedidos.filter(p=>
+        p.status_pagamento==="pendente").length],
+    ["📦 Em preparação",
+      state.pedidos.filter(p=>
+        p.status_entrega==="em_preparacao").length],
+    ["🛍️ Produtos",state.produtos.length],
+    ["👥 Clientes",state.clientes.length],
+    ["📍 Retirada",
+      state.config.retirada_ativa?"Ativada":"Desativada"]
   ];
 
-  for (const [nome, valor] of metricas) {
-    const c = cartao(nome);
-    c.append(criar("div", valor, "metrica"));
-    grade.append(c);
+  for(const [title,value] of metrics){
+    const c=card(title);
+    c.append(node("div",value,"metric"));
+    grid.append(c);
   }
+  area.append(grid);
 
-  area.append(grade);
-
-  const aviso = cartao("Atenção aos pagamentos");
-  aviso.classList.add("destaque");
-
-  aviso.append(criar("p",
-    "Os pedidos registrados não representam " +
-    "necessariamente vendas pagas. Confira " +
-    "a InfinitePay antes de preparar ou entregar."
+  const c=card("Acompanhamento da loja");
+  c.append(node("p",
+    "O status de pagamento deve ser conferido "+
+    "na InfinitePay. O painel não confirma "+
+    "pagamentos automaticamente."
   ));
-
-  aviso.append(botao(
-    "Ver pedidos",
-    () => abrirPagina("pedidos")
-  ));
-
-  area.append(aviso);
+  c.append(button("Ver pedidos",()=>openPage("pedidos")));
+  area.append(c);
 }
 
-function montarPedidos(area) {
-  const topo = cartao("📦 Pedidos da Mimbox");
-  topo.append(criar("p",
-    "Consulte clientes, itens, entrega e andamento."
+function orders(area){
+  const intro=card("📦 Pedidos cadastrados");
+  intro.append(button(
+    "Atualizar pedidos",()=>openPage("pedidos")
   ));
-  topo.append(botao(
-    "Atualizar pedidos",
-    () => abrirPagina("pedidos")
-  ));
-  area.append(topo);
+  area.append(intro);
 
-  if (!estado.pedidos.length) {
-    area.append(cartao("Nenhum pedido cadastrado"));
+  if(!state.pedidos.length){
+    area.append(card("Nenhum pedido disponível"));
     return;
   }
 
-  for (const pedido of estado.pedidos) {
-    const c = cartao(
-      "Pedido " + texto(pedido.numero_pedido, pedido.id)
+  for(const p of state.pedidos){
+    const c=card(
+      "Pedido "+(p.numero_pedido||p.id)
     );
 
-    const cliente = Array.isArray(pedido.clientes)
-      ? pedido.clientes[0]
-      : pedido.clientes;
-
-    const data = pedido.criado_em
-      ? new Date(pedido.criado_em).toLocaleString(
-          "pt-BR",
-          { timeZone: "America/Sao_Paulo" }
-        )
-      : "Não informada";
+    const customer=Array.isArray(p.clientes)
+      ?p.clientes[0]:p.clientes;
 
     c.append(
-      linha("Data", data),
-      linha("Cliente", cliente?.nome),
-      linha("WhatsApp", cliente?.telefone),
-      linha("E-mail", cliente?.email),
-      linha("Valor total", dinheiro(pedido.valor_total)),
-      linha("Pagamento", pedido.status_pagamento),
-      linha("Forma de entrega", pedido.forma_entrega)
+      line("Cliente",customer?.nome),
+      line("WhatsApp",customer?.telefone),
+      line("E-mail",customer?.email),
+      line("Total",money(p.valor_total)),
+      line("Pagamento",p.status_pagamento),
+      line("Entrega",p.forma_entrega),
+      line("Andamento",p.status_entrega)
     );
 
-    if (Array.isArray(pedido.itens)) {
-      c.append(criar("h3", "Produtos"));
-
-      for (const item of pedido.itens) {
-        const descricao =
-          item.descricao ||
-          item.description ||
-          item.nome ||
-          "Produto";
-
-        const quantidade =
-          item.quantidade ??
-          item.quantity ??
-          item.qty ??
-          1;
-
-        c.append(linha(
-          "Item",
-          descricao + " — " + quantidade + " unidade(s)"
+    if(Array.isArray(p.itens)){
+      for(const item of p.itens){
+        c.append(line(
+          "Produto",
+          (item.descricao||item.nome||
+           item.description||"Item")+
+          " — "+(item.quantidade||item.quantity||1)
         ));
       }
     }
 
-    if (pedido.forma_entrega === "transportadora") {
-      c.append(
-        linha("Transportadora", pedido.transportadora),
-        linha("Frete", dinheiro(pedido.frete_valor))
+    if(p.endereco_entrega){
+      c.append(line(
+        "Endereço",
+        typeof p.endereco_entrega==="string"
+          ?p.endereco_entrega
+          :JSON.stringify(p.endereco_entrega)
+      ));
+    }
+
+    if(state.gestaoDisponivel){
+      const f=field("Alterar andamento");
+      f.input.remove();
+
+      const select=document.createElement("select");
+      for(const [value,label] of deliveryStatuses){
+        const option=node("option",label);
+        option.value=value;
+        option.selected=p.status_entrega===value;
+        select.append(option);
+      }
+      f.wrapper.append(select);
+      c.append(f.wrapper);
+
+      c.append(button("Salvar andamento",async()=>{
+        await manage("pedido_status",{
+          id:p.id,
+          status_entrega:select.value
+        });
+        await openPage("pedidos");
+        message("Andamento atualizado.");
+      }));
+
+      const notes=field(
+        "Observações internas",
+        p.observacoes||"","textarea"
       );
+      c.append(notes.wrapper);
 
-      const e = pedido.endereco_entrega;
-
-      if (e && typeof e === "object") {
-        c.append(linha(
-          "Endereço",
-          [
-            e.street, e.number, e.complement,
-            e.neighborhood, e.city, e.state, e.cep
-          ].filter(Boolean).join(", ")
-        ));
-      }
-    }
-
-    const status = campo("Status da entrega", "", "text");
-    status.input.remove();
-
-    const select = document.createElement("select");
-
-    for (const [valor, nome] of statusEntrega) {
-      const option = document.createElement("option");
-      option.value = valor;
-      option.textContent = nome;
-      option.selected = pedido.status_entrega === valor;
-      select.append(option);
-    }
-
-    status.div.append(select);
-    c.append(status.div);
-
-    c.append(botao(
-      "Salvar status",
-      async () => {
-        await apiGerenciar("pedido_status", {
-          id: pedido.id,
-          status_entrega: select.value
+      c.append(button("Salvar observação",async()=>{
+        await manage("pedido_nota",{
+          id:p.id,nota:notes.input.value
         });
-
-        mensagem("Status atualizado.");
-        await abrirPagina("pedidos");
-      }
-    ));
-
-    const observacoes = campo(
-      "Observações internas",
-      pedido.observacoes,
-      "textarea"
-    );
-
-    c.append(observacoes.div);
-
-    c.append(botao(
-      "Salvar observação",
-      async () => {
-        await apiGerenciar("pedido_nota", {
-          id: pedido.id,
-          nota: observacoes.input.value
-        });
-        mensagem("Observação salva.");
-      },
-      "botao branco"
-    ));
+        message("Observação salva.");
+      }));
+    }else{
+      c.append(node("p",
+        "Edição indisponível até a API de "+
+        "gerenciamento responder corretamente.",
+        "muted"
+      ));
+    }
 
     area.append(c);
   }
 }
 
-function montarNovoPedido(area) {
-  const c = cartao("➕ Novo pedido manual");
-  c.classList.add("destaque");
-
-  c.append(criar("p",
-    "Use para vendas realizadas fora do checkout. " +
-    "O pagamento será registrado como pendente."
+function newOrder(area){
+  const c=card("➕ Cadastrar pedido manual");
+  c.append(node("p",
+    "Pedidos manuais começam com pagamento "+
+    "pendente. Não representam pagamento confirmado."
   ));
 
-  const form = document.createElement("form");
+  if(!state.gestaoDisponivel){
+    c.append(node("p",
+      "Cadastro temporariamente indisponível: "+
+      "verifique a API admin-gerenciar."
+    ));
+    area.append(c);
+    return;
+  }
 
-  const campos = {
-    nome: campo("Nome do cliente", ""),
-    email: campo("E-mail", "", "email"),
-    telefone: campo("WhatsApp", ""),
-    descricao: campo("Produto / coleção", ""),
-    quantidade: campo("Quantidade", 1, "number"),
-    valor: campo("Valor total (R$)", "", "number")
+  const form=node("form");
+  const inputs={
+    nome:field("Nome do cliente"),
+    email:field("E-mail","","email"),
+    telefone:field("WhatsApp"),
+    descricao:field("Produto ou coleção"),
+    quantidade:field("Quantidade",1,"number"),
+    valor:field("Valor total em R$",0,"number")
   };
 
-  for (const [nome, item] of Object.entries(campos)) {
-    if (["nome", "email", "descricao", "quantidade", "valor"]
-        .includes(nome)) {
-      item.input.required = true;
-    }
-    form.append(item.div);
+  for(const [key,f] of Object.entries(inputs)){
+    if(["nome","email","descricao","quantidade","valor"]
+      .includes(key))f.input.required=true;
+    form.append(f.wrapper);
   }
 
-  const entrega = document.createElement("select");
+  const delivery=field("Forma de entrega");
+  delivery.input.remove();
 
-  for (const [valor, nome] of [
-    ["retirada", "Retirada"],
-    ["transportadora", "Transportadora"]
-  ]) {
-    const option = document.createElement("option");
-    option.value = valor;
-    option.textContent = nome;
-    entrega.append(option);
+  const select=node("select");
+  for(const [value,label] of [
+    ["retirada","Retirada"],
+    ["transportadora","Transportadora"]
+  ]){
+    const option=node("option",label);
+    option.value=value;
+    select.append(option);
   }
+  delivery.wrapper.append(select);
+  form.append(delivery.wrapper);
 
-  form.append(criar("label", "Forma de entrega"), entrega);
+  const save=node("button","Cadastrar pedido","btn");
+  save.type="submit";
+  form.append(save);
 
-  const salvar = criar(
-    "button",
-    "Cadastrar pedido",
-    "botao"
-  );
-  salvar.type = "submit";
-  form.append(salvar);
-
-  form.addEventListener("submit", async event => {
+  form.onsubmit=async event=>{
     event.preventDefault();
-    salvar.disabled = true;
-
-    try {
-      await apiGerenciar("pedido_manual", {
-        cliente: {
-          nome: campos.nome.input.value,
-          email: campos.email.input.value,
-          telefone: campos.telefone.input.value
+    save.disabled=true;
+    try{
+      await manage("pedido_manual",{
+        cliente:{
+          nome:inputs.nome.input.value,
+          email:inputs.email.input.value,
+          telefone:inputs.telefone.input.value
         },
-        pedido: {
-          descricao: campos.descricao.input.value,
-          quantidade: Number(campos.quantidade.input.value),
-          valor_total: Number(campos.valor.input.value),
-          forma_entrega: entrega.value
+        pedido:{
+          descricao:inputs.descricao.input.value,
+          quantidade:Number(inputs.quantidade.input.value),
+          valor_total:Number(inputs.valor.input.value),
+          forma_entrega:select.value
         }
       });
-
-      mensagem("Pedido manual cadastrado.");
-      await abrirPagina("pedidos");
-
-    } catch (erro) {
-      mensagem("Erro ao cadastrar: " + erro.message);
-    } finally {
-      salvar.disabled = false;
-    }
-  });
+      await openPage("pedidos");
+      message("Pedido cadastrado.");
+    }catch(e){message(e.message,true);}
+    finally{save.disabled=false;}
+  };
 
   c.append(form);
   area.append(c);
 }
 
-function montarProdutos(area) {
-  const cadastro = cartao("🛍️ Cadastrar produto");
-  cadastro.classList.add("destaque");
+function products(area){
+  const c=card("🛍️ Produtos cadastrados");
 
-  const form = document.createElement("form");
-
-  const campos = {
-    nome: campo("Nome do produto", ""),
-    colecao: campo("Coleção", ""),
-    preco: campo("Preço (R$)", "", "number"),
-    descricao: campo("Descrição", "", "textarea"),
-    imagem_url: campo("Link HTTPS da imagem", "", "url")
-  };
-
-  for (const item of Object.values(campos)) {
-    form.append(item.div);
-  }
-
-  campos.nome.input.required = true;
-  campos.preco.input.required = true;
-
-  const disponivel = document.createElement("input");
-  disponivel.type = "checkbox";
-  disponivel.checked = true;
-
-  const destaque = document.createElement("input");
-  destaque.type = "checkbox";
-
-  const linhaDisponivel = criar("label", undefined, "linha-check");
-  linhaDisponivel.append(
-    disponivel,
-    document.createTextNode("Produto disponível")
-  );
-
-  const linhaDestaque = criar("label", undefined, "linha-check");
-  linhaDestaque.append(
-    destaque,
-    document.createTextNode("Produto em destaque")
-  );
-
-  form.append(linhaDisponivel, linhaDestaque);
-
-  const salvar = criar("button", "Cadastrar produto", "botao");
-  salvar.type = "submit";
-  form.append(salvar);
-
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    salvar.disabled = true;
-
-    try {
-      const resposta = await fetch(
-        "/api/admin-salvar-produto",
-        {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            nome: campos.nome.input.value.trim(),
-            colecao: campos.colecao.input.value.trim(),
-            preco: Number(campos.preco.input.value),
-            descricao: campos.descricao.input.value.trim(),
-            imagem_url: campos.imagem_url.input.value.trim(),
-            disponivel: disponivel.checked,
-            destaque: destaque.checked
-          })
-        }
-      );
-
-      await respostaJSON(resposta);
-      mensagem("Produto cadastrado.");
-      await abrirPagina("produtos");
-
-    } catch (erro) {
-      mensagem("Erro: " + erro.message);
-    } finally {
-      salvar.disabled = false;
-    }
-  });
-
-  cadastro.append(form);
-  area.append(cadastro);
-
-  const lista = cartao("Editar produtos cadastrados");
-  area.append(lista);
-
-  if (!estado.produtos.length) {
-    lista.append(criar("p", "Nenhum produto cadastrado."));
+  if(!state.gestaoDisponivel){
+    c.append(node("p",
+      "A edição precisa da API de gerenciamento. "+
+      "Os produtos existentes não foram alterados."
+    ));
+    area.append(c);
     return;
   }
 
-  for (const produto of estado.produtos) {
-    const item = criar("div", undefined, "item");
-    item.append(criar("strong", produto.nome));
+  if(!state.produtos.length){
+    c.append(node("p","Nenhum produto encontrado."));
+  }
 
-    const camposEdicao = {
-      nome: campo("Nome", produto.nome),
-      colecao: campo("Coleção", produto.colecao),
-      preco: campo("Preço", produto.preco, "number"),
-      descricao: campo(
-        "Descrição", produto.descricao, "textarea"
-      ),
-      imagem_url: campo(
-        "Link da imagem", produto.imagem_url, "url"
-      )
+  for(const p of state.produtos){
+    const item=node("div",undefined,"item");
+    item.append(node("h3",p.nome||"Produto"));
+
+    const inputs={
+      nome:field("Nome",p.nome),
+      colecao:field("Coleção",p.colecao),
+      preco:field("Preço",p.preco,"number"),
+      descricao:field("Descrição",p.descricao,"textarea"),
+      imagem_url:field("URL da imagem",p.imagem_url)
     };
 
-    for (const campoEdicao of Object.values(camposEdicao)) {
-      item.append(campoEdicao.div);
+    for(const f of Object.values(inputs)){
+      item.append(f.wrapper);
     }
 
-    const disponivel = document.createElement("input");
-    disponivel.type = "checkbox";
-    disponivel.checked = !!produto.disponivel;
+    const available=node("input");
+    available.type="checkbox";
+    available.checked=!!p.disponivel;
 
-    const destaque = document.createElement("input");
-    destaque.type = "checkbox";
-    destaque.checked = !!produto.destaque;
+    const featured=node("input");
+    featured.type="checkbox";
+    featured.checked=!!p.destaque;
 
-    const ld = criar("label", undefined, "linha-check");
-    ld.append(disponivel, " Disponível");
+    const la=node("label");
+    la.append(available," Disponível");
 
-    const ldt = criar("label", undefined, "linha-check");
-    ldt.append(destaque, " Destaque");
+    const lf=node("label");
+    lf.append(featured," Destaque");
 
-    item.append(ld, ldt);
+    item.append(la,lf);
 
-    item.append(botao(
-      "Salvar alterações",
-      async () => {
-        await apiGerenciar("produto", {
-          produto: {
-            id: produto.id,
-            nome: camposEdicao.nome.input.value,
-            colecao: camposEdicao.colecao.input.value,
-            preco: Number(camposEdicao.preco.input.value),
-            descricao: camposEdicao.descricao.input.value,
-            imagem_url: camposEdicao.imagem_url.input.value,
-            disponivel: disponivel.checked,
-            destaque: destaque.checked
-          }
-        });
-
-        mensagem("Produto atualizado.");
-        await abrirPagina("produtos");
-      }
-    ));
-
-    lista.append(item);
-  }
-}
-
-function montarClientes(area) {
-  const c = cartao("👥 Clientes cadastrados");
-  area.append(c);
-
-  if (!estado.clientes.length) {
-    c.append(criar("p", "Nenhum cliente cadastrado."));
-    return;
-  }
-
-  for (const cliente of estado.clientes) {
-    const item = criar("div", undefined, "item");
-
-    item.append(
-      criar("strong", cliente.nome),
-      linha("E-mail", cliente.email),
-      linha("WhatsApp", cliente.telefone)
-    );
+    item.append(button("Salvar produto",async()=>{
+      await manage("produto",{
+        produto:{
+          id:p.id,
+          nome:inputs.nome.input.value,
+          colecao:inputs.colecao.input.value,
+          preco:Number(inputs.preco.input.value),
+          descricao:inputs.descricao.input.value,
+          imagem_url:inputs.imagem_url.input.value,
+          disponivel:available.checked,
+          destaque:featured.checked
+        }
+      });
+      message("Produto salvo.");
+    }));
 
     c.append(item);
   }
+
+  area.append(c);
 }
 
-function montarRetirada(area) {
-  const c = cartao("📍 Configurações de retirada");
-  c.classList.add("destaque");
+function customers(area){
+  const c=card("👥 Clientes");
 
-  c.append(criar("p",
-    "Defina as informações de retirada. " +
-    "A aplicação dessas regras no checkout " +
-    "depende da integração com a vitrine."
+  if(!state.gestaoDisponivel){
+    c.append(node("p",
+      "Consulta de clientes indisponível "+
+      "até a conexão com a API ser corrigida."
+    ));
+  }else if(!state.clientes.length){
+    c.append(node("p","Nenhum cliente cadastrado."));
+  }else{
+    for(const customer of state.clientes){
+      const item=node("div",undefined,"item");
+      item.append(
+        node("h3",customer.nome||"Cliente"),
+        line("E-mail",customer.email),
+        line("WhatsApp",customer.telefone)
+      );
+      c.append(item);
+    }
+  }
+  area.append(c);
+}
+
+function pickup(area){
+  const c=card("📍 Retirada de pedidos");
+
+  c.append(node("p",
+    "Estas informações serão salvas no banco. "+
+    "A opção de retirada só será controlada "+
+    "automaticamente no checkout quando "+
+    "a vitrine estiver conectada à configuração."
   ));
 
-  const ativa = document.createElement("input");
-  ativa.type = "checkbox";
-  ativa.checked = !!estado.config.retirada_ativa;
+  if(!state.gestaoDisponivel){
+    c.append(node("p",
+      "Configurações indisponíveis: "+
+      "verifique a API admin-gerenciar."
+    ));
+    area.append(c);
+    return;
+  }
 
-  const labelAtiva = criar(
-    "label", undefined, "linha-check"
-  );
-  labelAtiva.append(
-    ativa,
-    " Permitir retirada"
-  );
+  const active=node("input");
+  active.type="checkbox";
+  active.checked=!!state.config.retirada_ativa;
 
-  c.append(labelAtiva);
+  const label=node("label");
+  label.append(active," Permitir retirada");
+  c.append(label);
 
-  const local = campo(
+  const local=field(
     "Local de retirada",
-    estado.config.retirada_local
+    state.config.retirada_local
   );
-
-  const horarios = campo(
-    "Horários de retirada",
-    estado.config.retirada_horarios,
+  const hours=field(
+    "Horários",
+    state.config.retirada_horarios,
     "textarea"
   );
-
-  const instrucoes = campo(
-    "Instruções para o cliente",
-    estado.config.retirada_instrucoes,
+  const instructions=field(
+    "Instruções",
+    state.config.retirada_instrucoes,
     "textarea"
   );
 
   c.append(
-    local.div,
-    horarios.div,
-    instrucoes.div
+    local.wrapper,
+    hours.wrapper,
+    instructions.wrapper
   );
 
-  c.append(botao(
-    "Salvar retirada",
-    async () => {
-      await salvarConfig({
-        retirada_ativa: ativa.checked,
-        retirada_local: local.input.value,
-        retirada_horarios: horarios.input.value,
-        retirada_instrucoes: instrucoes.input.value
-      });
-    }
-  ));
-
-  area.append(c);
-}
-
-function montarConfiguracoes(area) {
-  const c = cartao("⚙️ Informações da loja");
-  c.classList.add("destaque");
-
-  const aviso = campo(
-    "Aviso da loja",
-    estado.config.loja_aviso,
-    "textarea"
-  );
-
-  const whatsapp = campo(
-    "WhatsApp da Mimbox",
-    estado.config.whatsapp
-  );
-
-  const instagram = campo(
-    "Instagram",
-    estado.config.instagram
-  );
-
-  c.append(
-    aviso.div,
-    whatsapp.div,
-    instagram.div
-  );
-
-  c.append(botao(
-    "Salvar informações",
-    async () => {
-      await salvarConfig({
-        loja_aviso: aviso.input.value,
-        whatsapp: whatsapp.input.value,
-        instagram: instagram.input.value
-      });
-    }
-  ));
-
-  area.append(c);
-}
-
-async function salvarConfig(alteracoes) {
-  const config = {
-    ...estado.config,
-    ...alteracoes
-  };
-
-  const resposta = await apiGerenciar(
-    "config",
-    { config }
-  );
-
-  estado.config = resposta.config || config;
-  mensagem("Configurações salvas no Supabase.");
-}
-
-async function verificarSessao() {
-  try {
-    const resposta = await fetch(
-      "/api/admin-session",
-      {
-        credentials: "same-origin",
-        cache: "no-store"
-      }
-    );
-
-    const dados = await resposta.json();
-
-    if (resposta.ok && dados.autenticado === true) {
-      mostrarPainel();
-    } else {
-      mostrarLogin();
-    }
-  } catch {
-    mostrarLogin();
-  }
-}
-
-$("login").addEventListener("submit", async event => {
-  event.preventDefault();
-
-  const entrar = $("entrar");
-  entrar.disabled = true;
-  entrar.textContent = "Verificando...";
-
-  $("aviso-login").textContent = "Verificando acesso...";
-
-  try {
-    const resposta = await fetch(
-      "/api/admin-login",
-      {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: $("email").value.trim(),
-          senha: $("senha").value
-        })
-      }
-    );
-
-    await respostaJSON(resposta);
-
-    $("senha").value = "";
-    await verificarSessao();
-
-  } catch (erro) {
-    $("aviso-login").textContent = erro.message;
-  } finally {
-    entrar.disabled = false;
-    entrar.textContent = "Entrar no painel";
-  }
-});
-
-$("sair").addEventListener("click", async () => {
-  const b = $("sair");
-  b.disabled = true;
-
-  try {
-    const resposta = await fetch(
-      "/api/admin-logout",
-      {
-        method: "POST",
-        credentials: "same-origin"
-      }
-    );
-
-    await respostaJSON(resposta);
-    mostrarLogin();
-
-  } catch (erro) {
-    mensagem("Erro ao sair: " + erro.message);
-  } finally {
-    b.disabled = false;
-  }
-});
-
-document.querySelectorAll(".menu button")
-  .forEach(b => {
-    b.addEventListener("click", () => {
-      abrirPagina(b.dataset.pagina);
+  c.append(button("Salvar retirada",async()=>{
+    await saveConfig({
+      retirada_ativa:active.checked,
+      retirada_local:local.input.value,
+      retirada_horarios:hours.input.value,
+      retirada_instrucoes:instructions.input.value
     });
-  });
+  }));
 
-verificarSessao();
+  area.append(c);
+}
+
+function settings(area){
+  const c=card("⚙️ Informações da loja");
+
+  if(!state.gestaoDisponivel){
+    c.append(node("p",
+      "A API de gerenciamento precisa "+
+      "estar funcionando para salvar alterações."
+    ));
+    area.append(c);
+    return;
+  }
+
+  const notice=field(
+    "Aviso da loja",
+    state.config.loja_aviso,
+    "textarea"
+  );
+  const whatsapp=field(
+    "WhatsApp",
+    state.config.whatsapp
+  );
+  const instagram=field(
+    "Instagram",
+    state.config.instagram
+  );
+
+  c.append(
+    notice.wrapper,
+    whatsapp.wrapper,
+    instagram.wrapper
+  );
+
+  c.append(button("Salvar informações",async()=>{
+    await saveConfig({
+      loja_aviso:notice.input.value,
+      whatsapp:whatsapp.input.value,
+      instagram:instagram.input.value
+    });
+  }));
+
+  area.append(c);
+}
+
+async function saveConfig(changes){
+  const config={...state.config,...changes};
+  const result=await manage("config",{config});
+  state.config=result.config||config;
+  message("Configurações salvas.");
+}
+
+checkSession();
 </script>
 </body>
 </html>
