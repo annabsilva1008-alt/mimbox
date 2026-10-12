@@ -120,6 +120,42 @@ async function quoteShipping(cep, itemCount, subtotal) {
   );
 }
 
+// A chave secreta permanece exclusivamente no servidor.
+async function supabaseRequest(path, options = {}) {
+  const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const key = process.env.SUPABASE_SECRET_KEY;
+
+  if (!base || !key) {
+    throw new Error("Supabase não configurado");
+  }
+
+  const response = await fetch(`${base}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...(options.headers || {})
+    }
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    console.error(
+      "Erro no Supabase:",
+      path.split("?")[0],
+      response.status,
+      data?.code || ""
+    );
+
+    throw new Error("Falha ao registrar pedido no CRM");
+  }
+
+  return data;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -185,6 +221,11 @@ export default async function handler(req, res) {
     }
 
     const checkoutItems = [];
+    const orderItems = [];
+
+    let shippingCents = 0;
+    let shippingLabel = null;
+    let shippingAddress = null;
     let subtotal = 0;
     let itemCount = 0;
 
@@ -226,6 +267,13 @@ export default async function handler(req, res) {
         quantity,
         price: PRODUCTS[id].price,
         description: PRODUCTS[id].description
+      });
+
+      orderItems.push({
+        id,
+        quantidade: quantity,
+        preco_unitario: PRODUCTS[id].price / 100,
+        descricao: PRODUCTS[id].description
       });
     }
 
@@ -281,11 +329,27 @@ export default async function handler(req, res) {
         });
       }
 
+      shippingLabel = `${
+        String(chosen.company?.name || "")
+      } ${
+        String(chosen.name || "")
+      }`.trim();
+
+      shippingAddress = {
+        cep,
+        street: String(address.street).trim(),
+        number: String(address.number).trim(),
+        neighborhood: String(address.neighborhood).trim(),
+        city: String(address.city).trim(),
+        state: String(address.state).trim(),
+        complement: String(address.complement || "").trim()
+      };
+
       const quotedPrice = Number(
         chosen.custom_price ?? chosen.price
       );
 
-      const shippingCents =
+      shippingCents =
         subtotal > FREE_SHIPPING_THRESHOLD
           ? 0
           : Math.round(quotedPrice * 100);
@@ -295,14 +359,79 @@ export default async function handler(req, res) {
           quantity: 1,
           price: shippingCents,
           description:
-            `Frete — ${String(chosen.company?.name || "")} ${String(chosen.name || "")}`
-              .trim()
-              .slice(0, 120)
+            `Frete — ${
+              String(chosen.company?.name || "")
+            } ${
+              String(chosen.name || "")
+            }`.trim().slice(0, 120)
         });
       }
     }
 
     const orderNsu = `mimbox-${crypto.randomUUID()}`;
+
+    const isClub = orderItems.some(
+      item => item.id.startsWith("clube-")
+    );
+
+    let orderSaved = false;
+
+    // Registra o cliente e o pedido pendente antes do pagamento.
+    try {
+      const customers = await supabaseRequest(
+        "clientes?select=id",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            nome: customer.name.trim(),
+            telefone: "+55" + phone,
+            email
+          })
+        }
+      );
+
+      const customerId = customers?.[0]?.id;
+
+      if (!customerId) {
+        throw new Error("Cliente não registrado");
+      }
+
+      await supabaseRequest(
+        "pedidos?select=id",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            cliente_id: customerId,
+            numero_pedido: orderNsu,
+            origem: "site",
+            tipo: isClub ? "clube" : "avulso",
+            valor_total: (subtotal + shippingCents) / 100,
+            status_pagamento: "pendente",
+            status_entrega: "aguardando",
+            forma_entrega:
+              deliveryMethod === "pickup"
+                ? "retirada"
+                : "transportadora",
+            itens: orderItems,
+            endereco_entrega: shippingAddress,
+            frete_valor: shippingCents / 100,
+            transportadora: shippingLabel
+          })
+        }
+      );
+
+      orderSaved = true;
+    } catch (dbError) {
+      console.error(
+        "Falha ao salvar pedido:",
+        dbError.message
+      );
+
+      return res.status(503).json({
+        error:
+          "Não foi possível registrar o pedido. Tente novamente antes de pagar."
+      });
+    }
 
     const payload = {
       handle: "mimbox",
@@ -349,8 +478,30 @@ export default async function handler(req, res) {
         data
       );
 
+      if (orderSaved) {
+        try {
+          await supabaseRequest(
+            `pedidos?numero_pedido=eq.${
+              encodeURIComponent(orderNsu)
+            }`,
+            {
+              method: "PATCH",
+              body: JSON.stringify({
+                status_pagamento: "falha_checkout"
+              })
+            }
+          );
+        } catch (dbError) {
+          console.error(
+            "Falha ao atualizar pedido sem checkout:",
+            dbError.message
+          );
+        }
+      }
+
       return res.status(502).json({
-        error: "Não foi possível gerar o pagamento na InfinitePay."
+        error:
+          "Não foi possível gerar o pagamento na InfinitePay."
       });
     }
 
@@ -360,10 +511,14 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("Erro ao criar checkout:", error);
+    console.error(
+      "Erro ao criar checkout:",
+      error
+    );
 
     return res.status(500).json({
-      error: "Não foi possível iniciar o pagamento. Confira a cotação e tente novamente."
+      error:
+        "Não foi possível iniciar o pagamento. Confira a cotação e tente novamente."
     });
   }
 }
