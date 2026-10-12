@@ -561,33 +561,95 @@
         const dados = await resposta.json();
         if (!resposta.ok) throw new Error(dados.error || dados.erro || "Erro ao consultar pedidos.");
         if (document.getElementById("lista-pedidos") !== lista) return;
-        lista.replaceChildren();
         if (!Array.isArray(dados.pedidos)) throw new Error("Resposta inválida do CRM.");
+        lista.replaceChildren();
         if (dados.pedidos.length === 0) {
           lista.textContent = "Nenhum pedido cadastrado ainda. As compras antigas não foram importadas.";
           return;
         }
+
         const dinheiro = valor => {
           const numero = Number(valor);
           return Number.isFinite(numero)
             ? numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
             : "Valor indisponível";
         };
+        const texto = (valor, alternativo = "Não informado") =>
+          valor === null || valor === undefined || String(valor).trim() === ""
+            ? alternativo : String(valor);
+        const linha = (rotulo, valor) => {
+          const p = document.createElement("p");
+          p.style.margin = "7px 0";
+          p.style.overflowWrap = "anywhere";
+          const strong = document.createElement("strong");
+          strong.textContent = rotulo + ": ";
+          strong.style.display = "inline";
+          p.append(strong, document.createTextNode(texto(valor)));
+          return p;
+        };
+
         for (const pedido of dados.pedidos) {
-          const item = document.createElement("div");
-          item.className = "produto-item";
-          const titulo = document.createElement("strong");
-          titulo.textContent = "Pedido " + (pedido.numero_pedido || String(pedido.id || "").slice(0, 8));
-          const detalhes = document.createElement("small");
-          const entrega = pedido.forma_entrega === "retirada" ? "Retirada" :
-            pedido.forma_entrega === "transportadora" ? "Transportadora" : (pedido.forma_entrega || "Entrega não informada");
-          const data = pedido.criado_em ? new Date(pedido.criado_em).toLocaleDateString("pt-BR") : "Sem data";
-          detalhes.textContent = `${data} · ${dinheiro(pedido.valor_total)} · Pagamento: ${pedido.status_pagamento || "Não informado"} · ${entrega} · Entrega: ${pedido.status_entrega || "Não informado"}`;
-          item.append(titulo, detalhes);
+          const item = document.createElement("article");
+          item.className = "card secao";
+          item.style.boxShadow = "none";
+          item.style.background = "#fff";
+          item.style.marginTop = "16px";
+
+          const titulo = document.createElement("h2");
+          const codigo = pedido.numero_pedido || String(pedido.id || "").slice(0, 8);
+          titulo.textContent = "📦 Pedido " + codigo;
+          titulo.style.overflowWrap = "anywhere";
+          item.append(titulo);
+
+          const data = pedido.criado_em
+            ? new Date(pedido.criado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+            : "Sem data";
+          item.append(linha("Data", data));
+          item.append(linha("Valor total", dinheiro(pedido.valor_total)));
+          item.append(linha("Pagamento", pedido.status_pagamento));
+          item.append(linha("Status da entrega", pedido.status_entrega));
+          item.append(linha("Forma de entrega", pedido.forma_entrega === "retirada"
+            ? "Retirada" : pedido.forma_entrega === "transportadora"
+              ? "Transportadora" : pedido.forma_entrega));
+
+          const clienteTitulo = document.createElement("h3");
+          clienteTitulo.textContent = "👤 Dados do cliente";
+          clienteTitulo.style.margin = "20px 0 10px";
+          item.append(clienteTitulo);
+          const cliente = pedido.clientes && !Array.isArray(pedido.clientes)
+            ? pedido.clientes : Array.isArray(pedido.clientes) ? pedido.clientes[0] : null;
+          item.append(linha("Nome", cliente?.nome));
+          item.append(linha("WhatsApp", cliente?.telefone));
+          item.append(linha("E-mail", cliente?.email));
+
+          const produtosTitulo = document.createElement("h3");
+          produtosTitulo.textContent = "🛍️ Produtos";
+          produtosTitulo.style.margin = "20px 0 10px";
+          item.append(produtosTitulo);
           if (Array.isArray(pedido.itens) && pedido.itens.length) {
-            const produtos = document.createElement("p");
-            produtos.textContent = pedido.itens.map(p => `${p.description || p.nome || "Produto"} (${p.quantity || p.qty || 1})`).join(" · ");
-            item.append(produtos);
+            for (const produto of pedido.itens) {
+              const nome = produto.descricao || produto.description || produto.nome || "Produto";
+              const quantidade = produto.quantidade ?? produto.quantity ?? produto.qty ?? 1;
+              const preco = produto.preco_unitario;
+              item.append(linha("Item", `${nome} — ${quantidade} unidade(s)` +
+                (preco === null || preco === undefined ? "" : ` · ${dinheiro(preco)} cada`)));
+            }
+          } else {
+            item.append(linha("Itens", "Não informados"));
+          }
+
+          if (pedido.forma_entrega === "transportadora") {
+            item.append(linha("Transportadora", pedido.transportadora));
+            item.append(linha("Frete", dinheiro(pedido.frete_valor ?? 0)));
+            const endereco = pedido.endereco_entrega;
+            if (endereco && typeof endereco === "object") {
+              const enderecoTexto = [
+                endereco.street, endereco.number, endereco.complement,
+                endereco.neighborhood, endereco.city, endereco.state,
+                endereco.cep
+              ].filter(Boolean).join(", ");
+              item.append(linha("Endereço", enderecoTexto));
+            }
           }
           lista.append(item);
         }
