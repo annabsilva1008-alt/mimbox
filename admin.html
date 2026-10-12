@@ -3,21 +3,21 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mimbox ADM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mimbox | Administração</title>
 <style>
 :root{
-  --amarelo:#f8d749;
-  --azul:#2456a6;
-  --vermelho:#e74739;
-  --creme:#f5eedf;
-  --preto:#181818;
+  --yellow:#f8d749;
+  --blue:#2456a6;
+  --red:#e74739;
+  --cream:#f5eedf;
+  --black:#181818;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
-  background:var(--creme);
-  color:var(--preto);
+  background:var(--cream);
+  color:var(--black);
   font-family:Arial,Helvetica,sans-serif;
 }
 button,input,select,textarea{font:inherit}
@@ -27,31 +27,37 @@ input,select,textarea{
   width:100%;
   padding:12px;
   margin:7px 0 14px;
-  border:2px solid #222;
+  border:2px solid var(--black);
   border-radius:8px;
   background:white;
 }
 input[type=checkbox]{
-  display:inline-block;
+  display:inline;
   width:auto;
-  margin:0 8px 0 0;
+  margin-right:8px;
 }
-label{font-weight:700;font-size:14px}
-textarea{resize:vertical}
+label{
+  display:block;
+  font-size:14px;
+  font-weight:700;
+  margin-top:12px;
+}
+textarea{resize:vertical;min-height:75px}
 h1,h2,h3{line-height:1.2}
 p{line-height:1.5}
 .hidden{display:none!important}
 .btn{
-  background:var(--amarelo);
-  border:2px solid var(--preto);
+  display:inline-block;
+  padding:12px 16px;
+  margin:6px 6px 6px 0;
+  background:var(--yellow);
+  border:2px solid var(--black);
   border-radius:9px;
-  padding:11px 16px;
   font-weight:800;
-  margin:5px 5px 5px 0;
 }
-.btn.blue{background:var(--azul);color:white}
+.btn.blue{background:var(--blue);color:white}
 .btn.white{background:white}
-.btn:disabled{opacity:.55}
+.btn:disabled{opacity:.5;cursor:wait}
 .login{
   min-height:100vh;
   display:grid;
@@ -59,18 +65,18 @@ p{line-height:1.5}
   padding:20px;
 }
 .login-box{
-  background:#fffdf6;
-  border:3px solid var(--preto);
-  border-radius:18px;
-  box-shadow:7px 7px 0 var(--preto);
-  padding:30px;
   width:100%;
   max-width:420px;
+  background:#fffdf7;
+  padding:30px;
+  border:3px solid var(--black);
+  border-radius:18px;
+  box-shadow:7px 7px 0 var(--black);
 }
 .logo{
-  font-size:34px;
+  color:var(--red);
+  font-size:36px;
   font-weight:900;
-  color:var(--vermelho);
   letter-spacing:-2px;
 }
 .layout{
@@ -79,69 +85,89 @@ p{line-height:1.5}
   min-height:100vh;
 }
 aside{
-  background:var(--preto);
+  background:var(--black);
   color:white;
-  padding:22px 14px;
+  padding:24px 15px;
 }
-aside .logo{color:var(--amarelo)}
+aside .logo{color:var(--yellow)}
 nav{display:grid;gap:5px;margin-top:25px}
 nav button{
-  text-align:left;
-  color:white;
-  background:transparent;
   border:0;
   border-radius:8px;
+  background:transparent;
+  color:white;
   padding:13px;
+  text-align:left;
   font-weight:700;
 }
-nav button:hover,nav button.active{background:var(--azul)}
-main{padding:25px;min-width:0}
+nav button:hover,nav button.active{
+  background:var(--blue);
+}
+main{
+  padding:25px;
+  min-width:0;
+  max-width:1450px;
+  width:100%;
+}
 .header{
   display:flex;
   justify-content:space-between;
   align-items:center;
+  gap:15px;
   flex-wrap:wrap;
-  gap:10px;
 }
 .card{
   background:#fffdf7;
-  border:2px solid var(--preto);
-  border-radius:14px;
+  border:2px solid var(--black);
+  border-radius:15px;
   padding:20px;
   margin:18px 0;
-  box-shadow:4px 4px 0 var(--preto);
+  box-shadow:4px 4px 0 var(--black);
   overflow-wrap:anywhere;
 }
 .card h2{margin-top:0}
 .grid{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:14px;
+  gap:15px;
 }
-.metric{font-size:29px;font-weight:900}
+.metric{font-size:30px;font-weight:900}
 .item{
+  padding:18px 0;
   border-top:1px solid #ddd;
-  padding:17px 0;
 }
 .notice{
-  padding:12px;
-  border-left:5px solid var(--azul);
   background:white;
+  border-left:5px solid var(--blue);
+  padding:13px;
   margin:15px 0;
   overflow-wrap:anywhere;
 }
-.error{border-left-color:var(--vermelho)}
-.muted{color:#666;font-size:13px}
+.error{border-left-color:var(--red)}
+.muted{font-size:13px;color:#666}
 .row{
   display:flex;
   flex-wrap:wrap;
-  align-items:center;
   gap:10px;
+  align-items:center;
+}
+.status{
+  display:inline-block;
+  background:var(--yellow);
+  border:1px solid var(--black);
+  border-radius:20px;
+  padding:5px 10px;
+  font-size:12px;
+  font-weight:bold;
 }
 @media(max-width:800px){
   .layout{display:block}
   aside{padding:15px}
-  nav{display:flex;overflow-x:auto;margin-top:12px}
+  nav{
+    display:flex;
+    overflow-x:auto;
+    margin-top:12px;
+  }
   nav button{white-space:nowrap}
   main{padding:15px}
   .grid{grid-template-columns:1fr}
@@ -160,15 +186,17 @@ main{padding:25px;min-width:0}
     <h1>Painel administrativo</h1>
     <form id="login-form">
       <label>E-mail</label>
-      <input id="login-email" type="email" required
+      <input id="login-email"
+        type="email" required
         autocomplete="username">
 
       <label>Senha</label>
-      <input id="login-password" type="password" required
+      <input id="login-password"
+        type="password" required
         autocomplete="current-password">
 
-      <button class="btn" id="login-button"
-        type="submit">Entrar</button>
+      <button class="btn" type="submit"
+        id="login-button">Entrar</button>
     </form>
     <p id="login-message"></p>
   </div>
@@ -178,14 +206,15 @@ main{padding:25px;min-width:0}
   <aside>
     <div class="logo">mimbox.</div>
     <p>Central administrativa</p>
+
     <nav id="navigation">
       <button data-page="dashboard">📊 Dashboard</button>
-      <button data-page="pedidos">📦 Pedidos</button>
-      <button data-page="novo">➕ Novo pedido</button>
+      <button data-page="pedidos">📦 Pedidos do site</button>
+      <button data-page="manual">➕ Pedido manual</button>
       <button data-page="produtos">🛍️ Produtos</button>
+      <button data-page="estoque">📋 Estoque</button>
+      <button data-page="envios">🚚 Envios</button>
       <button data-page="clientes">👥 Clientes</button>
-      <button data-page="retirada">📍 Retirada</button>
-      <button data-page="loja">⚙️ Configurações</button>
     </nav>
   </aside>
 
@@ -195,7 +224,9 @@ main{padding:25px;min-width:0}
         <h1 id="page-title">Dashboard</h1>
         <p class="muted">Mimbox ADM</p>
       </div>
-      <button id="logout" class="btn white">Sair</button>
+      <button class="btn white" id="logout">
+        Sair
+      </button>
     </div>
 
     <div id="message" role="status"></div>
@@ -206,27 +237,27 @@ main{padding:25px;min-width:0}
 <script>
 "use strict";
 
-const el = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 const state = {
   pedidos: [],
   produtos: [],
-  clientes: [],
-  config: {},
-  gestaoDisponivel: false
+  estoque: [],
+  envios: [],
+  clientes: []
 };
 
-const pages = {
+const titles = {
   dashboard:"Dashboard",
-  pedidos:"Pedidos",
-  novo:"Novo pedido",
+  pedidos:"Pedidos do site",
+  manual:"Cadastrar pedido manual",
   produtos:"Produtos",
-  clientes:"Clientes",
-  retirada:"Retirada",
-  loja:"Configurações"
+  estoque:"Estoque",
+  envios:"Envios e retiradas",
+  clientes:"Clientes"
 };
 
-const deliveryStatuses = [
+const statuses = [
   ["aguardando","Aguardando"],
   ["em_preparacao","Em preparação"],
   ["pronto_retirada","Pronto para retirada"],
@@ -235,76 +266,124 @@ const deliveryStatuses = [
   ["cancelado","Cancelado"]
 ];
 
-function show(id) {
-  for(const key of ["loading","login-screen","app"]){
-    el(key).classList.toggle("hidden",key!==id);
+function element(tag,text,css){
+  const e=document.createElement(tag);
+  if(text!==undefined){
+    e.textContent=String(text??"");
   }
-}
-
-function message(text,isError=false){
-  const area=el("message");
-  area.replaceChildren();
-  if(!text)return;
-  const box=document.createElement("div");
-  box.className="notice"+(isError?" error":"");
-  box.textContent=text;
-  area.append(box);
-}
-
-function node(tag,text,cls){
-  const n=document.createElement(tag);
-  if(text!==undefined)n.textContent=String(text??"");
-  if(cls)n.className=cls;
-  return n;
+  if(css)e.className=css;
+  return e;
 }
 
 function card(title){
-  const c=node("section",undefined,"card");
-  c.append(node("h2",title));
-  return c;
+  const e=element("section",undefined,"card");
+  e.append(element("h2",title));
+  return e;
 }
 
-function line(title,value){
-  const p=node("p");
-  const b=node("strong",title+": ");
-  p.append(b,document.createTextNode(
-    String(value??"Não informado")
-  ));
+function line(label,value){
+  const p=element("p");
+  const b=element("strong",label+": ");
+  p.append(
+    b,
+    document.createTextNode(
+      String(value??"Não informado")
+    )
+  );
   return p;
 }
 
 function money(value){
   return Number(value||0).toLocaleString(
-    "pt-BR",{style:"currency",currency:"BRL"}
+    "pt-BR",
+    {style:"currency",currency:"BRL"}
   );
 }
 
-function field(title,value="",type="text"){
-  const wrapper=node("div");
-  const label=node("label",title);
+function field(label,value="",type="text"){
+  const wrap=element("div");
+  const title=element("label",label);
   const input=type==="textarea"
     ?document.createElement("textarea")
     :document.createElement("input");
+
   if(type!=="textarea")input.type=type;
   input.value=value??"";
+
   if(type==="number"){
     input.min="0";
     input.step="0.01";
   }
-  wrapper.append(label,input);
-  return {wrapper,input};
+
+  wrap.append(title,input);
+  return {wrap,input};
 }
 
-function button(title,callback){
-  const b=node("button",title,"btn");
+function checkbox(label,checked=false){
+  const wrap=element("label");
+  const input=element("input");
+  input.type="checkbox";
+  input.checked=!!checked;
+  wrap.append(input,document.createTextNode(label));
+  return {wrap,input};
+}
+
+function selectField(label,options,value){
+  const wrap=element("div");
+  wrap.append(element("label",label));
+
+  const select=element("select");
+
+  for(const [v,t] of options){
+    const option=element("option",t);
+    option.value=v;
+    option.selected=v===value;
+    select.append(option);
+  }
+
+  wrap.append(select);
+  return {wrap,input:select};
+}
+
+function action(label,callback){
+  const b=element("button",label,"btn");
   b.type="button";
+
   b.onclick=async()=>{
     b.disabled=true;
-    try{await callback();}
-    catch(e){message(e.message,true);}
-    finally{b.disabled=false;}
+    try{
+      await callback();
+    }catch(error){
+      notify(error.message,true);
+    }finally{
+      b.disabled=false;
+    }
   };
+
   return b;
+}
+
+function notify(text,error=false){
+  const area=$("message");
+  area.replaceChildren();
+
+  if(!text)return;
+
+  const box=element(
+    "div",text,"notice"+(error?" error":"")
+  );
+
+  area.append(box);
+}
+
+function show(id){
+  for(const key of [
+    "loading","login-screen","app"
+  ]){
+    $(key).classList.toggle(
+      "hidden",key!==id
+    );
+  }
 }
 
 async function request(url,options={}){
@@ -315,34 +394,42 @@ async function request(url,options={}){
   });
 
   let data;
-  try{data=await response.json();}
-  catch{throw Error("Resposta inválida da API");}
+  try{
+    data=await response.json();
+  }catch{
+    throw Error("Resposta inválida do servidor");
+  }
 
   if(!response.ok){
     throw Error(
-      data.erro||data.error||"Erro HTTP "+response.status
+      data.erro||
+      data.error||
+      "Erro HTTP "+response.status
     );
   }
+
   return data;
 }
 
-async function manage(action,data){
+async function operations(acao,data){
   if(data===undefined){
     return request(
-      "/api/admin-gerenciar?action="+
-      encodeURIComponent(action)
+      "/api/admin-operacoes?acao="+
+      encodeURIComponent(acao)
     );
   }
-  return request("/api/admin-gerenciar",{
+
+  return request("/api/admin-operacoes",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({action,...data})
+    body:JSON.stringify({acao,...data})
   });
 }
 
 async function checkSession(){
   try{
     const data=await request("/api/admin-session");
+
     if(data.autenticado===true){
       show("app");
       openPage("dashboard");
@@ -354,172 +441,180 @@ async function checkSession(){
   }
 }
 
-el("login-form").onsubmit=async event=>{
+$("login-form").onsubmit=async event=>{
   event.preventDefault();
-  const b=el("login-button");
+
+  const b=$("login-button");
   b.disabled=true;
-  el("login-message").textContent="Verificando...";
+  $("login-message").textContent="Verificando...";
 
   try{
     await request("/api/admin-login",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
-        email:el("login-email").value.trim(),
-        senha:el("login-password").value
+        email:$("login-email").value.trim(),
+        senha:$("login-password").value
       })
     });
-    el("login-password").value="";
+
+    $("login-password").value="";
     await checkSession();
-  }catch(e){
-    el("login-message").textContent=e.message;
+
+  }catch(error){
+    $("login-message").textContent=error.message;
   }finally{
     b.disabled=false;
   }
 };
 
-el("logout").onclick=async()=>{
+$("logout").onclick=async()=>{
   try{
-    await request("/api/admin-logout",{method:"POST"});
+    await request("/api/admin-logout",{
+      method:"POST"
+    });
     show("login-screen");
-  }catch(e){message(e.message,true);}
+  }catch(error){
+    notify(error.message,true);
+  }
 };
 
-el("navigation").onclick=event=>{
+$("navigation").onclick=event=>{
   const b=event.target.closest("[data-page]");
   if(b)openPage(b.dataset.page);
 };
 
-async function loadOrders(){
-  const data=await request("/api/admin-pedidos");
-  state.pedidos=Array.isArray(data.pedidos)
-    ?data.pedidos:[];
-}
+async function openPage(page){
+  if(!titles[page])return;
 
-async function loadManagement(){
-  try{
-    const data=await manage("overview");
-    state.gestaoDisponivel=true;
-
-    if(Array.isArray(data.pedidos) &&
-       data.pedidos.length>=state.pedidos.length){
-      state.pedidos=data.pedidos;
-    }
-
-    state.produtos=Array.isArray(data.produtos)
-      ?data.produtos:[];
-    state.clientes=Array.isArray(data.clientes)
-      ?data.clientes:[];
-    state.config=data.config||{};
-  }catch(e){
-    state.gestaoDisponivel=false;
-    throw e;
-  }
-}
-
-async function openPage(name){
-  if(!pages[name])return;
-
-  el("page-title").textContent=pages[name];
-  message("");
+  $("page-title").textContent=titles[page];
+  notify("");
 
   document.querySelectorAll("[data-page]")
-    .forEach(b=>b.classList.toggle(
-      "active",b.dataset.page===name
+    .forEach(b=>{
+      b.classList.toggle(
+        "active",
+        b.dataset.page===page
+      );
+    });
+
+  const area=$("content");
+  area.replaceChildren(
+    element("p","Carregando informações...")
+  );
+
+  try{
+    if(page==="dashboard"||page==="pedidos"){
+      const data=await request("/api/admin-pedidos");
+      state.pedidos=data.pedidos||[];
+    }
+
+    if(page==="produtos"){
+      const data=await operations("produtos");
+      state.produtos=data.produtos||[];
+    }
+
+    if(page==="estoque"){
+      const data=await operations("estoque");
+      state.estoque=data.itens||[];
+    }
+
+    if(page==="envios"){
+      const data=await operations("envios");
+      state.envios=data.envios||[];
+    }
+
+    if(page==="clientes"){
+      const data=await request("/api/admin-pedidos");
+      state.pedidos=data.pedidos||[];
+    }
+
+    if($("page-title").textContent!==titles[page]){
+      return;
+    }
+
+    area.replaceChildren();
+
+    if(page==="dashboard")dashboard(area);
+    if(page==="pedidos")orders(area);
+    if(page==="manual")manual(area);
+    if(page==="produtos")products(area);
+    if(page==="estoque")stock(area);
+    if(page==="envios")shipments(area);
+    if(page==="clientes")customers(area);
+
+  }catch(error){
+    area.replaceChildren();
+
+    const c=card("Não foi possível carregar");
+    c.append(element("p",error.message));
+    c.append(action(
+      "Tentar novamente",
+      ()=>openPage(page)
     ));
+    area.append(c);
 
-  const area=el("content");
-  area.replaceChildren(node("p","Carregando..."));
-
-  let orderError=null;
-  let managementError=null;
-
-  if(name==="dashboard"||name==="pedidos"){
-    try{await loadOrders();}
-    catch(e){orderError=e;}
+    notify(error.message,true);
   }
-
-  if(name!=="pedidos"){
-    try{await loadManagement();}
-    catch(e){managementError=e;}
-  }
-
-  // Se a API nova falhar, os pedidos continuam
-  // sendo consultados pela API antiga.
-  if(name==="pedidos"){
-    try{await loadManagement();}
-    catch(e){managementError=e;}
-  }
-
-  if(el("page-title").textContent!==pages[name])return;
-
-  area.replaceChildren();
-
-  if(orderError){
-    message(
-      "Não foi possível atualizar pedidos: "+
-      orderError.message,true
-    );
-  }else if(managementError){
-    message(
-      "Gerenciamento avançado indisponível: "+
-      managementError.message+
-      ". As funções existentes continuam acessíveis.",
-      true
-    );
-  }
-
-  if(name==="dashboard")dashboard(area);
-  if(name==="pedidos")orders(area);
-  if(name==="novo")newOrder(area);
-  if(name==="produtos")products(area);
-  if(name==="clientes")customers(area);
-  if(name==="retirada")pickup(area);
-  if(name==="loja")settings(area);
 }
 
+// DASHBOARD
+
 function dashboard(area){
-  const grid=node("div",undefined,"grid");
+  const grid=element("div",undefined,"grid");
+
   const metrics=[
-    ["📦 Pedidos",state.pedidos.length],
-    ["⏳ Pagamentos pendentes",
+    ["Pedidos registrados",state.pedidos.length],
+    ["Pagamentos pendentes",
       state.pedidos.filter(p=>
-        p.status_pagamento==="pendente").length],
-    ["📦 Em preparação",
+        p.status_pagamento==="pendente"
+      ).length],
+    ["Em preparação",
       state.pedidos.filter(p=>
-        p.status_entrega==="em_preparacao").length],
-    ["🛍️ Produtos",state.produtos.length],
-    ["👥 Clientes",state.clientes.length],
-    ["📍 Retirada",
-      state.config.retirada_ativa?"Ativada":"Desativada"]
+        p.status_entrega==="em_preparacao"
+      ).length]
   ];
 
-  for(const [title,value] of metrics){
-    const c=card(title);
-    c.append(node("div",value,"metric"));
+  for(const [name,value] of metrics){
+    const c=card(name);
+    c.append(element("div",value,"metric"));
     grid.append(c);
   }
+
   area.append(grid);
 
-  const c=card("Acompanhamento da loja");
-  c.append(node("p",
-    "O status de pagamento deve ser conferido "+
-    "na InfinitePay. O painel não confirma "+
-    "pagamentos automaticamente."
+  const c=card("Operações da Mimbox");
+  c.append(element("p",
+    "Cadastre pedidos manuais, gerencie produtos, "+
+    "atualize o estoque e acompanhe envios."
   ));
-  c.append(button("Ver pedidos",()=>openPage("pedidos")));
+
+  for(const [page,label] of [
+    ["manual","Novo pedido"],
+    ["produtos","Produtos"],
+    ["estoque","Estoque"],
+    ["envios","Envios"]
+  ]){
+    c.append(action(label,()=>openPage(page)));
+  }
+
   area.append(c);
 }
 
+// PEDIDOS DO SITE
+
 function orders(area){
-  const intro=card("📦 Pedidos cadastrados");
-  intro.append(button(
-    "Atualizar pedidos",()=>openPage("pedidos")
+  const intro=card("Pedidos recebidos");
+
+  intro.append(action(
+    "Atualizar pedidos",
+    ()=>openPage("pedidos")
   ));
+
   area.append(intro);
 
   if(!state.pedidos.length){
-    area.append(card("Nenhum pedido disponível"));
+    area.append(card("Nenhum pedido encontrado"));
     return;
   }
 
@@ -545,9 +640,15 @@ function orders(area){
       for(const item of p.itens){
         c.append(line(
           "Produto",
-          (item.descricao||item.nome||
-           item.description||"Item")+
-          " — "+(item.quantidade||item.quantity||1)
+          (item.descricao||
+           item.nome||
+           item.description||
+           "Item")+
+          " — "+(
+            item.quantidade||
+            item.quantity||
+            1
+          )
         ));
       }
     }
@@ -561,333 +662,498 @@ function orders(area){
       ));
     }
 
-    if(state.gestaoDisponivel){
-      const f=field("Alterar andamento");
-      f.input.remove();
-
-      const select=document.createElement("select");
-      for(const [value,label] of deliveryStatuses){
-        const option=node("option",label);
-        option.value=value;
-        option.selected=p.status_entrega===value;
-        select.append(option);
-      }
-      f.wrapper.append(select);
-      c.append(f.wrapper);
-
-      c.append(button("Salvar andamento",async()=>{
-        await manage("pedido_status",{
-          id:p.id,
-          status_entrega:select.value
-        });
-        await openPage("pedidos");
-        message("Andamento atualizado.");
-      }));
-
-      const notes=field(
-        "Observações internas",
-        p.observacoes||"","textarea"
-      );
-      c.append(notes.wrapper);
-
-      c.append(button("Salvar observação",async()=>{
-        await manage("pedido_nota",{
-          id:p.id,nota:notes.input.value
-        });
-        message("Observação salva.");
-      }));
-    }else{
-      c.append(node("p",
-        "Edição indisponível até a API de "+
-        "gerenciamento responder corretamente.",
-        "muted"
-      ));
-    }
-
     area.append(c);
   }
 }
 
-function newOrder(area){
+// CADASTRO MANUAL
+
+function manual(area){
   const c=card("➕ Cadastrar pedido manual");
-  c.append(node("p",
-    "Pedidos manuais começam com pagamento "+
-    "pendente. Não representam pagamento confirmado."
+
+  c.append(element("p",
+    "O pedido será registrado com pagamento "+
+    "pendente. Confira os recebimentos "+
+    "separadamente na InfinitePay."
   ));
 
-  if(!state.gestaoDisponivel){
-    c.append(node("p",
-      "Cadastro temporariamente indisponível: "+
-      "verifique a API admin-gerenciar."
-    ));
-    area.append(c);
-    return;
-  }
+  const form=element("form");
 
-  const form=node("form");
-  const inputs={
+  const fields={
     nome:field("Nome do cliente"),
     email:field("E-mail","","email"),
     telefone:field("WhatsApp"),
-    descricao:field("Produto ou coleção"),
+    descricao:field("Produto / coleção"),
     quantidade:field("Quantidade",1,"number"),
-    valor:field("Valor total em R$",0,"number")
+    valor:field("Valor total (R$)",0,"number"),
+    observacoes:field(
+      "Observações internas","","textarea"
+    )
   };
 
-  for(const [key,f] of Object.entries(inputs)){
-    if(["nome","email","descricao","quantidade","valor"]
-      .includes(key))f.input.required=true;
-    form.append(f.wrapper);
+  for(const [name,f] of Object.entries(fields)){
+    if([
+      "nome","email","descricao",
+      "quantidade","valor"
+    ].includes(name)){
+      f.input.required=true;
+    }
+    form.append(f.wrap);
   }
 
-  const delivery=field("Forma de entrega");
-  delivery.input.remove();
+  const entrega=selectField(
+    "Forma de entrega",
+    [
+      ["retirada","Retirada"],
+      ["transportadora","Transportadora"]
+    ],
+    "retirada"
+  );
 
-  const select=node("select");
-  for(const [value,label] of [
-    ["retirada","Retirada"],
-    ["transportadora","Transportadora"]
-  ]){
-    const option=node("option",label);
-    option.value=value;
-    select.append(option);
-  }
-  delivery.wrapper.append(select);
-  form.append(delivery.wrapper);
+  form.append(entrega.wrap);
 
-  const save=node("button","Cadastrar pedido","btn");
+  const save=element(
+    "button","Cadastrar pedido","btn"
+  );
   save.type="submit";
   form.append(save);
 
   form.onsubmit=async event=>{
     event.preventDefault();
     save.disabled=true;
+
     try{
-      await manage("pedido_manual",{
+      await operations("pedido_manual",{
         cliente:{
-          nome:inputs.nome.input.value,
-          email:inputs.email.input.value,
-          telefone:inputs.telefone.input.value
+          nome:fields.nome.input.value,
+          email:fields.email.input.value,
+          telefone:fields.telefone.input.value
         },
         pedido:{
-          descricao:inputs.descricao.input.value,
-          quantidade:Number(inputs.quantidade.input.value),
-          valor_total:Number(inputs.valor.input.value),
-          forma_entrega:select.value
+          descricao:fields.descricao.input.value,
+          quantidade:Number(
+            fields.quantidade.input.value
+          ),
+          valor_total:Number(
+            fields.valor.input.value
+          ),
+          forma_entrega:entrega.input.value,
+          observacoes:fields.observacoes.input.value
         }
       });
-      await openPage("pedidos");
-      message("Pedido cadastrado.");
-    }catch(e){message(e.message,true);}
-    finally{save.disabled=false;}
+
+      form.reset();
+      notify("Pedido manual cadastrado com sucesso.");
+
+    }catch(error){
+      notify(error.message,true);
+    }finally{
+      save.disabled=false;
+    }
   };
 
   c.append(form);
   area.append(c);
 }
 
-function products(area){
-  const c=card("🛍️ Produtos cadastrados");
+// PRODUTOS
 
-  if(!state.gestaoDisponivel){
-    c.append(node("p",
-      "A edição precisa da API de gerenciamento. "+
-      "Os produtos existentes não foram alterados."
+function products(area){
+  const create=card("➕ Cadastrar produto");
+  const form=element("form");
+
+  const f={
+    nome:field("Nome do produto"),
+    colecao:field("Coleção"),
+    preco:field("Preço (R$)",0,"number"),
+    descricao:field("Descrição","","textarea"),
+    imagem_url:field("URL da imagem")
+  };
+
+  for(const x of Object.values(f)){
+    form.append(x.wrap);
+  }
+
+  f.nome.input.required=true;
+  f.preco.input.required=true;
+
+  const available=checkbox(
+    "Produto disponível",true
+  );
+  const featured=checkbox(
+    "Produto em destaque",false
+  );
+
+  form.append(available.wrap,featured.wrap);
+
+  const save=element(
+    "button","Cadastrar produto","btn"
+  );
+  save.type="submit";
+  form.append(save);
+
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    save.disabled=true;
+
+    try{
+      await request("/api/admin-salvar-produto",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          nome:f.nome.input.value,
+          colecao:f.colecao.input.value,
+          preco:Number(f.preco.input.value),
+          descricao:f.descricao.input.value,
+          imagem_url:f.imagem_url.input.value,
+          disponivel:available.input.checked,
+          destaque:featured.input.checked
+        })
+      });
+
+      await openPage("produtos");
+      notify("Produto cadastrado.");
+
+    }catch(error){
+      notify(error.message,true);
+    }finally{
+      save.disabled=false;
+    }
+  };
+
+  create.append(form);
+  area.append(create);
+
+  const list=card("✏️ Editar produtos");
+  area.append(list);
+
+  if(!state.produtos.length){
+    list.append(element(
+      "p","Nenhum produto cadastrado."
     ));
-    area.append(c);
     return;
   }
 
-  if(!state.produtos.length){
-    c.append(node("p","Nenhum produto encontrado."));
-  }
-
   for(const p of state.produtos){
-    const item=node("div",undefined,"item");
-    item.append(node("h3",p.nome||"Produto"));
+    const item=element("div",undefined,"item");
+    item.append(element("h3",p.nome));
 
     const inputs={
       nome:field("Nome",p.nome),
       colecao:field("Coleção",p.colecao),
       preco:field("Preço",p.preco,"number"),
-      descricao:field("Descrição",p.descricao,"textarea"),
-      imagem_url:field("URL da imagem",p.imagem_url)
+      descricao:field(
+        "Descrição",p.descricao,"textarea"
+      ),
+      imagem_url:field(
+        "URL da imagem",p.imagem_url
+      )
     };
 
-    for(const f of Object.values(inputs)){
-      item.append(f.wrapper);
+    for(const x of Object.values(inputs)){
+      item.append(x.wrap);
     }
 
-    const available=node("input");
-    available.type="checkbox";
-    available.checked=!!p.disponivel;
+    const av=checkbox(
+      "Disponível",p.disponivel
+    );
+    const ft=checkbox(
+      "Destaque",p.destaque
+    );
 
-    const featured=node("input");
-    featured.type="checkbox";
-    featured.checked=!!p.destaque;
+    item.append(av.wrap,ft.wrap);
 
-    const la=node("label");
-    la.append(available," Disponível");
+    item.append(action(
+      "Salvar alterações",
+      async()=>{
+        const result=await operations(
+          "produto_editar",
+          {
+            id:p.id,
+            produto:{
+              nome:inputs.nome.input.value,
+              colecao:inputs.colecao.input.value,
+              preco:Number(
+                inputs.preco.input.value
+              ),
+              descricao:inputs.descricao.input.value,
+              imagem_url:inputs.imagem_url.input.value,
+              disponivel:av.input.checked,
+              destaque:ft.input.checked
+            }
+          }
+        );
 
-    const lf=node("label");
-    lf.append(featured," Destaque");
+        if(result.ok!==true){
+          throw Error("Produto não foi atualizado");
+        }
 
-    item.append(la,lf);
+        notify("Produto atualizado no banco.");
+      }
+    ));
 
-    item.append(button("Salvar produto",async()=>{
-      await manage("produto",{
-        produto:{
-          id:p.id,
-          nome:inputs.nome.input.value,
-          colecao:inputs.colecao.input.value,
-          preco:Number(inputs.preco.input.value),
-          descricao:inputs.descricao.input.value,
-          imagem_url:inputs.imagem_url.input.value,
-          disponivel:available.checked,
-          destaque:featured.checked
+    list.append(item);
+  }
+}
+
+// ESTOQUE
+
+function stock(area){
+  const create=card("📋 Cadastrar item no estoque");
+  const form=element("form");
+
+  const f={
+    nome:field("Nome do item"),
+    quantidade:field(
+      "Quantidade atual",0,"number"
+    ),
+    minimo:field(
+      "Estoque mínimo",5,"number"
+    ),
+    unidade:field("Unidade","un")
+  };
+
+  for(const x of Object.values(f)){
+    form.append(x.wrap);
+  }
+
+  f.nome.input.required=true;
+  f.quantidade.input.required=true;
+
+  f.quantidade.input.step="1";
+  f.minimo.input.step="1";
+
+  const save=element(
+    "button","Cadastrar item","btn"
+  );
+  save.type="submit";
+  form.append(save);
+
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    save.disabled=true;
+
+    try{
+      await operations("estoque_criar",{
+        item:{
+          nome:f.nome.input.value,
+          quantidade:Number(
+            f.quantidade.input.value
+          ),
+          minimo:Number(f.minimo.input.value),
+          unidade:f.unidade.input.value
         }
       });
-      message("Produto salvo.");
-    }));
 
-    c.append(item);
-  }
+      await openPage("estoque");
+      notify("Item cadastrado no estoque.");
 
-  area.append(c);
-}
-
-function customers(area){
-  const c=card("👥 Clientes");
-
-  if(!state.gestaoDisponivel){
-    c.append(node("p",
-      "Consulta de clientes indisponível "+
-      "até a conexão com a API ser corrigida."
-    ));
-  }else if(!state.clientes.length){
-    c.append(node("p","Nenhum cliente cadastrado."));
-  }else{
-    for(const customer of state.clientes){
-      const item=node("div",undefined,"item");
-      item.append(
-        node("h3",customer.nome||"Cliente"),
-        line("E-mail",customer.email),
-        line("WhatsApp",customer.telefone)
-      );
-      c.append(item);
+    }catch(error){
+      notify(error.message,true);
+    }finally{
+      save.disabled=false;
     }
+  };
+
+  create.append(form);
+  area.append(create);
+
+  const list=card("Itens em estoque");
+  area.append(list);
+
+  if(!state.estoque.length){
+    list.append(element(
+      "p","Nenhum item cadastrado."
+    ));
+    return;
   }
-  area.append(c);
+
+  for(const item of state.estoque){
+    const row=element("div",undefined,"item");
+
+    row.append(element(
+      "h3",
+      item.nome+" — "+
+      item.quantidade+" "+item.unidade
+    ));
+
+    if(item.quantidade<=item.minimo){
+      row.append(element(
+        "span","⚠️ Estoque baixo","status"
+      ));
+    }
+
+    const quantidade=field(
+      "Quantidade",item.quantidade,"number"
+    );
+    const minimo=field(
+      "Estoque mínimo",item.minimo,"number"
+    );
+
+    quantidade.input.step="1";
+    minimo.input.step="1";
+
+    row.append(
+      quantidade.wrap,
+      minimo.wrap
+    );
+
+    row.append(action(
+      "Salvar estoque",
+      async()=>{
+        const result=await operations(
+          "estoque_editar",
+          {
+            id:item.id,
+            quantidade:Number(
+              quantidade.input.value
+            ),
+            minimo:Number(minimo.input.value)
+          }
+        );
+
+        if(result.ok!==true){
+          throw Error("Estoque não foi atualizado");
+        }
+
+        await openPage("estoque");
+        notify("Estoque atualizado.");
+      }
+    ));
+
+    list.append(row);
+  }
+
+  area.append(element(
+    "p",
+    "Controle manual: as vendas ainda não "+
+    "descontam automaticamente do estoque.",
+    "muted"
+  ));
 }
 
-function pickup(area){
-  const c=card("📍 Retirada de pedidos");
+// ENVIOS E RETIRADAS
 
-  c.append(node("p",
-    "Estas informações serão salvas no banco. "+
-    "A opção de retirada só será controlada "+
-    "automaticamente no checkout quando "+
-    "a vitrine estiver conectada à configuração."
+function shipments(area){
+  const c=card("🚚 Acompanhar envios");
+
+  c.append(element(
+    "p",
+    "Gerencie preparação, retirada, "+
+    "transportadora e código de rastreio."
   ));
 
-  if(!state.gestaoDisponivel){
-    c.append(node("p",
-      "Configurações indisponíveis: "+
-      "verifique a API admin-gerenciar."
-    ));
-    area.append(c);
+  area.append(c);
+
+  if(!state.envios.length){
+    area.append(card("Nenhum pedido encontrado"));
     return;
   }
 
-  const active=node("input");
-  active.type="checkbox";
-  active.checked=!!state.config.retirada_ativa;
+  for(const p of state.envios){
+    const item=card(
+      "Pedido "+(p.numero_pedido||p.id)
+    );
 
-  const label=node("label");
-  label.append(active," Permitir retirada");
-  c.append(label);
+    const customer=Array.isArray(p.clientes)
+      ?p.clientes[0]:p.clientes;
 
-  const local=field(
-    "Local de retirada",
-    state.config.retirada_local
-  );
-  const hours=field(
-    "Horários",
-    state.config.retirada_horarios,
-    "textarea"
-  );
-  const instructions=field(
-    "Instruções",
-    state.config.retirada_instrucoes,
-    "textarea"
-  );
+    item.append(
+      line("Cliente",customer?.nome),
+      line("Entrega",p.forma_entrega)
+    );
 
-  c.append(
-    local.wrapper,
-    hours.wrapper,
-    instructions.wrapper
-  );
+    const status=selectField(
+      "Andamento",
+      statuses,
+      p.status_entrega||"aguardando"
+    );
 
-  c.append(button("Salvar retirada",async()=>{
-    await saveConfig({
-      retirada_ativa:active.checked,
-      retirada_local:local.input.value,
-      retirada_horarios:hours.input.value,
-      retirada_instrucoes:instructions.input.value
-    });
-  }));
+    const carrier=field(
+      "Transportadora",p.transportadora
+    );
 
-  area.append(c);
+    const tracking=field(
+      "Código de rastreio",p.rastreio
+    );
+
+    const notes=field(
+      "Observações",p.observacoes,"textarea"
+    );
+
+    item.append(
+      status.wrap,
+      carrier.wrap,
+      tracking.wrap,
+      notes.wrap
+    );
+
+    item.append(action(
+      "Salvar envio",
+      async()=>{
+        const result=await operations(
+          "envio_editar",
+          {
+            id:p.id,
+            envio:{
+              status_entrega:status.input.value,
+              transportadora:carrier.input.value,
+              rastreio:tracking.input.value,
+              observacoes:notes.input.value
+            }
+          }
+        );
+
+        if(result.ok!==true){
+          throw Error("Envio não foi atualizado");
+        }
+
+        notify("Envio atualizado.");
+      }
+    ));
+
+    area.append(item);
+  }
 }
 
-function settings(area){
-  const c=card("⚙️ Informações da loja");
+// CLIENTES DOS PEDIDOS
 
-  if(!state.gestaoDisponivel){
-    c.append(node("p",
-      "A API de gerenciamento precisa "+
-      "estar funcionando para salvar alterações."
-    ));
-    area.append(c);
-    return;
+function customers(area){
+  const c=card("👥 Clientes dos pedidos");
+  const unique=new Map();
+
+  for(const p of state.pedidos){
+    const customer=Array.isArray(p.clientes)
+      ?p.clientes[0]:p.clientes;
+
+    if(!customer)continue;
+
+    const key=customer.email||
+      customer.telefone||
+      customer.nome;
+
+    if(key)unique.set(key,customer);
   }
 
-  const notice=field(
-    "Aviso da loja",
-    state.config.loja_aviso,
-    "textarea"
-  );
-  const whatsapp=field(
-    "WhatsApp",
-    state.config.whatsapp
-  );
-  const instagram=field(
-    "Instagram",
-    state.config.instagram
-  );
+  if(!unique.size){
+    c.append(element(
+      "p","Nenhum cliente encontrado."
+    ));
+  }
 
-  c.append(
-    notice.wrapper,
-    whatsapp.wrapper,
-    instagram.wrapper
-  );
+  for(const customer of unique.values()){
+    const row=element("div",undefined,"item");
 
-  c.append(button("Salvar informações",async()=>{
-    await saveConfig({
-      loja_aviso:notice.input.value,
-      whatsapp:whatsapp.input.value,
-      instagram:instagram.input.value
-    });
-  }));
+    row.append(
+      element("h3",customer.nome||"Cliente"),
+      line("E-mail",customer.email),
+      line("WhatsApp",customer.telefone)
+    );
+
+    c.append(row);
+  }
 
   area.append(c);
-}
-
-async function saveConfig(changes){
-  const config={...state.config,...changes};
-  const result=await manage("config",{config});
-  state.config=result.config||config;
-  message("Configurações salvas.");
 }
 
 checkSession();
