@@ -2,856 +2,1182 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Painel ADM | Mimbox</title>
-  <style>
-    * { box-sizing: border-box; }
-
-    :root {
-      --creme: #f5edda;
-      --amarelo: #f7d548;
-      --vermelho: #e33d32;
-      --azul: #2455a4;
-      --preto: #171717;
-    }
-
-    body {
-      margin: 0;
-      background: var(--creme);
-      color: var(--preto);
-      font-family: Arial, sans-serif;
-    }
-
-    button, input, textarea { font: inherit; }
-
-    button { cursor: pointer; }
-
-    .escondido { display: none !important; }
-
-    .login-area {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
-
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: #fffdf6;
-      border: 3px solid var(--preto);
-      border-radius: 18px;
-      padding: 30px;
-      box-shadow: 8px 8px 0 var(--preto);
-    }
-
-    .marca {
-      font-size: 36px;
-      font-weight: 900;
-      letter-spacing: -2px;
-      color: var(--vermelho);
-    }
-
-    h1 { font-size: 25px; }
-
-    .subtitulo {
-      color: #666;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: bold;
-      margin: 20px 0 8px;
-    }
-
-    input:not([type="checkbox"]), textarea {
-      width: 100%;
-      padding: 13px;
-      border: 2px solid var(--preto);
-      border-radius: 8px;
-    }
-
-    textarea { resize: vertical; }
-
-    .linha-check { display: flex; align-items: center; gap: 9px; margin: 16px 0; }
-    .linha-check input { width: auto; }
-    .produto-item { border-top: 1px solid #ddd; padding: 12px 0; }
-    .produto-item strong { display: block; }
-    .produto-item small { color: #555; }
-
-    .botao {
-      background: var(--amarelo);
-      border: 2px solid var(--preto);
-      border-radius: 9px;
-      padding: 13px 18px;
-      font-weight: 800;
-    }
-
-    .botao:disabled {
-      opacity: .6;
-      cursor: wait;
-    }
-
-    .entrar {
-      width: 100%;
-      margin-top: 24px;
-    }
-
-    .aviso {
-      margin-top: 16px;
-      font-size: 13px;
-      min-height: 20px;
-    }
-
-    .painel {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 245px 1fr;
-    }
-
-    aside {
-      background: var(--preto);
-      color: white;
-      padding: 26px 18px;
-    }
-
-    aside .marca { color: var(--amarelo); }
-
-    .menu {
-      display: grid;
-      gap: 7px;
-      margin-top: 35px;
-    }
-
-    .menu button {
-      background: transparent;
-      color: white;
-      border: 0;
-      text-align: left;
-      padding: 13px;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    .menu button.ativo,
-    .menu button:hover {
-      background: var(--azul);
-    }
-
-    main.conteudo {
-      padding: 32px;
-      max-width: 1300px;
-      width: 100%;
-    }
-
-    .topo {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 30px;
-    }
-
-    .topo h1 { margin: 0 0 8px; }
-
-    .sair {
-      background: white;
-    }
-
-    .grade {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .card {
-      background: #fffdf6;
-      border: 2px solid var(--preto);
-      border-radius: 15px;
-      padding: 22px;
-      box-shadow: 4px 4px 0 var(--preto);
-    }
-
-    .card h2 {
-      font-size: 18px;
-      margin: 0 0 12px;
-    }
-
-    .card p {
-      color: #555;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .etiqueta {
-      display: inline-block;
-      background: var(--amarelo);
-      border: 1px solid var(--preto);
-      border-radius: 20px;
-      padding: 5px 9px;
-      font-size: 11px;
-      font-weight: bold;
-    }
-
-    .destaque {
-      border-top: 7px solid var(--vermelho);
-    }
-
-    .secao { margin-top: 25px; }
-
-    .rodape {
-      margin-top: 35px;
-      color: #777;
-      font-size: 12px;
-    }
-
-    @media (max-width: 850px) {
-      .painel {
-        display: block;
-      }
-
-      aside { padding: 18px; }
-
-      .menu {
-        display: flex;
-        overflow-x: auto;
-        margin-top: 18px;
-      }
-
-      .menu button {
-        white-space: nowrap;
-      }
-
-      main.conteudo { padding: 22px; }
-
-      .grade { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mimbox | Painel Administrativo</title>
+<style>
+:root{
+  --creme:#f5edda;
+  --amarelo:#f7d548;
+  --vermelho:#e33d32;
+  --azul:#2455a4;
+  --preto:#171717;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--creme);
+  color:var(--preto);
+  font-family:Arial,sans-serif;
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+input,textarea,select{
+  width:100%;
+  padding:12px;
+  border:2px solid var(--preto);
+  border-radius:8px;
+  background:white;
+}
+textarea{resize:vertical}
+label{
+  display:block;
+  font-size:14px;
+  font-weight:700;
+  margin:15px 0 7px;
+}
+h1,h2,h3{line-height:1.2}
+p{line-height:1.5}
+.escondido{display:none!important}
+.login-area{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:20px;
+}
+.login-card{
+  width:100%;
+  max-width:430px;
+  background:#fffdf6;
+  border:3px solid var(--preto);
+  border-radius:18px;
+  padding:30px;
+  box-shadow:7px 7px 0 var(--preto);
+}
+.marca{
+  color:var(--vermelho);
+  font-size:35px;
+  font-weight:900;
+  letter-spacing:-2px;
+}
+.botao{
+  display:inline-block;
+  padding:12px 17px;
+  background:var(--amarelo);
+  color:var(--preto);
+  border:2px solid var(--preto);
+  border-radius:9px;
+  font-weight:800;
+  margin:8px 6px 8px 0;
+}
+.botao.azul{background:var(--azul);color:white}
+.botao.vermelho{background:var(--vermelho);color:white}
+.botao.branco{background:white}
+.botao:disabled{opacity:.5;cursor:wait}
+.painel{
+  display:grid;
+  grid-template-columns:240px minmax(0,1fr);
+  min-height:100vh;
+}
+aside{
+  background:var(--preto);
+  color:white;
+  padding:24px 16px;
+}
+aside .marca{color:var(--amarelo)}
+.menu{display:grid;gap:5px;margin-top:25px}
+.menu button{
+  background:transparent;
+  color:white;
+  text-align:left;
+  border:0;
+  padding:13px;
+  border-radius:8px;
+  font-weight:700;
+}
+.menu button.ativo,
+.menu button:hover{background:var(--azul)}
+main{
+  padding:30px;
+  min-width:0;
+  max-width:1450px;
+  width:100%;
+}
+.topo{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:25px;
+}
+.topo h1{margin:0}
+.subtitulo{color:#666;font-size:14px}
+.grade{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+}
+.card{
+  background:#fffdf6;
+  border:2px solid var(--preto);
+  border-radius:15px;
+  padding:20px;
+  margin-bottom:18px;
+  box-shadow:4px 4px 0 var(--preto);
+  min-width:0;
+}
+.card h2{margin:0 0 12px;font-size:19px}
+.destaque{border-top:7px solid var(--vermelho)}
+.metrica{font-size:27px;font-weight:900}
+.aviso{
+  font-size:14px;
+  min-height:20px;
+  overflow-wrap:anywhere;
+}
+.linha{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.linha-check{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:15px 0;
+}
+.linha-check input{width:auto}
+.item{
+  border-top:1px solid #ddd;
+  padding:16px 0;
+  overflow-wrap:anywhere;
+}
+.item strong{display:block}
+.item p{margin:7px 0}
+.etiqueta{
+  display:inline-block;
+  background:var(--amarelo);
+  border:1px solid var(--preto);
+  border-radius:20px;
+  padding:5px 9px;
+  font-size:12px;
+  font-weight:bold;
+}
+.campo-duplo{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+}
+.rodape{
+  color:#777;
+  font-size:12px;
+  margin-top:30px;
+}
+@media(max-width:850px){
+  .painel{display:block}
+  aside{padding:18px}
+  .menu{
+    display:flex;
+    overflow-x:auto;
+    margin-top:15px;
+  }
+  .menu button{white-space:nowrap}
+  main{padding:18px}
+  .grade,.campo-duplo{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
 
-  <section id="carregando" class="login-area">
-    <p>Verificando acesso ao Painel Mimbox...</p>
-  </section>
+<section id="carregando" class="login-area">
+  <p>Verificando acesso ao Painel Mimbox...</p>
+</section>
 
-  <section id="login-area" class="login-area escondido">
-    <div class="login-card">
-      <div class="marca">mimbox.</div>
-      <h1>Painel administrativo</h1>
-      <p class="subtitulo">
-        Entre com seu acesso de administradora.
-      </p>
+<section id="login-area" class="login-area escondido">
+  <div class="login-card">
+    <div class="marca">mimbox.</div>
+    <h1>Painel administrativo</h1>
+    <p class="subtitulo">
+      Acesso exclusivo da administração.
+    </p>
 
-      <form id="login">
-        <label for="email">E-mail</label>
-        <input
-          id="email"
-          type="email"
-          autocomplete="username"
-          required
-        >
+    <form id="login">
+      <label for="email">E-mail</label>
+      <input id="email" type="email"
+        autocomplete="username" required>
 
-        <label for="senha">Senha</label>
-        <input
-          id="senha"
-          type="password"
-          autocomplete="current-password"
-          required
-        >
+      <label for="senha">Senha</label>
+      <input id="senha" type="password"
+        autocomplete="current-password" required>
 
-        <button id="entrar" class="botao entrar" type="submit">
-          Entrar no painel
-        </button>
-      </form>
+      <button class="botao" id="entrar"
+        type="submit" style="width:100%">
+        Entrar no painel
+      </button>
+    </form>
 
-      <p id="aviso" class="aviso" role="status"></p>
-    </div>
-  </section>
-
-  <div id="painel" class="painel escondido">
-    <aside>
-      <div class="marca">mimbox.</div>
-      <p>Painel administrativo</p>
-
-      <nav class="menu" aria-label="Menu administrativo">
-        <button class="ativo" data-pagina="dashboard">
-          📊 Dashboard
-        </button>
-        <button data-pagina="editor">
-          🎨 Editor do Site
-        </button>
-        <button data-pagina="produtos">
-          🛍️ Produtos
-        </button>
-        <button data-pagina="pedidos">
-          📦 Pedidos
-        </button>
-        <button data-pagina="clientes">
-          👥 Clientes
-        </button>
-        <button data-pagina="clube">
-          🎁 Clube Mimbox
-        </button>
-        <button data-pagina="estoque">
-          📋 Estoque
-        </button>
-        <button data-pagina="envios">
-          🚚 Envios
-        </button>
-      </nav>
-    </aside>
-
-    <main class="conteudo">
-      <header class="topo">
-        <div>
-          <h1 id="titulo-pagina">Dashboard</h1>
-          <span class="subtitulo">
-            Central de controle da Mimbox
-          </span>
-        </div>
-
-        <button id="sair" class="botao sair">
-          Sair do painel
-        </button>
-      </header>
-
-      <div id="conteudo-pagina"></div>
-
-      <p class="rodape">
-        Mimbox ADM — Estrutura inicial.
-        Os recursos de edição e os dados reais serão
-        conectados nas próximas etapas.
-      </p>
-    </main>
+    <p id="aviso-login" class="aviso"></p>
   </div>
+</section>
 
-  <script>
-    const telas = {
-      dashboard: {
-        titulo: "Dashboard",
-        html: `
-          <div class="grade">
-            <div class="card">
-              <h2>💰 Faturamento</h2>
-              <p>Meta mensal</p>
-              <h1>R$ 8.500</h1>
-              <span class="etiqueta">Meta cadastrada</span>
-            </div>
+<div id="painel" class="painel escondido">
+  <aside>
+    <div class="marca">mimbox.</div>
+    <p>Painel administrativo</p>
 
-            <div class="card">
-              <h2>📦 Kits vendidos</h2>
-              <p>Meta mensal</p>
-              <h1>144 kits</h1>
-              <span class="etiqueta">Meta cadastrada</span>
-            </div>
+    <nav class="menu">
+      <button class="ativo" data-pagina="dashboard">
+        📊 Dashboard
+      </button>
+      <button data-pagina="pedidos">
+        📦 Pedidos
+      </button>
+      <button data-pagina="novo-pedido">
+        ➕ Novo pedido
+      </button>
+      <button data-pagina="produtos">
+        🛍️ Produtos
+      </button>
+      <button data-pagina="clientes">
+        👥 Clientes
+      </button>
+      <button data-pagina="retirada">
+        📍 Retirada
+      </button>
+      <button data-pagina="configuracoes">
+        ⚙️ Configurações
+      </button>
+      <button data-pagina="clube">
+        🎁 Clube Mimbox
+      </button>
+      <button data-pagina="estoque">
+        📋 Estoque
+      </button>
+      <button data-pagina="envios">
+        🚚 Envios
+      </button>
+    </nav>
+  </aside>
 
-            <div class="card">
-              <h2>🎁 Clube Mimbox</h2>
-              <p>
-                Acompanhamento de assinaturas,
-                caixas mensais e brindes.
-              </p>
-              <span class="etiqueta">Em construção</span>
-            </div>
-          </div>
+  <main>
+    <header class="topo">
+      <div>
+        <h1 id="titulo-pagina">Dashboard</h1>
+        <span class="subtitulo">
+          Central de controle da Mimbox
+        </span>
+      </div>
+      <button class="botao branco" id="sair">
+        Sair
+      </button>
+    </header>
 
-          <div class="card secao destaque">
-            <h2>Bem-vinda ao Painel Mimbox!</h2>
-            <p>
-              Esta é a primeira versão da central
-              administrativa. As metas exibidas acima
-              são referências, não resultados de vendas.
-            </p>
-          </div>
-        `
+    <div id="mensagem-global"
+      class="aviso" role="status"></div>
+
+    <div id="conteudo-pagina"></div>
+
+    <p class="rodape">
+      Mimbox ADM — Gerenciamento da loja.
+      Pagamentos devem ser conferidos na InfinitePay.
+    </p>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const estado = {
+  pedidos: [],
+  produtos: [],
+  clientes: [],
+  config: {}
+};
+
+const statusEntrega = [
+  ["aguardando", "Aguardando"],
+  ["em_preparacao", "Em preparação"],
+  ["pronto_retirada", "Pronto para retirada"],
+  ["enviado", "Enviado"],
+  ["entregue", "Entregue"],
+  ["cancelado", "Cancelado"]
+];
+
+function texto(valor, alternativa = "Não informado") {
+  if (valor === null || valor === undefined ||
+      String(valor).trim() === "") {
+    return alternativa;
+  }
+  return String(valor);
+}
+
+function dinheiro(valor) {
+  const numero = Number(valor);
+  return Number.isFinite(numero)
+    ? numero.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      })
+    : "Valor indisponível";
+}
+
+function mensagem(valor) {
+  $("mensagem-global").textContent = valor || "";
+}
+
+function criar(tag, conteudo, classe) {
+  const el = document.createElement(tag);
+  if (conteudo !== undefined) {
+    el.textContent = texto(conteudo, "");
+  }
+  if (classe) el.className = classe;
+  return el;
+}
+
+function campo(rotulo, valor, tipo = "text") {
+  const div = criar("div");
+  const label = criar("label", rotulo);
+  let input;
+
+  if (tipo === "textarea") {
+    input = document.createElement("textarea");
+    input.rows = 3;
+  } else {
+    input = document.createElement("input");
+    input.type = tipo;
+    if (tipo === "number") {
+      input.min = "0";
+      input.step = "0.01";
+    }
+  }
+
+  input.value = valor ?? "";
+  div.append(label, input);
+
+  return { div, input };
+}
+
+function linha(rotulo, valor) {
+  const p = criar("p");
+  const strong = criar("strong", rotulo + ": ");
+  strong.style.display = "inline";
+  p.append(strong, document.createTextNode(texto(valor)));
+  return p;
+}
+
+function cartao(titulo) {
+  const card = criar("div", undefined, "card");
+  card.append(criar("h2", titulo));
+  return card;
+}
+
+function botao(textoBotao, acao, classe = "botao") {
+  const b = criar("button", textoBotao, classe);
+  b.type = "button";
+  b.addEventListener("click", async () => {
+    b.disabled = true;
+    try {
+      await acao();
+    } catch (erro) {
+      mensagem("Erro: " + erro.message);
+    } finally {
+      b.disabled = false;
+    }
+  });
+  return b;
+}
+
+async function respostaJSON(resposta) {
+  let dados;
+  try {
+    dados = await resposta.json();
+  } catch {
+    throw new Error("Resposta inválida do servidor");
+  }
+
+  if (!resposta.ok) {
+    throw new Error(
+      dados.erro || dados.error ||
+      "Falha na comunicação com o servidor"
+    );
+  }
+  return dados;
+}
+
+async function apiGerenciar(action, payload) {
+  const consulta = payload === undefined
+    ? "?action=" + encodeURIComponent(action)
+    : "";
+
+  const resposta = await fetch(
+    "/api/admin-gerenciar" + consulta,
+    {
+      method: payload === undefined ? "GET" : "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json"
       },
+      ...(payload === undefined ? {} : {
+        body: JSON.stringify({ action, ...payload })
+      })
+    }
+  );
 
-      editor: {
-        titulo: "Editor do Site",
-        html: `
-          <div class="card destaque">
-            <h2>🎨 Sua loja, do seu jeito</h2>
-            <p>
-              Aqui você poderá editar o site sem
-              precisar acessar o GitHub.
-            </p>
-            <span class="etiqueta">Em construção</span>
-          </div>
+  return respostaJSON(resposta);
+}
 
-          <div class="grade secao">
-            <div class="card">
-              <h2>🖼️ Imagens e banners</h2>
-              <p>Trocar fotos, banners e imagens.</p>
-            </div>
+async function carregarDados() {
+  const dados = await apiGerenciar("overview");
+  estado.pedidos = dados.pedidos || [];
+  estado.produtos = dados.produtos || [];
+  estado.clientes = dados.clientes || [];
+  estado.config = dados.config || {};
+}
 
-            <div class="card">
-              <h2>✏️ Textos e botões</h2>
-              <p>Editar frases, títulos e chamadas.</p>
-            </div>
+function mostrarLogin() {
+  $("carregando").classList.add("escondido");
+  $("painel").classList.add("escondido");
+  $("login-area").classList.remove("escondido");
+}
 
-            <div class="card">
-              <h2>🧩 Seções do site</h2>
-              <p>Organizar e personalizar a página.</p>
-            </div>
-          </div>
-        `
-      },
+function mostrarPainel() {
+  $("carregando").classList.add("escondido");
+  $("login-area").classList.add("escondido");
+  $("painel").classList.remove("escondido");
+  abrirPagina("dashboard");
+}
 
-      produtos: {
-        titulo: "Produtos",
-        html: `
-          <div class="card destaque">
-            <h2>🛍️ Cadastrar produto</h2>
-            <p>Cadastre produtos no Supabase. Eles ainda não aparecem automaticamente na loja.</p>
-            <form id="form-produto">
-              <label for="produto-nome">Nome do produto *</label>
-              <input id="produto-nome" maxlength="150" required>
-              <label for="produto-colecao">Coleção</label>
-              <input id="produto-colecao" maxlength="100">
-              <label for="produto-preco">Preço (R$) *</label>
-              <input id="produto-preco" type="number" min="0" max="99999999.99" step="0.01" placeholder="Ex.: 59,90" required>
-              <label for="produto-descricao">Descrição</label>
-              <textarea id="produto-descricao" maxlength="2000" rows="4"></textarea>
-              <label for="produto-imagem">Link HTTPS da imagem (opcional)</label>
-              <input id="produto-imagem" type="url" placeholder="https://..." maxlength="2048">
-              <label class="linha-check"><input id="produto-disponivel" type="checkbox" checked> Produto disponível</label>
-              <label class="linha-check"><input id="produto-destaque" type="checkbox"> Produto em destaque</label>
-              <button class="botao" type="submit" id="salvar-produto">Salvar produto</button>
-              <p id="mensagem-produto" class="aviso" role="status"></p>
-            </form>
-          </div>
-          <div class="card secao">
-            <h2>Produtos cadastrados</h2>
-            <p>Lista do banco de dados, ainda não conectada à vitrine da loja.</p>
-            <div id="lista-produtos" aria-live="polite">Carregando produtos...</div>
-          </div>
-        `
-      },
+const titulos = {
+  dashboard: "Dashboard",
+  pedidos: "Pedidos",
+  "novo-pedido": "Cadastrar pedido",
+  produtos: "Produtos",
+  clientes: "Clientes",
+  retirada: "Configurar retirada",
+  configuracoes: "Configurações da loja",
+  clube: "Clube Mimbox",
+  estoque: "Estoque",
+  envios: "Envios"
+};
 
-      pedidos: {
-        titulo: "Pedidos",
-        html: `
-          <div class="card destaque">
-            <h2>📦 Pedidos da Mimbox</h2>
-            <p>Pedidos registrados no CRM. Os pagamentos ainda precisam ser integrados à InfinitePay.</p>
-            <button class="botao" id="atualizar-pedidos" type="button">Atualizar pedidos</button>
-            <div id="lista-pedidos" class="secao" aria-live="polite">Carregando pedidos...</div>
-          </div>
-        `
-      },
+async function abrirPagina(nome) {
+  if (!titulos[nome]) return;
 
-      clientes: {
-        titulo: "Clientes",
-        html: `
-          <div class="card">
-            <h2>👥 Cadastro de clientes</h2>
-            <p>
-              Histórico de compras e informações
-              dos clientes, com acesso protegido.
-            </p>
-            <span class="etiqueta">Em construção</span>
-          </div>
-        `
-      },
+  $("titulo-pagina").textContent = titulos[nome];
+  $("conteudo-pagina").replaceChildren();
+  mensagem("");
 
-      clube: {
-        titulo: "Clube Mimbox",
-        html: `
-          <div class="card">
-            <h2>🎁 Assinaturas</h2>
-            <p>
-              Planos de 3, 6 e 9 meses,
-              caixas enviadas, coleções e brindes.
-            </p>
-            <span class="etiqueta">Em construção</span>
-          </div>
-        `
-      },
+  document.querySelectorAll(".menu button")
+    .forEach(b => {
+      b.classList.toggle(
+        "ativo",
+        b.dataset.pagina === nome
+      );
+    });
 
-      estoque: {
-        titulo: "Estoque",
-        html: `
-          <div class="card">
-            <h2>📋 Controle de estoque</h2>
-            <p>
-              Copos, adesivos, embalagens e
-              materiais usados nos kits.
-            </p>
-            <span class="etiqueta">Em construção</span>
-          </div>
-        `
-      },
+  const area = $("conteudo-pagina");
 
-      envios: {
-        titulo: "Envios",
-        html: `
-          <div class="card">
-            <h2>🚚 Calendário de despachos</h2>
-            <p>
-              Envios de terça a sexta-feira,
-              exceto feriados. Sem envios na terça
-              quando a segunda anterior for feriado.
-            </p>
-            <span class="etiqueta">Em construção</span>
-          </div>
-        `
+  if (["clube", "estoque", "envios"].includes(nome)) {
+    const c = cartao(titulos[nome]);
+    c.append(criar("p",
+      "Área reservada para a próxima integração. " +
+      "Nenhuma alteração será aplicada sem conexão " +
+      "com os dados reais."
+    ));
+    area.append(c);
+    return;
+  }
+
+  area.append(criar("p", "Carregando informações..."));
+
+  try {
+    await carregarDados();
+
+    if ($("titulo-pagina").textContent !== titulos[nome]) {
+      return;
+    }
+
+    area.replaceChildren();
+
+    if (nome === "dashboard") montarDashboard(area);
+    if (nome === "pedidos") montarPedidos(area);
+    if (nome === "novo-pedido") montarNovoPedido(area);
+    if (nome === "produtos") montarProdutos(area);
+    if (nome === "clientes") montarClientes(area);
+    if (nome === "retirada") montarRetirada(area);
+    if (nome === "configuracoes") montarConfiguracoes(area);
+
+  } catch (erro) {
+    area.replaceChildren();
+
+    const c = cartao("Não foi possível carregar");
+    c.append(criar("p", erro.message));
+    c.append(botao("Tentar novamente", () => abrirPagina(nome)));
+    area.append(c);
+
+    mensagem(
+      "Não foi possível consultar o gerenciamento. " +
+      "Confira a autenticação da API."
+    );
+  }
+}
+
+function montarDashboard(area) {
+  const grade = criar("div", undefined, "grade");
+
+  const total = estado.pedidos.length;
+  const pendentes = estado.pedidos.filter(
+    p => p.status_pagamento === "pendente"
+  ).length;
+
+  const emPreparacao = estado.pedidos.filter(
+    p => p.status_entrega === "em_preparacao"
+  ).length;
+
+  const metricas = [
+    ["📦 Pedidos registrados", total],
+    ["💳 Pagamentos pendentes", pendentes],
+    ["📦 Em preparação", emPreparacao],
+    ["🛍️ Produtos cadastrados", estado.produtos.length],
+    ["👥 Clientes cadastrados", estado.clientes.length],
+    ["📍 Retirada", estado.config.retirada_ativa
+      ? "Ativada no ADM"
+      : "Desativada no ADM"]
+  ];
+
+  for (const [nome, valor] of metricas) {
+    const c = cartao(nome);
+    c.append(criar("div", valor, "metrica"));
+    grade.append(c);
+  }
+
+  area.append(grade);
+
+  const aviso = cartao("Atenção aos pagamentos");
+  aviso.classList.add("destaque");
+
+  aviso.append(criar("p",
+    "Os pedidos registrados não representam " +
+    "necessariamente vendas pagas. Confira " +
+    "a InfinitePay antes de preparar ou entregar."
+  ));
+
+  aviso.append(botao(
+    "Ver pedidos",
+    () => abrirPagina("pedidos")
+  ));
+
+  area.append(aviso);
+}
+
+function montarPedidos(area) {
+  const topo = cartao("📦 Pedidos da Mimbox");
+  topo.append(criar("p",
+    "Consulte clientes, itens, entrega e andamento."
+  ));
+  topo.append(botao(
+    "Atualizar pedidos",
+    () => abrirPagina("pedidos")
+  ));
+  area.append(topo);
+
+  if (!estado.pedidos.length) {
+    area.append(cartao("Nenhum pedido cadastrado"));
+    return;
+  }
+
+  for (const pedido of estado.pedidos) {
+    const c = cartao(
+      "Pedido " + texto(pedido.numero_pedido, pedido.id)
+    );
+
+    const cliente = Array.isArray(pedido.clientes)
+      ? pedido.clientes[0]
+      : pedido.clientes;
+
+    const data = pedido.criado_em
+      ? new Date(pedido.criado_em).toLocaleString(
+          "pt-BR",
+          { timeZone: "America/Sao_Paulo" }
+        )
+      : "Não informada";
+
+    c.append(
+      linha("Data", data),
+      linha("Cliente", cliente?.nome),
+      linha("WhatsApp", cliente?.telefone),
+      linha("E-mail", cliente?.email),
+      linha("Valor total", dinheiro(pedido.valor_total)),
+      linha("Pagamento", pedido.status_pagamento),
+      linha("Forma de entrega", pedido.forma_entrega)
+    );
+
+    if (Array.isArray(pedido.itens)) {
+      c.append(criar("h3", "Produtos"));
+
+      for (const item of pedido.itens) {
+        const descricao =
+          item.descricao ||
+          item.description ||
+          item.nome ||
+          "Produto";
+
+        const quantidade =
+          item.quantidade ??
+          item.quantity ??
+          item.qty ??
+          1;
+
+        c.append(linha(
+          "Item",
+          descricao + " — " + quantidade + " unidade(s)"
+        ));
       }
+    }
+
+    if (pedido.forma_entrega === "transportadora") {
+      c.append(
+        linha("Transportadora", pedido.transportadora),
+        linha("Frete", dinheiro(pedido.frete_valor))
+      );
+
+      const e = pedido.endereco_entrega;
+
+      if (e && typeof e === "object") {
+        c.append(linha(
+          "Endereço",
+          [
+            e.street, e.number, e.complement,
+            e.neighborhood, e.city, e.state, e.cep
+          ].filter(Boolean).join(", ")
+        ));
+      }
+    }
+
+    const status = campo("Status da entrega", "", "text");
+    status.input.remove();
+
+    const select = document.createElement("select");
+
+    for (const [valor, nome] of statusEntrega) {
+      const option = document.createElement("option");
+      option.value = valor;
+      option.textContent = nome;
+      option.selected = pedido.status_entrega === valor;
+      select.append(option);
+    }
+
+    status.div.append(select);
+    c.append(status.div);
+
+    c.append(botao(
+      "Salvar status",
+      async () => {
+        await apiGerenciar("pedido_status", {
+          id: pedido.id,
+          status_entrega: select.value
+        });
+
+        mensagem("Status atualizado.");
+        await abrirPagina("pedidos");
+      }
+    ));
+
+    const observacoes = campo(
+      "Observações internas",
+      pedido.observacoes,
+      "textarea"
+    );
+
+    c.append(observacoes.div);
+
+    c.append(botao(
+      "Salvar observação",
+      async () => {
+        await apiGerenciar("pedido_nota", {
+          id: pedido.id,
+          nota: observacoes.input.value
+        });
+        mensagem("Observação salva.");
+      },
+      "botao branco"
+    ));
+
+    area.append(c);
+  }
+}
+
+function montarNovoPedido(area) {
+  const c = cartao("➕ Novo pedido manual");
+  c.classList.add("destaque");
+
+  c.append(criar("p",
+    "Use para vendas realizadas fora do checkout. " +
+    "O pagamento será registrado como pendente."
+  ));
+
+  const form = document.createElement("form");
+
+  const campos = {
+    nome: campo("Nome do cliente", ""),
+    email: campo("E-mail", "", "email"),
+    telefone: campo("WhatsApp", ""),
+    descricao: campo("Produto / coleção", ""),
+    quantidade: campo("Quantidade", 1, "number"),
+    valor: campo("Valor total (R$)", "", "number")
+  };
+
+  for (const [nome, item] of Object.entries(campos)) {
+    if (["nome", "email", "descricao", "quantidade", "valor"]
+        .includes(nome)) {
+      item.input.required = true;
+    }
+    form.append(item.div);
+  }
+
+  const entrega = document.createElement("select");
+
+  for (const [valor, nome] of [
+    ["retirada", "Retirada"],
+    ["transportadora", "Transportadora"]
+  ]) {
+    const option = document.createElement("option");
+    option.value = valor;
+    option.textContent = nome;
+    entrega.append(option);
+  }
+
+  form.append(criar("label", "Forma de entrega"), entrega);
+
+  const salvar = criar(
+    "button",
+    "Cadastrar pedido",
+    "botao"
+  );
+  salvar.type = "submit";
+  form.append(salvar);
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    salvar.disabled = true;
+
+    try {
+      await apiGerenciar("pedido_manual", {
+        cliente: {
+          nome: campos.nome.input.value,
+          email: campos.email.input.value,
+          telefone: campos.telefone.input.value
+        },
+        pedido: {
+          descricao: campos.descricao.input.value,
+          quantidade: Number(campos.quantidade.input.value),
+          valor_total: Number(campos.valor.input.value),
+          forma_entrega: entrega.value
+        }
+      });
+
+      mensagem("Pedido manual cadastrado.");
+      await abrirPagina("pedidos");
+
+    } catch (erro) {
+      mensagem("Erro ao cadastrar: " + erro.message);
+    } finally {
+      salvar.disabled = false;
+    }
+  });
+
+  c.append(form);
+  area.append(c);
+}
+
+function montarProdutos(area) {
+  const cadastro = cartao("🛍️ Cadastrar produto");
+  cadastro.classList.add("destaque");
+
+  const form = document.createElement("form");
+
+  const campos = {
+    nome: campo("Nome do produto", ""),
+    colecao: campo("Coleção", ""),
+    preco: campo("Preço (R$)", "", "number"),
+    descricao: campo("Descrição", "", "textarea"),
+    imagem_url: campo("Link HTTPS da imagem", "", "url")
+  };
+
+  for (const item of Object.values(campos)) {
+    form.append(item.div);
+  }
+
+  campos.nome.input.required = true;
+  campos.preco.input.required = true;
+
+  const disponivel = document.createElement("input");
+  disponivel.type = "checkbox";
+  disponivel.checked = true;
+
+  const destaque = document.createElement("input");
+  destaque.type = "checkbox";
+
+  const linhaDisponivel = criar("label", undefined, "linha-check");
+  linhaDisponivel.append(
+    disponivel,
+    document.createTextNode("Produto disponível")
+  );
+
+  const linhaDestaque = criar("label", undefined, "linha-check");
+  linhaDestaque.append(
+    destaque,
+    document.createTextNode("Produto em destaque")
+  );
+
+  form.append(linhaDisponivel, linhaDestaque);
+
+  const salvar = criar("button", "Cadastrar produto", "botao");
+  salvar.type = "submit";
+  form.append(salvar);
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    salvar.disabled = true;
+
+    try {
+      const resposta = await fetch(
+        "/api/admin-salvar-produto",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            nome: campos.nome.input.value.trim(),
+            colecao: campos.colecao.input.value.trim(),
+            preco: Number(campos.preco.input.value),
+            descricao: campos.descricao.input.value.trim(),
+            imagem_url: campos.imagem_url.input.value.trim(),
+            disponivel: disponivel.checked,
+            destaque: destaque.checked
+          })
+        }
+      );
+
+      await respostaJSON(resposta);
+      mensagem("Produto cadastrado.");
+      await abrirPagina("produtos");
+
+    } catch (erro) {
+      mensagem("Erro: " + erro.message);
+    } finally {
+      salvar.disabled = false;
+    }
+  });
+
+  cadastro.append(form);
+  area.append(cadastro);
+
+  const lista = cartao("Editar produtos cadastrados");
+  area.append(lista);
+
+  if (!estado.produtos.length) {
+    lista.append(criar("p", "Nenhum produto cadastrado."));
+    return;
+  }
+
+  for (const produto of estado.produtos) {
+    const item = criar("div", undefined, "item");
+    item.append(criar("strong", produto.nome));
+
+    const camposEdicao = {
+      nome: campo("Nome", produto.nome),
+      colecao: campo("Coleção", produto.colecao),
+      preco: campo("Preço", produto.preco, "number"),
+      descricao: campo(
+        "Descrição", produto.descricao, "textarea"
+      ),
+      imagem_url: campo(
+        "Link da imagem", produto.imagem_url, "url"
+      )
     };
 
-    const carregando =
-      document.getElementById("carregando");
-    const loginArea =
-      document.getElementById("login-area");
-    const painel =
-      document.getElementById("painel");
-    const aviso =
-      document.getElementById("aviso");
-
-    function mostrarLogin() {
-      carregando.classList.add("escondido");
-      painel.classList.add("escondido");
-      loginArea.classList.remove("escondido");
+    for (const campoEdicao of Object.values(camposEdicao)) {
+      item.append(campoEdicao.div);
     }
 
-    function mostrarPainel() {
-      carregando.classList.add("escondido");
-      loginArea.classList.add("escondido");
-      painel.classList.remove("escondido");
-      abrirPagina("dashboard");
-    }
+    const disponivel = document.createElement("input");
+    disponivel.type = "checkbox";
+    disponivel.checked = !!produto.disponivel;
 
-    function abrirPagina(nome) {
-      const pagina = telas[nome];
+    const destaque = document.createElement("input");
+    destaque.type = "checkbox";
+    destaque.checked = !!produto.destaque;
 
-      if (!pagina) return;
+    const ld = criar("label", undefined, "linha-check");
+    ld.append(disponivel, " Disponível");
 
-      document.getElementById(
-        "titulo-pagina"
-      ).textContent = pagina.titulo;
+    const ldt = criar("label", undefined, "linha-check");
+    ldt.append(destaque, " Destaque");
 
-      document.getElementById(
-        "conteudo-pagina"
-      ).innerHTML = pagina.html;
+    item.append(ld, ldt);
 
-      document.querySelectorAll(
-        ".menu button"
-      ).forEach(botao => {
-        botao.classList.toggle(
-          "ativo",
-          botao.dataset.pagina === nome
-        );
-      });
-      if (nome === "produtos") carregarProdutos();
-      if (nome === "pedidos") carregarPedidos();
-    }
-
-    async function carregarPedidos() {
-      const lista = document.getElementById("lista-pedidos");
-      if (!lista) return;
-      lista.textContent = "Carregando pedidos...";
-      try {
-        const resposta = await fetch("/api/admin-pedidos", {
-          credentials: "same-origin", cache: "no-store"
+    item.append(botao(
+      "Salvar alterações",
+      async () => {
+        await apiGerenciar("produto", {
+          produto: {
+            id: produto.id,
+            nome: camposEdicao.nome.input.value,
+            colecao: camposEdicao.colecao.input.value,
+            preco: Number(camposEdicao.preco.input.value),
+            descricao: camposEdicao.descricao.input.value,
+            imagem_url: camposEdicao.imagem_url.input.value,
+            disponivel: disponivel.checked,
+            destaque: destaque.checked
+          }
         });
-        const dados = await resposta.json();
-        if (!resposta.ok) throw new Error(dados.error || dados.erro || "Erro ao consultar pedidos.");
-        if (document.getElementById("lista-pedidos") !== lista) return;
-        if (!Array.isArray(dados.pedidos)) throw new Error("Resposta inválida do CRM.");
-        lista.replaceChildren();
-        if (dados.pedidos.length === 0) {
-          lista.textContent = "Nenhum pedido cadastrado ainda. As compras antigas não foram importadas.";
-          return;
-        }
 
-        const dinheiro = valor => {
-          const numero = Number(valor);
-          return Number.isFinite(numero)
-            ? numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-            : "Valor indisponível";
-        };
-        const texto = (valor, alternativo = "Não informado") =>
-          valor === null || valor === undefined || String(valor).trim() === ""
-            ? alternativo : String(valor);
-        const linha = (rotulo, valor) => {
-          const p = document.createElement("p");
-          p.style.margin = "7px 0";
-          p.style.overflowWrap = "anywhere";
-          const strong = document.createElement("strong");
-          strong.textContent = rotulo + ": ";
-          strong.style.display = "inline";
-          p.append(strong, document.createTextNode(texto(valor)));
-          return p;
-        };
-
-        for (const pedido of dados.pedidos) {
-          const item = document.createElement("article");
-          item.className = "card secao";
-          item.style.boxShadow = "none";
-          item.style.background = "#fff";
-          item.style.marginTop = "16px";
-
-          const titulo = document.createElement("h2");
-          const codigo = pedido.numero_pedido || String(pedido.id || "").slice(0, 8);
-          titulo.textContent = "📦 Pedido " + codigo;
-          titulo.style.overflowWrap = "anywhere";
-          item.append(titulo);
-
-          const data = pedido.criado_em
-            ? new Date(pedido.criado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
-            : "Sem data";
-          item.append(linha("Data", data));
-          item.append(linha("Valor total", dinheiro(pedido.valor_total)));
-          item.append(linha("Pagamento", pedido.status_pagamento));
-          item.append(linha("Status da entrega", pedido.status_entrega));
-          item.append(linha("Forma de entrega", pedido.forma_entrega === "retirada"
-            ? "Retirada" : pedido.forma_entrega === "transportadora"
-              ? "Transportadora" : pedido.forma_entrega));
-
-          const clienteTitulo = document.createElement("h3");
-          clienteTitulo.textContent = "👤 Dados do cliente";
-          clienteTitulo.style.margin = "20px 0 10px";
-          item.append(clienteTitulo);
-          const cliente = pedido.clientes && !Array.isArray(pedido.clientes)
-            ? pedido.clientes : Array.isArray(pedido.clientes) ? pedido.clientes[0] : null;
-          item.append(linha("Nome", cliente?.nome));
-          item.append(linha("WhatsApp", cliente?.telefone));
-          item.append(linha("E-mail", cliente?.email));
-
-          const produtosTitulo = document.createElement("h3");
-          produtosTitulo.textContent = "🛍️ Produtos";
-          produtosTitulo.style.margin = "20px 0 10px";
-          item.append(produtosTitulo);
-          if (Array.isArray(pedido.itens) && pedido.itens.length) {
-            for (const produto of pedido.itens) {
-              const nome = produto.descricao || produto.description || produto.nome || "Produto";
-              const quantidade = produto.quantidade ?? produto.quantity ?? produto.qty ?? 1;
-              const preco = produto.preco_unitario;
-              item.append(linha("Item", `${nome} — ${quantidade} unidade(s)` +
-                (preco === null || preco === undefined ? "" : ` · ${dinheiro(preco)} cada`)));
-            }
-          } else {
-            item.append(linha("Itens", "Não informados"));
-          }
-
-          if (pedido.forma_entrega === "transportadora") {
-            item.append(linha("Transportadora", pedido.transportadora));
-            item.append(linha("Frete", dinheiro(pedido.frete_valor ?? 0)));
-            const endereco = pedido.endereco_entrega;
-            if (endereco && typeof endereco === "object") {
-              const enderecoTexto = [
-                endereco.street, endereco.number, endereco.complement,
-                endereco.neighborhood, endereco.city, endereco.state,
-                endereco.cep
-              ].filter(Boolean).join(", ");
-              item.append(linha("Endereço", enderecoTexto));
-            }
-          }
-          lista.append(item);
-        }
-      } catch (erro) {
-        if (document.getElementById("lista-pedidos") === lista) {
-          lista.textContent = erro.message || "Não foi possível carregar pedidos.";
-        }
+        mensagem("Produto atualizado.");
+        await abrirPagina("produtos");
       }
-    }
+    ));
 
-    document.getElementById("conteudo-pagina").addEventListener("click", event => {
-      if (event.target.id === "atualizar-pedidos") carregarPedidos();
+    lista.append(item);
+  }
+}
+
+function montarClientes(area) {
+  const c = cartao("👥 Clientes cadastrados");
+  area.append(c);
+
+  if (!estado.clientes.length) {
+    c.append(criar("p", "Nenhum cliente cadastrado."));
+    return;
+  }
+
+  for (const cliente of estado.clientes) {
+    const item = criar("div", undefined, "item");
+
+    item.append(
+      criar("strong", cliente.nome),
+      linha("E-mail", cliente.email),
+      linha("WhatsApp", cliente.telefone)
+    );
+
+    c.append(item);
+  }
+}
+
+function montarRetirada(area) {
+  const c = cartao("📍 Configurações de retirada");
+  c.classList.add("destaque");
+
+  c.append(criar("p",
+    "Defina as informações de retirada. " +
+    "A aplicação dessas regras no checkout " +
+    "depende da integração com a vitrine."
+  ));
+
+  const ativa = document.createElement("input");
+  ativa.type = "checkbox";
+  ativa.checked = !!estado.config.retirada_ativa;
+
+  const labelAtiva = criar(
+    "label", undefined, "linha-check"
+  );
+  labelAtiva.append(
+    ativa,
+    " Permitir retirada"
+  );
+
+  c.append(labelAtiva);
+
+  const local = campo(
+    "Local de retirada",
+    estado.config.retirada_local
+  );
+
+  const horarios = campo(
+    "Horários de retirada",
+    estado.config.retirada_horarios,
+    "textarea"
+  );
+
+  const instrucoes = campo(
+    "Instruções para o cliente",
+    estado.config.retirada_instrucoes,
+    "textarea"
+  );
+
+  c.append(
+    local.div,
+    horarios.div,
+    instrucoes.div
+  );
+
+  c.append(botao(
+    "Salvar retirada",
+    async () => {
+      await salvarConfig({
+        retirada_ativa: ativa.checked,
+        retirada_local: local.input.value,
+        retirada_horarios: horarios.input.value,
+        retirada_instrucoes: instrucoes.input.value
+      });
+    }
+  ));
+
+  area.append(c);
+}
+
+function montarConfiguracoes(area) {
+  const c = cartao("⚙️ Informações da loja");
+  c.classList.add("destaque");
+
+  const aviso = campo(
+    "Aviso da loja",
+    estado.config.loja_aviso,
+    "textarea"
+  );
+
+  const whatsapp = campo(
+    "WhatsApp da Mimbox",
+    estado.config.whatsapp
+  );
+
+  const instagram = campo(
+    "Instagram",
+    estado.config.instagram
+  );
+
+  c.append(
+    aviso.div,
+    whatsapp.div,
+    instagram.div
+  );
+
+  c.append(botao(
+    "Salvar informações",
+    async () => {
+      await salvarConfig({
+        loja_aviso: aviso.input.value,
+        whatsapp: whatsapp.input.value,
+        instagram: instagram.input.value
+      });
+    }
+  ));
+
+  area.append(c);
+}
+
+async function salvarConfig(alteracoes) {
+  const config = {
+    ...estado.config,
+    ...alteracoes
+  };
+
+  const resposta = await apiGerenciar(
+    "config",
+    { config }
+  );
+
+  estado.config = resposta.config || config;
+  mensagem("Configurações salvas no Supabase.");
+}
+
+async function verificarSessao() {
+  try {
+    const resposta = await fetch(
+      "/api/admin-session",
+      {
+        credentials: "same-origin",
+        cache: "no-store"
+      }
+    );
+
+    const dados = await resposta.json();
+
+    if (resposta.ok && dados.autenticado === true) {
+      mostrarPainel();
+    } else {
+      mostrarLogin();
+    }
+  } catch {
+    mostrarLogin();
+  }
+}
+
+$("login").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const entrar = $("entrar");
+  entrar.disabled = true;
+  entrar.textContent = "Verificando...";
+
+  $("aviso-login").textContent = "Verificando acesso...";
+
+  try {
+    const resposta = await fetch(
+      "/api/admin-login",
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: $("email").value.trim(),
+          senha: $("senha").value
+        })
+      }
+    );
+
+    await respostaJSON(resposta);
+
+    $("senha").value = "";
+    await verificarSessao();
+
+  } catch (erro) {
+    $("aviso-login").textContent = erro.message;
+  } finally {
+    entrar.disabled = false;
+    entrar.textContent = "Entrar no painel";
+  }
+});
+
+$("sair").addEventListener("click", async () => {
+  const b = $("sair");
+  b.disabled = true;
+
+  try {
+    const resposta = await fetch(
+      "/api/admin-logout",
+      {
+        method: "POST",
+        credentials: "same-origin"
+      }
+    );
+
+    await respostaJSON(resposta);
+    mostrarLogin();
+
+  } catch (erro) {
+    mensagem("Erro ao sair: " + erro.message);
+  } finally {
+    b.disabled = false;
+  }
+});
+
+document.querySelectorAll(".menu button")
+  .forEach(b => {
+    b.addEventListener("click", () => {
+      abrirPagina(b.dataset.pagina);
     });
+  });
 
-    async function carregarProdutos() {
-      const lista = document.getElementById("lista-produtos");
-      if (!lista) return;
-      lista.textContent = "Carregando produtos...";
-      try {
-        const resposta = await fetch("/api/admin-produtos", {
-          credentials: "same-origin", cache: "no-store"
-        });
-        const dados = await resposta.json();
-        if (!resposta.ok) throw new Error(dados.erro || "Falha ao consultar produtos");
-        if (!document.getElementById("lista-produtos")) return;
-        lista.replaceChildren();
-        if (!Array.isArray(dados.produtos) || dados.produtos.length === 0) {
-          lista.textContent = "Nenhum produto cadastrado ainda.";
-          return;
-        }
-        for (const produto of dados.produtos) {
-          const item = document.createElement("div");
-          item.className = "produto-item";
-          const nome = document.createElement("strong");
-          nome.textContent = produto.nome || "Sem nome";
-          const detalhes = document.createElement("small");
-          const preco = Number(produto.preco);
-          detalhes.textContent = `${produto.colecao || "Sem coleção"} · ${Number.isFinite(preco) ? preco.toLocaleString("pt-BR", {style:"currency",currency:"BRL"}) : "Preço indisponível"} · ${produto.disponivel ? "Disponível" : "Indisponível"}`;
-          item.append(nome, detalhes);
-          lista.append(item);
-        }
-      } catch (erro) {
-        lista.textContent = erro.message || "Erro ao carregar produtos.";
-      }
-    }
-
-    document.getElementById("conteudo-pagina")
-      .addEventListener("submit", async event => {
-        if (event.target.id !== "form-produto") return;
-        event.preventDefault();
-        const botao = document.getElementById("salvar-produto");
-        const mensagem = document.getElementById("mensagem-produto");
-        const form = event.target;
-        const precoTexto = document.getElementById("produto-preco").value;
-        const preco = Number(precoTexto);
-        if (!precoTexto || !Number.isFinite(preco)) {
-          mensagem.textContent = "Informe um preço válido.";
-          return;
-        }
-        botao.disabled = true;
-        mensagem.textContent = "Salvando produto...";
-        try {
-          const resposta = await fetch("/api/admin-salvar-produto", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-              nome: document.getElementById("produto-nome").value.trim(),
-              colecao: document.getElementById("produto-colecao").value.trim(),
-              preco,
-              descricao: document.getElementById("produto-descricao").value.trim(),
-              imagem_url: document.getElementById("produto-imagem").value.trim(),
-              disponivel: document.getElementById("produto-disponivel").checked,
-              destaque: document.getElementById("produto-destaque").checked
-            })
-          });
-          const dados = await resposta.json();
-          if (!resposta.ok) throw new Error(dados.erro || "Erro ao salvar produto");
-          form.reset();
-          mensagem.textContent = "Produto cadastrado com sucesso!";
-          await carregarProdutos();
-        } catch (erro) {
-          mensagem.textContent = erro.message || "Não foi possível salvar.";
-        } finally {
-          if (document.getElementById("salvar-produto") === botao) botao.disabled = false;
-        }
-      });
-
-    async function verificarSessao() {
-      try {
-        const resposta = await fetch(
-          "/api/admin-session",
-          {
-            credentials: "same-origin",
-            cache: "no-store"
-          }
-        );
-
-        const dados = await resposta.json();
-
-        if (resposta.ok && dados.autenticado === true) {
-          mostrarPainel();
-        } else {
-          mostrarLogin();
-        }
-      } catch {
-        mostrarLogin();
-      }
-    }
-
-    document.querySelectorAll(
-      ".menu button"
-    ).forEach(botao => {
-      botao.addEventListener("click", () => {
-        abrirPagina(botao.dataset.pagina);
-      });
-    });
-
-    document.getElementById("login")
-      .addEventListener("submit", async event => {
-        event.preventDefault();
-
-        const botao =
-          document.getElementById("entrar");
-
-        botao.disabled = true;
-        botao.textContent = "Verificando...";
-        aviso.textContent = "Verificando seu acesso...";
-
-        try {
-          const resposta = await fetch(
-            "/api/admin-login",
-            {
-              method: "POST",
-              credentials: "same-origin",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                email: document.getElementById(
-                  "email"
-                ).value.trim(),
-                senha: document.getElementById(
-                  "senha"
-                ).value
-              })
-            }
-          );
-
-          const dados = await resposta.json();
-
-          if (!resposta.ok) {
-            throw new Error(
-              dados.erro || "Falha no login"
-            );
-          }
-
-          document.getElementById(
-            "senha"
-          ).value = "";
-
-          await verificarSessao();
-
-        } catch (erro) {
-          aviso.textContent = erro.message;
-        } finally {
-          botao.disabled = false;
-          botao.textContent = "Entrar no painel";
-        }
-      });
-
-    document.getElementById("sair")
-      .addEventListener("click", async () => {
-        const botao = document.getElementById("sair");
-        botao.disabled = true;
-
-        try {
-          const resposta = await fetch(
-            "/api/admin-logout",
-            {
-              method: "POST",
-              credentials: "same-origin"
-            }
-          );
-
-          if (!resposta.ok) {
-            throw new Error("Não foi possível sair.");
-          }
-
-          mostrarLogin();
-          aviso.textContent = "Sessão encerrada.";
-
-        } catch {
-          alert(
-            "Não foi possível encerrar a sessão. Tente novamente."
-          );
-        } finally {
-          botao.disabled = false;
-        }
-      });
-
-    verificarSessao();
-  </script>
+verificarSessao();
+</script>
 </body>
 </html>
