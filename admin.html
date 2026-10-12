@@ -436,13 +436,11 @@
       pedidos: {
         titulo: "Pedidos",
         html: `
-          <div class="card">
-            <h2>📦 Gestão de pedidos</h2>
-            <p>
-              Vendas do site, Instagram, WhatsApp
-              e pedidos cadastrados manualmente.
-            </p>
-            <span class="etiqueta">Em construção</span>
+          <div class="card destaque">
+            <h2>📦 Pedidos da Mimbox</h2>
+            <p>Pedidos registrados no CRM. Os pagamentos ainda precisam ser integrados à InfinitePay.</p>
+            <button class="botao" id="atualizar-pedidos" type="button">Atualizar pedidos</button>
+            <div id="lista-pedidos" class="secao" aria-live="polite">Carregando pedidos...</div>
           </div>
         `
       },
@@ -549,7 +547,60 @@
         );
       });
       if (nome === "produtos") carregarProdutos();
+      if (nome === "pedidos") carregarPedidos();
     }
+
+    async function carregarPedidos() {
+      const lista = document.getElementById("lista-pedidos");
+      if (!lista) return;
+      lista.textContent = "Carregando pedidos...";
+      try {
+        const resposta = await fetch("/api/admin-pedidos", {
+          credentials: "same-origin", cache: "no-store"
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok) throw new Error(dados.error || dados.erro || "Erro ao consultar pedidos.");
+        if (document.getElementById("lista-pedidos") !== lista) return;
+        lista.replaceChildren();
+        if (!Array.isArray(dados.pedidos)) throw new Error("Resposta inválida do CRM.");
+        if (dados.pedidos.length === 0) {
+          lista.textContent = "Nenhum pedido cadastrado ainda. As compras antigas não foram importadas.";
+          return;
+        }
+        const dinheiro = valor => {
+          const numero = Number(valor);
+          return Number.isFinite(numero)
+            ? numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+            : "Valor indisponível";
+        };
+        for (const pedido of dados.pedidos) {
+          const item = document.createElement("div");
+          item.className = "produto-item";
+          const titulo = document.createElement("strong");
+          titulo.textContent = "Pedido " + (pedido.numero_pedido || String(pedido.id || "").slice(0, 8));
+          const detalhes = document.createElement("small");
+          const entrega = pedido.forma_entrega === "retirada" ? "Retirada" :
+            pedido.forma_entrega === "transportadora" ? "Transportadora" : (pedido.forma_entrega || "Entrega não informada");
+          const data = pedido.criado_em ? new Date(pedido.criado_em).toLocaleDateString("pt-BR") : "Sem data";
+          detalhes.textContent = `${data} · ${dinheiro(pedido.valor_total)} · Pagamento: ${pedido.status_pagamento || "Não informado"} · ${entrega} · Entrega: ${pedido.status_entrega || "Não informado"}`;
+          item.append(titulo, detalhes);
+          if (Array.isArray(pedido.itens) && pedido.itens.length) {
+            const produtos = document.createElement("p");
+            produtos.textContent = pedido.itens.map(p => `${p.description || p.nome || "Produto"} (${p.quantity || p.qty || 1})`).join(" · ");
+            item.append(produtos);
+          }
+          lista.append(item);
+        }
+      } catch (erro) {
+        if (document.getElementById("lista-pedidos") === lista) {
+          lista.textContent = erro.message || "Não foi possível carregar pedidos.";
+        }
+      }
+    }
+
+    document.getElementById("conteudo-pagina").addEventListener("click", event => {
+      if (event.target.id === "atualizar-pedidos") carregarPedidos();
+    });
 
     async function carregarProdutos() {
       const lista = document.getElementById("lista-produtos");
