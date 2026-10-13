@@ -241,6 +241,7 @@ const $ = id => document.getElementById(id);
 
 const state = {
   pedidos: [],
+  filtroPedidos: "pagos",
   produtos: [],
   estoque: [],
   envios: [],
@@ -484,7 +485,35 @@ $("navigation").onclick=event=>{
   if(b)openPage(b.dataset.page);
 };
 
+let paginaAtual = "";
+let carregamentoPedidos = false;
+
+async function atualizarPedidosAutomaticamente(){
+  if (document.hidden || !["dashboard","pedidos"].includes(paginaAtual) || carregamentoPedidos) return;
+  carregamentoPedidos = true;
+  try {
+    const data = await request("/api/admin-pedidos");
+    const novos = Array.isArray(data.pedidos) ? data.pedidos : [];
+    const assinatura = lista => JSON.stringify(lista.map(p => [p.id,p.status_pagamento,p.status_entrega,p.valor_total,p.observacoes,p.criado_em]));
+    if (assinatura(novos) !== assinatura(state.pedidos)) {
+      const antigos = new Map(state.pedidos.map(p => [p.id,p]));
+      state.pedidos = novos.map(p => ({
+        ...p,
+        observacoes: p.observacoes ?? antigos.get(p.id)?.observacoes,
+        clientes: p.clientes || antigos.get(p.id)?.clientes
+      }));
+      const area = $("content");
+      if (paginaAtual === "pedidos") { area.replaceChildren(); orders(area); }
+      if (paginaAtual === "dashboard") { area.replaceChildren(); dashboard(area); }
+    }
+  } catch (error) {
+    console.warn("Atualização automática dos pedidos:", error.message);
+  } finally { carregamentoPedidos = false; }
+}
+setInterval(atualizarPedidosAutomaticamente, 8000);
+
 async function openPage(page){
+  paginaAtual = page;
   if(!titles[page])return;
 
   $("page-title").textContent=titles[page];
@@ -535,7 +564,7 @@ async function openPage(page){
       state.pedidos=data.pedidos||[];
     }
 
-    if($("page-title").textContent!==titles[page]){
+    if(paginaAtual!==page || $("page-title").textContent!==titles[page]){
       return;
     }
 
@@ -756,33 +785,43 @@ function dashboard(area){
 // PEDIDOS DO SITE
 
 function orders(area){
-  const intro=card("Pedidos recebidos");
+  const intro=card("📦 Pedidos da Mimbox");
+  intro.append(element("p","Os pedidos pagos aparecem primeiro. A lista é verificada automaticamente a cada 8 segundos enquanto esta página estiver aberta.","muted"));
+  intro.append(action("↻ Atualizar agora",()=>openPage("pedidos")));
 
-  intro.append(action(
-    "Atualizar pedidos",
-    ()=>openPage("pedidos")
-  ));
-
+  const tabs=element("div",undefined,"row");
+  tabs.setAttribute("role","group");
+  tabs.setAttribute("aria-label","Filtrar pedidos por pagamento");
+  const grupos=[
+    ["pagos","✓ Pagos",p=>isPaid(p) && String(p.status_entrega||"").toLowerCase()!=="cancelado"],
+    ["pendentes","◷ Pagamentos pendentes",p=>["pendente","pending","aguardando","aguardando_pagamento"].includes(String(p.status_pagamento||"").toLowerCase())],
+    ["cancelados","✕ Cancelados / falhas",p=>["cancelado","cancelled","canceled","falha_checkout","falhou","failed","recusado"].includes(String(p.status_pagamento||"").toLowerCase()) || String(p.status_entrega||"").toLowerCase()==="cancelado"],
+    ["todos","☰ Todos",p=>true]
+  ];
+  for(const [id,label,predicate] of grupos){
+    const button=element("button",label+" ("+state.pedidos.filter(predicate).length+")","btn "+(state.filtroPedidos===id?"blue":"white"));
+    button.type="button";
+    button.setAttribute("aria-pressed",String(state.filtroPedidos===id));
+    button.onclick=()=>{state.filtroPedidos=id;$("content").replaceChildren();orders($("content"));};
+    tabs.append(button);
+  }
+  intro.append(tabs);
   area.append(intro);
 
-  if(!state.pedidos.length){
-    area.append(card("Nenhum pedido encontrado"));
+  const selecionado=grupos.find(g=>g[0]===state.filtroPedidos)||grupos[0];
+  const pedidosOrdenados=state.pedidos.filter(selecionado[2]).sort((a,b)=>{
+    const dataA=new Date(a.criado_em||a.created_at||0).getTime()||0;
+    const dataB=new Date(b.criado_em||b.created_at||0).getTime()||0;
+    return dataB-dataA;
+  });
+  if(!pedidosOrdenados.length){
+    const vazio=card("Nenhum pedido nesta categoria");
+    vazio.append(element("p",state.filtroPedidos==="pagos"?
+      "Assim que o pagamento for confirmado e registrado no CRM, o pedido aparecerá aqui.":
+      "Não há registros com este status no momento."));
+    area.append(vazio);
     return;
   }
-
-  const pedidosOrdenados = [...state.pedidos].sort((a, b) => {
-    const prioridade = pedido => {
-      const status = String(pedido.status_pagamento || "").toLowerCase();
-      if (["pago", "paid", "aprovado", "approved"].includes(status)) return 0;
-      if (["pendente", "pending", "aguardando", "aguardando_pagamento"].includes(status)) return 2;
-      return 1;
-    };
-    const diferenca = prioridade(a) - prioridade(b);
-    if (diferenca !== 0) return diferenca;
-    const dataA = new Date(a.criado_em || a.created_at || 0).getTime() || 0;
-    const dataB = new Date(b.criado_em || b.created_at || 0).getTime() || 0;
-    return dataB - dataA;
-  });
 
   for(const p of pedidosOrdenados){
     const c=card(
