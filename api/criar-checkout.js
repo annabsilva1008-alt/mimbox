@@ -50,6 +50,28 @@ const PACKAGE = {
   weight: 1.5
 };
 
+// Identificadores de produtos cadastrados no CRM.
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function findCrmProducts(ids) {
+  if (!ids.length) return new Map();
+
+  const unique = [...new Set(ids)];
+
+  const query =
+    `produtos?select=id,nome,preco,disponivel` +
+    `&id=in.(${unique.join(",")})`;
+
+  const rows = await supabaseRequest(query);
+
+  return new Map(
+    (Array.isArray(rows) ? rows : []).map(
+      p => [p.id.toLowerCase(), p]
+    )
+  );
+}
+
 function digits(value) {
   return String(value ?? "").replace(/\D/g, "");
 }
@@ -58,7 +80,9 @@ async function quoteShipping(cep, itemCount, subtotal) {
   const token = process.env.MELHOR_ENVIO_TOKEN;
 
   if (!token) {
-    throw new Error("MELHOR_ENVIO_TOKEN não configurado.");
+    throw new Error(
+      "MELHOR_ENVIO_TOKEN não configurado."
+    );
   }
 
   const response = await fetch(
@@ -122,23 +146,29 @@ async function quoteShipping(cep, itemCount, subtotal) {
 
 // A chave secreta permanece exclusivamente no servidor.
 async function supabaseRequest(path, options = {}) {
-  const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const base = (
+    process.env.SUPABASE_URL || ""
+  ).replace(/\/$/, "");
+
   const key = process.env.SUPABASE_SECRET_KEY;
 
   if (!base || !key) {
     throw new Error("Supabase não configurado");
   }
 
-  const response = await fetch(`${base}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-      ...(options.headers || {})
+  const response = await fetch(
+    `${base}/rest/v1/${path}`,
+    {
+      ...options,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+        ...(options.headers || {})
+      }
     }
-  });
+  );
 
   const data = await response.json().catch(() => null);
 
@@ -150,7 +180,9 @@ async function supabaseRequest(path, options = {}) {
       data?.code || ""
     );
 
-    throw new Error("Falha ao registrar pedido no CRM");
+    throw new Error(
+      "Falha ao consultar ou registrar dados no CRM"
+    );
   }
 
   return data;
@@ -194,11 +226,17 @@ export default async function handler(req, res) {
       customer.phone_number || customer.phone
     );
 
-    if (phone.startsWith("55") && phone.length > 11) {
+    if (
+      phone.startsWith("55") &&
+      phone.length > 11
+    ) {
       phone = phone.slice(2);
     }
 
-    if (phone.length < 10 || phone.length > 11) {
+    if (
+      phone.length < 10 ||
+      phone.length > 11
+    ) {
       return res.status(400).json({
         error: "Informe um telefone válido."
       });
@@ -208,13 +246,19 @@ export default async function handler(req, res) {
       customer.email || ""
     ).trim().toLowerCase();
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
       return res.status(400).json({
         error: "Informe um e-mail válido."
       });
     }
 
-    if (!["shipping", "pickup"].includes(deliveryMethod)) {
+    if (
+      !["shipping", "pickup"].includes(
+        deliveryMethod
+      )
+    ) {
       return res.status(400).json({
         error: "Forma de entrega inválida."
       });
@@ -229,62 +273,132 @@ export default async function handler(req, res) {
     let subtotal = 0;
     let itemCount = 0;
 
+    // Consulta os produtos novos no Supabase.
+    // O preço enviado pelo navegador não é utilizado.
+    const crmIds = items
+      .map(item =>
+        String(item?.id || "").trim()
+      )
+      .filter(id => UUID_PATTERN.test(id));
+
+    const crmProducts = await findCrmProducts(
+      crmIds
+    );
+
     for (const item of items) {
-      if (!item || typeof item !== "object") {
+      if (
+        !item ||
+        typeof item !== "object"
+      ) {
         return res.status(400).json({
           error: "Há itens inválidos no carrinho."
         });
       }
 
-      const rawId = String(item.id || "").trim();
-
-      const id = Object.prototype.hasOwnProperty.call(
-        PRODUCTS,
-        rawId
-      )
-        ? rawId
-        : PRODUCT_ALIASES[rawId];
+      const rawId = String(
+        item.id || ""
+      ).trim();
 
       const quantity = Number(
         item.qty ?? item.quantity ?? 1
       );
 
       if (
-        !id ||
         !Number.isInteger(quantity) ||
         quantity < 1 ||
         quantity > 20
       ) {
         return res.status(400).json({
-          error: "Há produtos ou quantidades inválidos no carrinho."
+          error:
+            "Há produtos ou quantidades inválidos no carrinho."
         });
       }
 
-      subtotal += PRODUCTS[id].price * quantity;
+      let product;
+      let id;
+
+      // Produto cadastrado pelo CRM.
+      if (UUID_PATTERN.test(rawId)) {
+        const crm = crmProducts.get(
+          rawId.toLowerCase()
+        );
+
+        const value = Number(crm?.preco);
+        const cents = Math.round(value * 100);
+
+        if (
+          !crm ||
+          crm.disponivel !== true ||
+          !Number.isFinite(value) ||
+          value <= 0 ||
+          !Number.isSafeInteger(cents) ||
+          cents < 1 ||
+          !String(crm.nome || "").trim()
+        ) {
+          return res.status(400).json({
+            error:
+              "Produto indisponível ou preço inválido. Atualize o carrinho."
+          });
+        }
+
+        id = crm.id;
+
+        product = {
+          price: cents,
+          description: String(
+            crm.nome
+          ).trim().slice(0, 120)
+        };
+
+      } else {
+        // Produtos antigos e planos do Clube.
+        id = Object.prototype.hasOwnProperty.call(
+          PRODUCTS,
+          rawId
+        )
+          ? rawId
+          : PRODUCT_ALIASES[rawId];
+
+        product = id
+          ? PRODUCTS[id]
+          : null;
+
+        if (!product) {
+          return res.status(400).json({
+            error:
+              "Há produtos ou quantidades inválidos no carrinho."
+          });
+        }
+      }
+
+      subtotal += product.price * quantity;
       itemCount += quantity;
 
       checkoutItems.push({
         quantity,
-        price: PRODUCTS[id].price,
-        description: PRODUCTS[id].description
+        price: product.price,
+        description: product.description
       });
 
       orderItems.push({
         id,
         quantidade: quantity,
-        preco_unitario: PRODUCTS[id].price / 100,
-        descricao: PRODUCTS[id].description
+        preco_unitario: product.price / 100,
+        descricao: product.description
       });
     }
 
+    // Cálculo de frete.
     if (deliveryMethod === "shipping") {
       const cep = digits(
-        address?.cep || address?.postal_code
+        address?.cep ||
+        address?.postal_code
       );
 
       if (!/^\d{8}$/.test(cep)) {
         return res.status(400).json({
-          error: "Informe um CEP válido para entrega."
+          error:
+            "Informe um CEP válido para entrega."
         });
       }
 
@@ -295,9 +409,14 @@ export default async function handler(req, res) {
         "city",
         "state"
       ]) {
-        if (!String(address?.[field] || "").trim()) {
+        if (
+          !String(
+            address?.[field] || ""
+          ).trim()
+        ) {
           return res.status(400).json({
-            error: "Complete o endereço de entrega."
+            error:
+              "Complete o endereço de entrega."
           });
         }
       }
@@ -308,7 +427,8 @@ export default async function handler(req, res) {
         String(shippingServiceId).trim() === ""
       ) {
         return res.status(400).json({
-          error: "Selecione uma transportadora antes de pagar."
+          error:
+            "Selecione uma transportadora antes de pagar."
         });
       }
 
@@ -320,12 +440,14 @@ export default async function handler(req, res) {
 
       const chosen = quotes.find(
         option =>
-          String(option.id) === String(shippingServiceId)
+          String(option.id) ===
+          String(shippingServiceId)
       );
 
       if (!chosen) {
         return res.status(400).json({
-          error: "A transportadora escolhida não está disponível. Recalcule o frete."
+          error:
+            "A transportadora escolhida não está disponível. Recalcule o frete."
         });
       }
 
@@ -337,22 +459,37 @@ export default async function handler(req, res) {
 
       shippingAddress = {
         cep,
-        street: String(address.street).trim(),
-        number: String(address.number).trim(),
-        neighborhood: String(address.neighborhood).trim(),
-        city: String(address.city).trim(),
-        state: String(address.state).trim(),
-        complement: String(address.complement || "").trim()
+        street: String(
+          address.street
+        ).trim(),
+        number: String(
+          address.number
+        ).trim(),
+        neighborhood: String(
+          address.neighborhood
+        ).trim(),
+        city: String(
+          address.city
+        ).trim(),
+        state: String(
+          address.state
+        ).trim(),
+        complement: String(
+          address.complement || ""
+        ).trim()
       };
 
       const quotedPrice = Number(
-        chosen.custom_price ?? chosen.price
+        chosen.custom_price ??
+        chosen.price
       );
 
       shippingCents =
         subtotal > FREE_SHIPPING_THRESHOLD
           ? 0
-          : Math.round(quotedPrice * 100);
+          : Math.round(
+              quotedPrice * 100
+            );
 
       if (shippingCents > 0) {
         checkoutItems.push({
@@ -360,23 +497,30 @@ export default async function handler(req, res) {
           price: shippingCents,
           description:
             `Frete — ${
-              String(chosen.company?.name || "")
+              String(
+                chosen.company?.name || ""
+              )
             } ${
-              String(chosen.name || "")
+              String(
+                chosen.name || ""
+              )
             }`.trim().slice(0, 120)
         });
       }
     }
 
-    const orderNsu = `mimbox-${crypto.randomUUID()}`;
+    // Identificador único do pedido.
+    const orderNsu =
+      `mimbox-${crypto.randomUUID()}`;
 
     const isClub = orderItems.some(
-      item => item.id.startsWith("clube-")
+      item =>
+        item.id.startsWith("clube-")
     );
 
     let orderSaved = false;
 
-    // Registra o cliente e o pedido pendente antes do pagamento.
+    // Registra cliente e pedido pendente no CRM.
     try {
       const customers = await supabaseRequest(
         "clientes?select=id",
@@ -390,10 +534,13 @@ export default async function handler(req, res) {
         }
       );
 
-      const customerId = customers?.[0]?.id;
+      const customerId =
+        customers?.[0]?.id;
 
       if (!customerId) {
-        throw new Error("Cliente não registrado");
+        throw new Error(
+          "Cliente não registrado"
+        );
       }
 
       await supabaseRequest(
@@ -404,8 +551,11 @@ export default async function handler(req, res) {
             cliente_id: customerId,
             numero_pedido: orderNsu,
             origem: "site",
-            tipo: isClub ? "clube" : "avulso",
-            valor_total: (subtotal + shippingCents) / 100,
+            tipo: isClub
+              ? "clube"
+              : "avulso",
+            valor_total:
+              (subtotal + shippingCents) / 100,
             status_pagamento: "pendente",
             status_entrega: "aguardando",
             forma_entrega:
@@ -413,14 +563,18 @@ export default async function handler(req, res) {
                 ? "retirada"
                 : "transportadora",
             itens: orderItems,
-            endereco_entrega: shippingAddress,
-            frete_valor: shippingCents / 100,
-            transportadora: shippingLabel
+            endereco_entrega:
+              shippingAddress,
+            frete_valor:
+              shippingCents / 100,
+            transportadora:
+              shippingLabel
           })
         }
       );
 
       orderSaved = true;
+
     } catch (dbError) {
       console.error(
         "Falha ao salvar pedido:",
@@ -433,6 +587,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // Cria o pagamento na InfinitePay.
     const payload = {
       handle: "mimbox",
       order_nsu: orderNsu,
@@ -453,13 +608,16 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type":
+            "application/json"
         },
         body: JSON.stringify(payload)
       }
     );
 
-    const data = await response.json().catch(() => ({}));
+    const data = await response
+      .json()
+      .catch(() => ({}));
 
     const checkoutUrl =
       data.url ||
@@ -482,15 +640,19 @@ export default async function handler(req, res) {
         try {
           await supabaseRequest(
             `pedidos?numero_pedido=eq.${
-              encodeURIComponent(orderNsu)
+              encodeURIComponent(
+                orderNsu
+              )
             }`,
             {
               method: "PATCH",
               body: JSON.stringify({
-                status_pagamento: "falha_checkout"
+                status_pagamento:
+                  "falha_checkout"
               })
             }
           );
+
         } catch (dbError) {
           console.error(
             "Falha ao atualizar pedido sem checkout:",
