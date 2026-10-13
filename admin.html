@@ -624,43 +624,66 @@ async function saveClubOrder(p,club,visibleNotes){
 // DASHBOARD
 
 function dashboard(area){
-  const grid=element("div",undefined,"grid");
+  const pago = p => ["pago", "paid", "aprovado", "approved"].includes(
+    String(p.status_pagamento || "").trim().toLowerCase()
+  );
+  const finalizado = p => ["entregue", "cancelado"].includes(
+    String(p.status_entrega || "").trim().toLowerCase()
+  );
+  const pendentesDeEnvio = state.pedidos.filter(p => pago(p) && !finalizado(p));
+  const grid = element("div", undefined, "grid");
 
-  const metrics=[
-    ["Pedidos registrados",state.pedidos.length],
-    ["Pagamentos pendentes",
-      state.pedidos.filter(p=>
-        p.status_pagamento==="pendente"
-      ).length],
-    ["Em preparação",
-      state.pedidos.filter(p=>
-        p.status_entrega==="em_preparacao"
-      ).length]
+  const metrics = [
+    ["Pedidos registrados", state.pedidos.length],
+    ["Pagos aguardando envio / retirada", pendentesDeEnvio.length],
+    ["Pagamentos pendentes", state.pedidos.filter(p =>
+      ["pendente", "pending", "aguardando", "aguardando_pagamento"].includes(
+        String(p.status_pagamento || "").trim().toLowerCase()
+      )
+    ).length]
   ];
 
-  for(const [name,value] of metrics){
-    const c=card(name);
-    c.append(element("div",value,"metric"));
+  for (const [name, value] of metrics) {
+    const c = card(name);
+    c.append(element("div", value, "metric"));
     grid.append(c);
   }
-
   area.append(grid);
 
-  const c=card("Operações da Mimbox");
-  c.append(element("p",
-    "Cadastre pedidos manuais, gerencie produtos, "+
-    "atualize o estoque e acompanhe envios."
-  ));
+  const attention = card("📦 Pedidos pagos aguardando envio ou retirada");
+  attention.append(element("p", "Pedidos com pagamento confirmado que ainda não foram entregues ou cancelados."));
+  attention.append(action("Ver todos os pedidos", () => openPage("pedidos")));
+  if (!pendentesDeEnvio.length) {
+    attention.append(element("p", "Nenhum pedido pago aguardando envio ou retirada no momento."));
+  } else {
+    const ordered = [...pendentesDeEnvio].sort((a,b) =>
+      (new Date(a.criado_em || a.created_at || 0).getTime() || 0) -
+      (new Date(b.criado_em || b.created_at || 0).getTime() || 0)
+    );
+    for (const p of ordered) {
+      const item = element("div", undefined, "item");
+      const customer = Array.isArray(p.clientes) ? p.clientes[0] : p.clientes;
+      item.append(element("h3", "Pedido " + (p.numero_pedido || p.id)));
+      item.append(
+        line("Cliente", customer?.nome || "Consultar pedido"),
+        line("Valor", money(p.valor_total)),
+        line("Entrega", p.forma_entrega === "retirada" ? "Retirada" : "Transportadora / entrega"),
+        line("Andamento", p.status_entrega || "Aguardando preparação")
+      );
+      item.append(action("Abrir pedidos", () => openPage("pedidos")));
+      attention.append(item);
+    }
+  }
+  area.append(attention);
 
-  for(const [page,label] of [
+  const c = card("Operações da Mimbox");
+  c.append(element("p", "Cadastre pedidos manuais, gerencie produtos, atualize o estoque e acompanhe envios."));
+  for (const [page,label] of [
     ["manual","Novo pedido"],
     ["produtos","Produtos"],
     ["estoque","Estoque"],
     ["envios","Envios"]
-  ]){
-    c.append(action(label,()=>openPage(page)));
-  }
-
+  ]) c.append(action(label, () => openPage(page)));
   area.append(c);
 }
 
