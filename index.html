@@ -698,5 +698,91 @@
   render();
 })();
 </script>
+<script>
+/* Sincronização não destrutiva: conserva as artes originais, layout e checkout. */
+(() => {
+  const normalize = value => String(value || '').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+  const money = value => new Intl.NumberFormat('pt-BR',
+    {style:'currency',currency:'BRL'}).format(value);
+  const validPrice = value => typeof value === 'number' &&
+    Number.isFinite(value) && value >= 0;
+  const isImage = value => typeof value === 'string' && /^https:\/\//i.test(value);
+  const grid = document.querySelector('.collection-grid');
+  if (!grid) return;
+  function findProduct(products, card) {
+    const btn = card.querySelector('.add-to-cart');
+    const title = card.querySelector('.product-info h3, .product-info h2');
+    const candidates = [btn?.dataset.productName, title?.textContent];
+    return products.find(p => candidates.some(name => normalize(name) === normalize(p.nome)));
+  }
+  function applyProduct(card, product) {
+    const btn = card.querySelector('.add-to-cart');
+    if (!btn) return;
+    const info = card.querySelector('.product-info');
+    const title = info?.querySelector('h3, h2');
+    const price = [...(info?.querySelectorAll('*') || [])].find(el =>
+      el.children.length === 0 && /R\$\s*[\d.,]+/.test(el.textContent));
+    if (title) title.textContent = product.nome;
+    if (price && validPrice(product.preco)) price.textContent = money(product.preco);
+    const description = info?.querySelector('p');
+    if (description && product.descricao) description.textContent = product.descricao;
+    if (isImage(product.imagem_url)) {
+      const image = card.querySelector('.product-art img');
+      if (image) { image.src = product.imagem_url; image.alt = product.nome; }
+    }
+    if (validPrice(product.preco)) btn.dataset.productPrice = product.preco.toFixed(2);
+    btn.dataset.productName = product.nome;
+    btn.disabled = product.disponivel === false;
+    btn.textContent = product.disponivel === false ? 'Indisponível' : 'Adicionar ao carrinho ↗';
+    card.dataset.crmProdutoId = product.id;
+    card.style.opacity = product.disponivel === false ? '0.65' : '';
+  }
+  function newCard(p) {
+    if (!validPrice(p.preco) || !p.nome) return;
+    const card = document.createElement('article'); card.className = 'product-card';
+    const art = document.createElement('div'); art.className = 'product-art cream';
+    if (isImage(p.imagem_url)) {
+      const img = document.createElement('img'); img.src = p.imagem_url;
+      img.alt = p.nome; img.loading = 'lazy'; art.append(img);
+    } else {
+      const name = document.createElement('strong'); name.textContent = p.nome;
+      name.style.cssText = 'padding:30px;display:block;text-align:center;font-size:24px';
+      art.append(name);
+    }
+    const info = document.createElement('div'); info.className = 'product-info';
+    const title = document.createElement('h3'); title.textContent = p.nome;
+    const price = document.createElement('div'); price.className = 'sample-price'; price.textContent = money(p.preco);
+    const desc = document.createElement('p'); desc.textContent = p.descricao || p.colecao || 'Box Mimbox';
+    const btn = document.createElement('button'); btn.type = 'button';
+    btn.className = 'small-btn add-to-cart'; btn.textContent = 'Adicionar ao carrinho ↗';
+    btn.dataset.productId = String(p.id);
+    btn.dataset.productName = p.nome;
+    btn.dataset.productPrice = p.preco.toFixed(2);
+    info.append(title,price,desc,btn); card.append(art,info);
+    card.dataset.crmProdutoId = p.id;
+    grid.append(card);
+  }
+  async function sync() {
+    try {
+      const response = await fetch('/api/produtos-publicos', {cache:'no-store'});
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!Array.isArray(data.produtos)) return;
+      const products = data.produtos.filter(p => p && typeof p.nome === 'string');
+      const matched = new Set();
+      grid.querySelectorAll('.product-card').forEach(card => {
+        const p = findProduct(products,card);
+        if (p) { matched.add(p.id); applyProduct(card,p); }
+      });
+      for (const p of products) {
+        if (!matched.has(p.id) && p.disponivel !== false) newCard(p);
+      }
+    } catch (error) { console.warn('Catálogo do CRM não pôde ser carregado',error); }
+  }
+  sync();
+})();
+</script>
 </body>
 </html>
