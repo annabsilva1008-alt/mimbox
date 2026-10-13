@@ -22,7 +22,15 @@ function lerCookie(req) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader(
+    "X-Content-Type-Options",
+    "nosniff"
+  );
+
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, max-age=0"
+  );
 
   if (req.method !== "GET") {
     return res.status(405).json({
@@ -42,20 +50,10 @@ export default async function handler(req, res) {
     });
   }
 
-  const publico =
-    req.query?.publico === "1";
-
-  if (publico) {
-    res.setHeader(
-      "Cache-Control",
-      "public, s-maxage=60, stale-while-revalidate=120"
-    );
-  } else {
-    res.setHeader("Cache-Control", "no-store");
-  }
+  const publico = req.query?.publico === "1";
 
   try {
-    // O acesso administrativo continua protegido.
+    // PROTEÇÃO DA CONSULTA ADMINISTRATIVA
     if (!publico) {
       const token = lerCookie(req);
 
@@ -71,7 +69,8 @@ export default async function handler(req, res) {
           headers: {
             apikey: secret,
             Authorization: `Bearer ${token}`
-          }
+          },
+          cache: "no-store"
         }
       );
 
@@ -83,19 +82,23 @@ export default async function handler(req, res) {
 
       const usuario = await usuarioResposta.json();
 
-      if (!usuario.id) {
+      if (!usuario?.id) {
         return res.status(401).json({
           erro: "Usuário inválido"
         });
       }
 
       const adminResposta = await fetch(
-        `${base}/rest/v1/administradores?usuario_id=eq.${encodeURIComponent(usuario.id)}&select=usuario_id`,
+        `${base}/rest/v1/administradores` +
+        `?usuario_id=eq.${encodeURIComponent(usuario.id)}` +
+        `&select=usuario_id&limit=1`,
         {
           headers: {
             apikey: secret,
+            Authorization: `Bearer ${secret}`,
             Accept: "application/json"
-          }
+          },
+          cache: "no-store"
         }
       );
 
@@ -118,15 +121,32 @@ export default async function handler(req, res) {
       }
     }
 
-    // Campos que podem ser mostrados na loja.
-    const campos =
-      "id,nome,descricao,colecao,preco," +
-      "imagem_url,disponivel,destaque,ordem";
+    // CAMPOS DO CATÁLOGO
+    // Inclui a galeria de até 8 fotos.
+    const campos = [
+      "id",
+      "nome",
+      "descricao",
+      "colecao",
+      "preco",
+      "imagem_url",
+      "imagens",
+      "disponivel",
+      "destaque",
+      "ordem"
+    ].join(",");
+
+    // A loja consulta somente produtos disponíveis.
+    // O CRM consulta todos os produtos.
+    const filtro = publico
+      ? "&disponivel=eq.true"
+      : "";
 
     const consulta =
       `${base}/rest/v1/produtos` +
       `?select=${campos}` +
-      `&order=ordem.asc,criado_em.asc` +
+      filtro +
+      `&order=ordem.asc,nome.asc` +
       `&limit=200`;
 
     const produtosResposta = await fetch(
@@ -136,14 +156,18 @@ export default async function handler(req, res) {
           apikey: secret,
           Authorization: `Bearer ${secret}`,
           Accept: "application/json"
-        }
+        },
+        cache: "no-store"
       }
     );
 
     if (!produtosResposta.ok) {
+      const detalhe = await produtosResposta.text();
+
       console.error(
         "Erro ao consultar produtos:",
-        produtosResposta.status
+        produtosResposta.status,
+        detalhe.slice(0, 500)
       );
 
       return res.status(503).json({
@@ -159,9 +183,36 @@ export default async function handler(req, res) {
       });
     }
 
+    // NORMALIZAÇÃO DAS IMAGENS
+    const catalogo = produtos.map(produto => {
+      const imagens = Array.isArray(produto.imagens)
+        ? produto.imagens.filter(
+            url =>
+              typeof url === "string" &&
+              /^https:\/\//i.test(url)
+          ).slice(0, 8)
+        : [];
+
+      const principal =
+        typeof produto.imagem_url === "string"
+          ? produto.imagem_url.trim()
+          : "";
+
+      // Produtos antigos podem ter somente imagem_url.
+      if (imagens.length === 0 && principal) {
+        imagens.push(principal);
+      }
+
+      return {
+        ...produto,
+        imagem_url: imagens[0] || principal,
+        imagens
+      };
+    });
+
     return res.status(200).json({
       sucesso: true,
-      produtos
+      produtos: catalogo
     });
 
   } catch (erro) {
