@@ -715,7 +715,7 @@ async function saveClubOrder(p,club,visibleNotes){
   const result=await operations("envio_editar",{
     id:p.id,
     envio:{
-      status_entrega:club.enviados>=club.meses?"entregue":"em_preparacao",
+      status_entrega:p.status_entrega||"aguardando",
       transportadora:p.transportadora||"",
       rastreio:p.rastreio||"",
       observacoes:clubNotes(visibleNotes??p.observacoes,club)
@@ -723,7 +723,7 @@ async function saveClubOrder(p,club,visibleNotes){
   });
   if(result.ok!==true)throw Error("Não foi possível salvar a assinatura");
   p.observacoes=clubNotes(visibleNotes??p.observacoes,club);
-  p.status_entrega=club.enviados>=club.meses?"entregue":"em_preparacao";
+  // Status geral do pedido permanece inalterado; progresso do Clube fica no histórico.
 }
 
 // HISTÓRICO DAS ENTREGAS MENSAIS DO CLUBE (dentro das observações do pedido).
@@ -845,7 +845,7 @@ function clubTracking(area){
           const updated={...c,enviados:next};
           const newHistory={...history,[String(next)]:{status:"enviado",data:sent.input.value,transportadora:carrier.input.value.trim(),rastreio:track.input.value.trim(),notas:notes.input.value.trim()}};
           const newNotes=clubShipmentNotes(clubNotes(withoutClubShipments(p.observacoes),updated),newHistory);
-          const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:next>=c.meses?"entregue":"em_preparacao",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:newNotes}});
+          const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:p.status_entrega||"aguardando",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:newNotes}});
           if(result.ok!==true)throw Error("Não foi possível confirmar o envio.");
           notify("Caixa "+next+" confirmada. Próximo vencimento atualizado.");await openPage("acompanhamento");
         }));
