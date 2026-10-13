@@ -219,7 +219,7 @@ main{
       <button data-page="produtos">🛍️ Produtos</button>
        <button data-page="clubes">🎁 Planos do Clube</button>
       <button data-page="acompanhamento">🎁 Acompanhamento Clube</button>
-      <button data-page="envios">🚚 Entregas pendentes</button>
+
       <button data-page="clientes">👥 Clientes</button>
     </nav>
   </aside>
@@ -584,7 +584,7 @@ async function openPage(page){
     if(page==="produtos")products(area);
      if(page==="clubes")clubsCatalog(area);
     if(page==="acompanhamento")clubTracking(area);
-    if(page==="envios")shipments(area);
+
     if(page==="clientes")customers(area);
 
   }catch(error){
@@ -642,7 +642,7 @@ function orderActions(area, p, page) {
   if (!needsAction(p)) return;
   if (clubInfo(p.observacoes)) {
     area.append(element("p",
-      "Assinatura Mimbox Clube: confirme cada caixa na aba Entregas pendentes.","muted"));
+      "Assinatura Mimbox Clube: acompanhe as caixas na aba Acompanhamento Clube.","muted"));
     return;
   }
   const method = p.forma_entrega === "retirada" ? "retirar" : "enviar";
@@ -739,12 +739,78 @@ function withoutClubShipments(notes){return String(notes||"").replace(/\[MIMBOX_
 function clubShipmentNotes(notes,history){
   return withoutClubShipments(notes)+(Object.keys(history).length?"\n"+CLUB_SHIP_TAG+JSON.stringify(history)+"]":"");
 }
+// Classificação explícita para pedidos manuais; inferência para pedidos do site.
+const ORDER_KIND_TAG="[MIMBOX_TIPO:";
+function orderKind(p){
+  const notes=String(p.observacoes||"");
+  const match=notes.match(/\[MIMBOX_TIPO:(clube|avulso)\]/i);
+  if(match)return {tipo:match[1].toLowerCase(),origem:"Classificação manual"};
+  if(clubInfo(notes))return {tipo:"clube",origem:"Assinatura registrada"};
+  const items=Array.isArray(p.itens)?p.itens:[];
+  const descriptions=items.map(i=>[i.nome,i.descricao,i.description,i.colecao,i.tipo,i.categoria].filter(Boolean).join(" ")).join(" ");
+  const looksLikeClub=/\b(mimbox\s*clube|clube\s*mimbox|plano\s*(?:de\s*)?(?:3|6|9)\s*meses|assinatura\s*(?:de\s*)?(?:3|6|9)\s*meses)\b/i.test(descriptions);
+  return {tipo:looksLikeClub?"clube":"avulso",origem:looksLikeClub?"Identificado pelos itens do site":"Sem identificação de Clube"};
+}
+function planMonths(p){
+ const items=Array.isArray(p.itens)?p.itens:[];
+ const txt=items.map(i=>[i.nome,i.descricao,i.description].join(" ")).join(" ");
+ const match=txt.match(/\b(3|6|9)\s*meses\b/i);
+ return match?Number(match[1]):3;
+}
+function withoutKind(notes){return String(notes||"").replace(/\[MIMBOX_TIPO:(?:clube|avulso)\]/gi,"").trim();}
+async function saveOrderKind(p,tipo){
+ const existing=withoutKind(p.observacoes);
+ const clean=tipo==="avulso"?cleanClubNotes(existing):existing;
+ const next=clean+"\n[MIMBOX_TIPO:"+tipo+"]";
+ const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:p.status_entrega||"aguardando",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:next.trim()}});
+ if(!result.ok)throw Error("Não foi possível salvar o tipo de pedido");
+ p.observacoes=next.trim();
+}
 function clubTracking(area){
   const intro=card("🎁 Acompanhamento das entregas do Mimbox Clube");
   intro.append(element("p","Controle de cada caixa mensal. As informações são salvas no pedido do assinante; nenhuma nova cobrança é gerada."));
   intro.append(action("Atualizar acompanhamento",()=>openPage("acompanhamento")));
   area.append(intro);
-  const orders=state.envios.filter(p=>clubInfo(p.observacoes));
+  const all=state.envios;
+  const classify=card("Classificação dos pedidos — Clube ou Avulso");
+  classify.append(element("p","Pedidos do site são identificados pelos itens comprados quando há informação suficiente. Você pode corrigir manualmente a classificação."));
+  const finder=field("Buscar pedido ou cliente");classify.append(finder.wrap);
+  const matches=element("div");classify.append(matches);
+  function renderClassification(){
+    matches.replaceChildren();
+    const q=finder.input.value.toLocaleLowerCase("pt-BR").trim();
+    for(const p of all.filter(p=>{
+      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
+      return [customer?.nome,p.numero_pedido].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(q));
+    }).slice(0,40)){
+      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
+      const detected=orderKind(p);
+      const row=element("details");
+      row.append(element("summary",(customer?.nome||"Cliente")+" — "+(p.numero_pedido||p.id)+" — "+(detected.tipo==="clube"?"Clube":"Avulso")));
+      row.append(line("Identificação",detected.origem));
+      const kind=selectField("Tipo de pedido",[["avulso","Avulso"],["clube","Clube"]],detected.tipo);
+      row.append(kind.wrap);
+      row.append(action("Salvar classificação",async()=>{
+        await saveOrderKind(p,kind.input.value);
+        await openPage("acompanhamento");notify("Classificação salva.");
+      }));
+      if(detected.tipo==="clube"&&!clubInfo(p.observacoes)){
+        const name=field("Nome do assinante",customer?.nome||"");
+        const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],["9","9 meses (antigo)"]],String(planMonths(p)));
+        const first=field("Data do primeiro envio",new Date().toISOString().slice(0,10),"date");
+        row.append(name.wrap,plan.wrap,first.wrap);
+        row.append(action("Ativar acompanhamento mensal",async()=>{
+          if(!name.input.value.trim()||!first.input.value)throw Error("Preencha nome e data.");
+          await saveClubOrder(p,{nome:name.input.value.trim(),meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
+          await openPage("acompanhamento");notify("Acompanhamento ativado.");
+        }));
+      }
+      matches.append(row);
+    }
+  }
+  finder.input.addEventListener("input",renderClassification);
+  renderClassification();area.append(classify);
+  const orders=state.envios.filter(p=>clubInfo(p.observacoes)&&orderKind(p).tipo==="clube");
   const ongoing=orders.filter(p=>{const c=clubInfo(p.observacoes);return c.enviados<c.meses;});
   const late=ongoing.filter(p=>clubState(clubInfo(p.observacoes)).includes("Atrasado"));
   const summary=card("Visão geral");
@@ -763,7 +829,7 @@ function clubTracking(area){
     });
     if(!filtered.length){
       const empty=card(orders.length?"Nenhum assinante encontrado":"Nenhuma assinatura vinculada");
-      empty.append(element("p",orders.length?"Tente outro nome.":"Abra Entregas pendentes e ative o acompanhamento mensal em um pedido do Clube. Depois ele aparecerá aqui."));
+      empty.append(element("p",orders.length?"Tente outro nome.":"Classifique um pedido como Clube abaixo para ativar o acompanhamento mensal."));
       list.append(empty);return;
     }
     for(const p of filtered){
@@ -1023,6 +1089,9 @@ function manual(area){
     form.append(f.wrap);
   }
 
+  const tipoPedido=selectField("Tipo de pedido",[["avulso","Avulso"],["clube","Clube"]],"avulso");
+  form.append(tipoPedido.wrap);
+
   const entrega=selectField(
     "Forma de entrega",
     [
@@ -1060,7 +1129,8 @@ function manual(area){
             fields.valor.input.value
           ),
           forma_entrega:entrega.input.value,
-          observacoes:fields.observacoes.input.value
+          observacoes:fields.observacoes.input.value,
+          tipo_pedido:tipoPedido.input.value
         }
       });
 
@@ -1228,7 +1298,7 @@ function isClubCatalogProduct(p){
 
 function clubsCatalog(area){
   const intro=card("🎁 Planos do Mimbox Clube");
-  intro.append(element("p","Planos comerciais cadastrados no catálogo. A gestão de envios dos assinantes continua na aba Entregas pendentes."));
+  intro.append(element("p","Planos comerciais cadastrados no catálogo. A gestão de envios dos assinantes fica na aba Acompanhamento Clube."));
   intro.append(element("p","Planos atuais: 3 meses — R$ 299,90; 6 meses — R$ 549,90. Confira os valores no checkout antes de liberar pagamentos.","muted"));
   area.append(intro);
   const clubProducts=state.produtos.filter(isClubCatalogProduct);
