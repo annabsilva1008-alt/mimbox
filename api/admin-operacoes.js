@@ -297,6 +297,60 @@ export default async function handler(req, res) {
       });
     }
 
+    // GALERIA DE FOTOS DO PRODUTO (ATÉ 8 IMAGENS)
+    // Requer coluna produtos.imagens (jsonb) no Supabase.
+    if (acao === "produto_galeria_salvar") {
+      const id = req.body?.id;
+      const imagens = req.body?.imagens;
+
+      if (
+        !goodId(id) ||
+        !Array.isArray(imagens) ||
+        imagens.length > 8 ||
+        imagens.some(
+          url =>
+            typeof url !== "string" ||
+            url.length > 2048 ||
+            !/^https:\/\/[^\s]+$/i.test(url)
+        )
+      ) {
+        return res.status(400).json({
+          erro: "Galeria inválida: envie até 8 URLs HTTPS."
+        });
+      }
+
+      const unicas = [
+        ...new Set(imagens.map(url => url.trim()))
+      ];
+
+      const existentes = await db(
+        "produtos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id&limit=1`
+      );
+
+      if (!existentes.length) {
+        return res.status(404).json({
+          erro: "Produto não encontrado."
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        {
+          imagens: unicas,
+          imagem_url: unicas[0] || ""
+        }
+      );
+
+      return res.json({
+        ok: rows.length > 0,
+        imagens: unicas
+      });
+    }
+
     // EDITAR PRODUTO
     if (acao === "produto_editar") {
       const id = req.body?.id;
