@@ -212,6 +212,7 @@ main{
       <button data-page="pedidos">📦 Pedidos do site</button>
       <button data-page="manual">➕ Pedido manual</button>
       <button data-page="produtos">🛍️ Produtos</button>
+       <button data-page="clubes">🎁 Planos do Clube</button>
       <button data-page="estoque">📋 Estoque</button>
       <button data-page="envios">🚚 Entregas pendentes</button>
       <button data-page="clientes">👥 Clientes</button>
@@ -253,6 +254,7 @@ const titles = {
   pedidos:"Pedidos do site",
   manual:"Cadastrar pedido manual",
   produtos:"Produtos",
+  clubes:"Planos do Mimbox Clube",
   estoque:"Estoque",
   envios:"Entregas pendentes",
   clientes:"Clientes"
@@ -544,7 +546,7 @@ async function openPage(page){
       }));
     }
 
-    if(page==="produtos"){
+    if(page==="produtos"||page==="clubes"){
       const data=await operations("produtos");
       state.produtos=data.produtos||[];
     }
@@ -574,6 +576,7 @@ async function openPage(page){
     if(page==="pedidos")orders(area);
     if(page==="manual")manual(area);
     if(page==="produtos")products(area);
+     if(page==="clubes")clubsCatalog(area);
     if(page==="estoque")stock(area);
     if(page==="envios")shipments(area);
     if(page==="clientes")customers(area);
@@ -1042,7 +1045,46 @@ async function uploadProductPhoto(photo) {
   return result.imagem_url;
 }
 
+function isClubCatalogProduct(p){
+  const text = String((p.nome||"")+" "+(p.colecao||"")).toLowerCase();
+  return /mimbox\s*clube|clube\s*mimbox|clube\s*[369]\s*mes|plano\s*[369]\s*mes/.test(text);
+}
+
+function clubsCatalog(area){
+  const intro=card("🎁 Planos do Mimbox Clube");
+  intro.append(element("p","Planos comerciais cadastrados no catálogo. A gestão de envios dos assinantes continua na aba Entregas pendentes."));
+  intro.append(element("p","Planos atuais: 3 meses — R$ 299,90; 6 meses — R$ 549,90. Confira os valores no checkout antes de liberar pagamentos.","muted"));
+  area.append(intro);
+  const clubProducts=state.produtos.filter(isClubCatalogProduct);
+  const active=clubProducts.filter(p=>/\b(3|6)\s*mes/.test(String(p.nome||"").toLowerCase()));
+  if(!clubProducts.length){
+    const empty=card("Nenhum plano encontrado no cadastro");
+    empty.append(element("p","Se o SQL de importação já foi executado, confira se os planos aparecem na tabela produtos do Supabase. Não cadastre novamente sem verificar, para evitar duplicatas."));
+    area.append(empty);
+  }else{
+    const list=card("Planos encontrados no CRM");
+    for(const p of clubProducts){
+      const item=element("div",undefined,"item");
+      item.append(line("Plano",p.nome),line("Preço",money(p.preco)),line("Visibilidade",p.disponivel?"Disponível":"Oculto"));
+      if(/9\s*mes/.test(String(p.nome||"").toLowerCase())){
+        item.append(element("p","Plano antigo: oculte-o se não quiser que apareça na loja. Não exclua pedidos de assinantes existentes.","muted"));
+      }
+      item.append(action("Editar no catálogo",()=>openPage("produtos")));
+      list.append(item);
+    }
+    area.append(list);
+  }
+  const note=card("Gerenciamento e segurança");
+  note.append(element("p","Os preços e as descrições destes registros podem ser editados na aba Produtos. A contratação e o preço efetivamente cobrado dependem também da API de checkout, que não é alterada por esta página."));
+  note.append(element("p","Galerias com várias fotos dependem de suporte da API e do banco de dados. O upload de uma foto principal continua disponível em Produtos.","muted"));
+  area.append(note);
+}
+
 function products(area){
+  const info=card("Catálogo administrável");
+  info.append(element("p","Aqui você edita as boxes e os planos do Clube registrados no Supabase. A foto principal é enviada pelo formulário abaixo."));
+  info.append(element("p","Antes de cadastrar um produto que já existe no site, procure-o na lista abaixo para evitar duplicatas.","muted"));
+  area.append(info);
   const create = card("➕ Cadastrar produto");
   const form = element("form");
   const f = {
@@ -1354,7 +1396,7 @@ function shipments(area){
       edit.append(element("summary","Editar dados da assinatura"));
       const name=field("Nome para exibição",club.nome||customer?.nome||"");
       const first=field("Data do primeiro envio",club.inicio,"date");
-      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],["9","9 meses"]],String(club.meses));
+      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],...(club.meses===9?[["9","9 meses (plano antigo)"]]:[])],String(club.meses));
       const sent=field("Caixas já enviadas",club.enviados,"number");sent.input.step="1";
       edit.append(name.wrap,first.wrap,plan.wrap,sent.wrap);
       edit.append(action("Salvar assinatura",async()=>{
@@ -1371,7 +1413,7 @@ function shipments(area){
       const setup=element("details");
       setup.append(element("summary","Cadastrar este pedido no Mimbox Clube"));
       const name=field("Nome do assinante",customer?.nome||"");
-      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],["9","9 meses"]],"9");
+      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"]],"3");
       const first=field("Data do primeiro envio","","date");
       setup.append(name.wrap,plan.wrap,first.wrap);
       setup.append(action("Ativar acompanhamento mensal",async()=>{
