@@ -725,6 +725,26 @@ function orders(area){
       ));
     }
 
+    if(String(p.numero_pedido || "").startsWith("MANUAL-")){
+      const edit=element("details");
+      edit.append(element("summary","✏️ Atualizar pedido manual"));
+      const payment=selectField("Pagamento",[
+        ["pendente","Pendente"],["pago","Pago (confirmado fora do sistema)"],
+        ["cancelado","Cancelado"]
+      ],p.status_pagamento||"pendente");
+      const progress=selectField("Andamento da entrega",statuses,p.status_entrega||"aguardando");
+      edit.append(payment.wrap,progress.wrap);
+      edit.append(element("p","Marque como pago somente após conferir o recebimento na InfinitePay.","muted"));
+      edit.append(action("Salvar status do pedido",async()=>{
+        const result=await operations("pedido_status",{
+          id:p.id,status_pagamento:payment.input.value,
+          status_entrega:progress.input.value
+        });
+        if(!result.ok)throw Error("Não foi possível atualizar o pedido");
+        await openPage("pedidos");notify("Status do pedido atualizado.");
+      }));
+      c.append(edit);
+    }
     area.append(c);
   }
 }
@@ -736,8 +756,8 @@ function manual(area){
 
   c.append(element("p",
     "O pedido será registrado com pagamento "+
-    "pendente. Confira os recebimentos "+
-    "separadamente na InfinitePay."
+    "pendente. Depois, em Pedidos do site, altere o status "+
+    "somente após conferir o recebimento na InfinitePay."
   ));
 
   const form=element("form");
@@ -1119,7 +1139,17 @@ function shipments(area){
     area.append(empty);return;
   }
 
-  const ordered=[...state.envios].sort((a,b)=>{
+  const active=state.envios.filter(p=>{
+    const club=clubInfo(p.observacoes);
+    if(club)return club.enviados<club.meses;
+    return !["entregue","cancelado"].includes(p.status_entrega);
+  });
+  if(!active.length){
+    const done=card("Nenhuma entrega pendente");
+    done.append(element("p","Todos os pedidos estão concluídos ou cancelados."));
+    area.append(done);return;
+  }
+  const ordered=[...active].sort((a,b)=>{
     const ca=clubInfo(a.observacoes),cb=clubInfo(b.observacoes);
     const score=c=>!c?3:c.enviados>=c.meses?4:clubState(c).includes("Atrasado")?0:1;
     return score(ca)-score(cb);
