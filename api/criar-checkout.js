@@ -188,7 +188,184 @@ async function supabaseRequest(path, options = {}) {
   return data;
 }
 
+// A mesma função recebe o webhook para respeitar
+// o limite de funções da Vercel.
+// A transação é conferida na InfinitePay antes
+// de marcar o pedido como pago.
+async function receivePaymentWebhook(req, res) {
+  const fail = (message, status = 400) =>
+    res.status(status).json({
+      success: false,
+      message
+    });
+
+  const body = req.body || {};
+
+  const orderNsu = String(
+    body.order_nsu || ""
+  ).trim();
+
+  const transactionNsu = String(
+    body.transaction_nsu || ""
+  ).trim();
+
+  const slug = String(
+    body.invoice_slug || body.slug || ""
+  ).trim();
+
+  if (
+    !/^mimbox-[0-9a-f-]{36}$/i.test(orderNsu) ||
+    !transactionNsu ||
+    !slug ||
+    transactionNsu.length > 200 ||
+    slug.length > 200
+  ) {
+    return fail("Dados de transação inválidos.");
+  }
+
+  try {
+    const rows = await supabaseRequest(
+      `pedidos?numero_pedido=eq.${encodeURIComponent(orderNsu)}` +
+      `&select=id,numero_pedido,valor_total,status_pagamento,observacoes&limit=1`
+    );
+
+    const order = rows?.[0];
+
+    if (!order) {
+      return fail("Pedido não encontrado.");
+    }
+
+    const checkResponse = await fetch(
+      "https://api.checkout.infinitepay.io/payment_check",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          handle: "mimbox",
+          order_nsu: orderNsu,
+          transaction_nsu: transactionNsu,
+          slug
+        })
+      }
+    );
+
+    const checked = await checkResponse
+      .json()
+      .catch(() => null);
+
+    if (
+      !checkResponse.ok ||
+      checked?.success !== true ||
+      checked?.paid !== true
+    ) {
+      return fail(
+        "Pagamento ainda não confirmado pela InfinitePay."
+      );
+    }
+
+    const expected = Math.round(
+      Number(order.valor_total) * 100
+    );
+
+    const verified = Number(checked.amount);
+
+    if (
+      !Number.isSafeInteger(expected) ||
+      expected < 1 ||
+      !Number.isSafeInteger(verified) ||
+      verified !== expected
+    ) {
+      console.error(
+        "Divergência no valor confirmado para",
+        orderNsu
+      );
+
+      return fail(
+        "Valor do pagamento não confere com o pedido."
+      );
+    }
+
+    if (
+      String(order.status_pagamento)
+        .toLowerCase() === "pago"
+    ) {
+      return res.status(200).json({
+        success: true,
+        message: null
+      });
+    }
+
+    // Guarda o NSU da transação no histórico do pedido.
+    const previousNotes = String(
+      order.observacoes || ""
+    );
+
+    const transactionRecord =
+      `[InfinitePay NSU: ${transactionNsu}]`;
+
+    const updatedNotes =
+      previousNotes.includes(transactionRecord)
+        ? previousNotes
+        : (
+            previousNotes
+              ? previousNotes + "\n"
+              : ""
+          ) + transactionRecord;
+
+    const update = {
+      status_pagamento: "pago"
+    };
+
+    if (updatedNotes.length <= 1000) {
+      update.observacoes = updatedNotes;
+    }
+
+    const saved = await supabaseRequest(
+      `pedidos?id=eq.${encodeURIComponent(order.id)}&select=id`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(update)
+      }
+    );
+
+    if (
+      !Array.isArray(saved) ||
+      saved.length !== 1
+    ) {
+      return fail(
+        "Não foi possível atualizar o pedido."
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: null
+    });
+
+  } catch (error) {
+    console.error(
+      "Falha ao processar webhook InfinitePay:",
+      error.message
+    );
+
+    return fail(
+      "Falha temporária ao confirmar o pagamento."
+    );
+  }
+}
+
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+
+  if (
+    req.method === "POST" &&
+    String(req.query?.webhook || "") === "1"
+  ) {
+    return receivePaymentWebhook(req, res);
+  }
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
 
@@ -591,6 +768,8 @@ export default async function handler(req, res) {
     const payload = {
       handle: "mimbox",
       order_nsu: orderNsu,
+      webhook_url:
+        "https://www.mimbox.com.br/api/criar-checkout?webhook=1",
       redirect_url:
         "https://www.mimbox.com.br/pagamento-retorno.html",
 
