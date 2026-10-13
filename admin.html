@@ -217,7 +217,6 @@ main{
       <button data-page="pedidos">📦 Pedidos do site</button>
       <button data-page="manual">➕ Pedido manual</button>
       <button data-page="produtos">🛍️ Produtos</button>
-       <button data-page="clubes">🎁 Planos do Clube</button>
       <button data-page="acompanhamento">🎁 Acompanhamento Clube</button>
 
       <button data-page="clientes">👥 Clientes</button>
@@ -695,10 +694,10 @@ function clubNotes(notes,club){
 function clubDue(club){
   if(!club?.inicio)return null;
   const [year,month,day]=club.inicio.split("-").map(Number);
-  const target=new Date(year,month-1+club.enviados,1);
-  const lastDay=new Date(target.getFullYear(),target.getMonth()+1,0).getDate();
-  target.setDate(Math.min(day,lastDay));
-  return target;
+  if(!year||!month||!day)return null;
+  if(club.enviados===0)return new Date(year,month-1,day);
+  // Cada nova caixa vence no dia 1 do mês seguinte ao mês da anterior.
+  return new Date(year,month-1+club.enviados,1);
 }
 function clubDateLabel(date){
   return date?date.toLocaleDateString("pt-BR"):"Definir primeira data";
@@ -767,116 +766,109 @@ async function saveOrderKind(p,tipo){
  p.observacoes=next.trim();
 }
 function clubTracking(area){
-  const intro=card("🎁 Acompanhamento das entregas do Mimbox Clube");
-  intro.append(element("p","Controle de cada caixa mensal. As informações são salvas no pedido do assinante; nenhuma nova cobrança é gerada."));
-  intro.append(action("Atualizar acompanhamento",()=>openPage("acompanhamento")));
+  const all=state.envios.filter(p=>orderKind(p).tipo==="clube");
+  const registered=all.filter(p=>clubInfo(p.observacoes));
+  const active=registered.filter(p=>{const c=clubInfo(p.observacoes);return c.enviados<c.meses;});
+  const today=new Date();today.setHours(0,0,0,0);
+  const pending=active.filter(p=>{const d=clubDue(clubInfo(p.observacoes));return d&&d<=today;});
+  const late=pending.filter(p=>{const d=clubDue(clubInfo(p.observacoes));return d<today;});
+  const intro=card("🎁 Acompanhamento do Clube");
+  intro.append(element("p","Somente clientes do Clube. Confirme cada caixa enviada; a próxima vence no dia 1º do mês seguinte. Não gera cobrança."));
+  intro.append(action("Atualizar",()=>openPage("acompanhamento")));
   area.append(intro);
-  const all=state.envios;
-  const classify=card("Classificação dos pedidos — Clube ou Avulso");
-  classify.append(element("p","Pedidos do site são identificados pelos itens comprados quando há informação suficiente. Você pode corrigir manualmente a classificação."));
-  const finder=field("Buscar pedido ou cliente");classify.append(finder.wrap);
-  const matches=element("div");classify.append(matches);
-  function renderClassification(){
-    matches.replaceChildren();
-    const q=finder.input.value.toLocaleLowerCase("pt-BR").trim();
-    for(const p of all.filter(p=>{
-      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-      return [customer?.nome,p.numero_pedido].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(q));
-    }).slice(0,40)){
-      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-      const detected=orderKind(p);
-      const row=element("details");
-      row.append(element("summary",(customer?.nome||"Cliente")+" — "+(p.numero_pedido||p.id)+" — "+(detected.tipo==="clube"?"Clube":"Avulso")));
-      row.append(line("Identificação",detected.origem));
-      const kind=selectField("Tipo de pedido",[["avulso","Avulso"],["clube","Clube"]],detected.tipo);
-      row.append(kind.wrap);
-      row.append(action("Salvar classificação",async()=>{
-        await saveOrderKind(p,kind.input.value);
-        await openPage("acompanhamento");notify("Classificação salva.");
-      }));
-      if(detected.tipo==="clube"&&!clubInfo(p.observacoes)){
-        const name=field("Nome do assinante",customer?.nome||"");
-        const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],["9","9 meses (antigo)"]],String(planMonths(p)));
-        const first=field("Data do primeiro envio",new Date().toISOString().slice(0,10),"date");
-        row.append(name.wrap,plan.wrap,first.wrap);
-        row.append(action("Ativar acompanhamento mensal",async()=>{
-          if(!name.input.value.trim()||!first.input.value)throw Error("Preencha nome e data.");
-          await saveClubOrder(p,{nome:name.input.value.trim(),meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
-          await openPage("acompanhamento");notify("Acompanhamento ativado.");
-        }));
-      }
-      matches.append(row);
-    }
+  const metrics=element("div",undefined,"grid");
+  for(const [title,value] of [["Assinantes do Clube",all.length],["Assinaturas ativas",active.length],["Envios pendentes",pending.length],["Atrasados",late.length]]){
+    const tile=card(title);tile.append(element("div",String(value),"metric"));metrics.append(tile);
   }
-  finder.input.addEventListener("input",renderClassification);
-  renderClassification();area.append(classify);
-  const orders=state.envios.filter(p=>clubInfo(p.observacoes)&&orderKind(p).tipo==="clube");
-  const ongoing=orders.filter(p=>{const c=clubInfo(p.observacoes);return c.enviados<c.meses;});
-  const late=ongoing.filter(p=>clubState(clubInfo(p.observacoes)).includes("Atrasado"));
-  const summary=card("Visão geral");
-  summary.append(line("Assinaturas cadastradas",orders.length));
-  summary.append(line("Em andamento",ongoing.length));
-  summary.append(line("Próximos envios atrasados",late.length));
-  area.append(summary);
-  const search=field("Buscar assinante pelo nome");area.append(search.wrap);
+  area.append(metrics);
+  const search=field("Buscar assinante");area.append(search.wrap);
   const list=element("div");area.append(list);
   function render(){
     list.replaceChildren();
-    const query=search.input.value.toLocaleLowerCase("pt-BR").trim();
-    const filtered=orders.filter(p=>{
-      const c=clubInfo(p.observacoes), customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-      return [c.nome,customer?.nome,p.numero_pedido].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(query));
+    const q=search.input.value.toLocaleLowerCase("pt-BR").trim();
+    const matches=all.filter(p=>{
+      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
+      const c=clubInfo(p.observacoes);
+      return [customer?.nome,c?.nome,p.numero_pedido].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(q));
+    }).sort((a,b)=>{
+      const ca=clubInfo(a.observacoes),cb=clubInfo(b.observacoes);
+      const da=ca&&ca.enviados<ca.meses?clubDue(ca):null;
+      const db=cb&&cb.enviados<cb.meses?clubDue(cb):null;
+      return (da?.getTime()||Infinity)-(db?.getTime()||Infinity);
     });
-    if(!filtered.length){
-      const empty=card(orders.length?"Nenhum assinante encontrado":"Nenhuma assinatura vinculada");
-      empty.append(element("p",orders.length?"Tente outro nome.":"Classifique um pedido como Clube abaixo para ativar o acompanhamento mensal."));
-      list.append(empty);return;
-    }
-    for(const p of filtered){
-      const c=clubInfo(p.observacoes),customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-      const name=c.nome||customer?.nome||"Assinante";
+    if(!matches.length){const empty=card("Nenhum assinante encontrado");empty.append(element("p",all.length?"Tente outro nome.":"Ainda não há pedidos classificados como Clube."));list.append(empty);return;}
+    for(const p of matches){
+      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
+      const c=clubInfo(p.observacoes);
+      const name=c?.nome||customer?.nome||"Assinante";
+      const box=card(name);
+      if(!c){
+        box.append(element("p","Pedido identificado como Clube. Ative o acompanhamento mensal para controlar as caixas."));
+        const plan=selectField("Plano contratado",[["3","3 meses"],["6","6 meses"],["9","9 meses (legado)"]],String(planMonths(p)));
+        const first=field("Data do primeiro envio",new Date().toLocaleDateString("en-CA"),"date");
+        box.append(plan.wrap,first.wrap);
+        box.append(action("Ativar acompanhamento",async()=>{
+          if(!first.input.value)throw Error("Informe a data do primeiro envio.");
+          await saveClubOrder(p,{nome,meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
+          notify("Acompanhamento ativado.");await openPage("acompanhamento");
+        }));
+        list.append(box);continue;
+      }
+      const done=c.enviados>=c.meses;
+      const due=done?null:clubDue(c);
+      const isDue=due&&due<=today;
       const history=clubShipments(p.observacoes);
-      const box=card(name+" — "+c.meses+" meses");
-      box.append(line("Progresso",c.enviados+" de "+c.meses+" caixas enviadas"));
-      box.append(line("Situação",clubState(c)));
-      box.append(line("Próximo envio",c.enviados>=c.meses?"Concluído":clubDateLabel(clubDue(c))));
-      const bar=element("div");bar.style.cssText="display:flex;gap:5px;margin:12px 0";
+      const status=done?"Concluído":isDue?(due<today?"Atrasado":"Pendente hoje"):"Programado";
+      box.append(line("Plano",c.meses+" meses"));
+      box.append(line("Caixas enviadas",c.enviados+" de "+c.meses));
+      box.append(line("Situação",status));
+      box.append(line("Próximo envio",done?"Todas as caixas enviadas":clubDateLabel(due)));
+      const bar=element("div");bar.style.cssText="display:flex;gap:6px;margin:12px 0";
       for(let i=1;i<=c.meses;i++){
-        const part=element("div");part.title="Caixa "+i;
-        part.style.cssText="height:12px;flex:1;border:1px solid #222;border-radius:5px;background:"+(i<=c.enviados?"#3bb978":"#e5e5e5");
-        bar.append(part);
+        const seg=element("div");seg.title="Caixa "+i+(i<=c.enviados?" enviada":" pendente");
+        seg.style.cssText="height:13px;flex:1;border-radius:6px;border:1px solid #222;background:"+(i<=c.enviados?"#37b879":"#eee");bar.append(seg);
       }
       box.append(bar);
-      for(let i=1;i<=c.meses;i++){
-        const h=history[String(i)]||{};
-        const item=element("details");
-        const label=i<=c.enviados?"Enviada":i===c.enviados+1?"Próxima":"Futura";
-        item.append(element("summary","Caixa "+String(i).padStart(2,"0")+"/"+c.meses+" — "+(h.status||label)));
-        const status=selectField("Situação da caixa",[["aguardando","Aguardando"],["preparacao","Em preparação"],["enviado","Enviado"],["entregue","Entregue"]],h.status|| (i<=c.enviados?"enviado":"aguardando"));
-        const sent=field("Data de postagem",h.data||"","date");
-        const carrier=field("Transportadora",h.transportadora||"");
-        const track=field("Rastreamento",h.rastreio||"");
-        const notes=field("Observações",h.notas||"","textarea");
-        item.append(status.wrap,sent.wrap,carrier.wrap,track.wrap,notes.wrap);
-        item.append(action("Salvar caixa "+i,async()=>{
-          const newHistory={...clubShipments(p.observacoes)};
-          newHistory[String(i)]={status:status.input.value,data:sent.input.value,transportadora:carrier.input.value.trim(),rastreio:track.input.value.trim(),notas:notes.input.value.trim()};
-          // Avança somente em ordem: evita pular mensalidades.
-          const updated={...c};
-          if(["enviado","entregue"].includes(status.input.value)&&i===c.enviados+1)updated.enviados=i;
-          const base=clubNotes(withoutClubShipments(p.observacoes),updated);
-          const newNotes=clubShipmentNotes(base,newHistory);
-          const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:updated.enviados>=updated.meses?"entregue":"em_preparacao",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:newNotes}});
-          if(result.ok!==true)throw Error("Não foi possível salvar a caixa.");
-          await openPage("acompanhamento");notify("Dados da caixa "+i+" salvos.");
+      if(!done){
+        const next=c.enviados+1;
+        const panel=element("details");
+        panel.open=!!isDue;
+        panel.append(element("summary","Caixa "+String(next).padStart(2,"0")+" — "+(isDue?"Envio pendente":"Próximo envio programado")));
+        const sent=field("Data da postagem",new Date().toLocaleDateString("en-CA"),"date");
+        const carrier=field("Transportadora","");
+        const track=field("Código de rastreamento","");
+        const notes=field("Observações", "", "textarea");
+        panel.append(sent.wrap,carrier.wrap,track.wrap,notes.wrap);
+        panel.append(action("Confirmar envio da caixa "+next,async()=>{
+          if(!sent.input.value)throw Error("Informe a data da postagem.");
+          if(!confirm("Confirmar o envio da caixa "+next+" de "+c.meses+" para "+name+"?"))return;
+          const updated={...c,enviados:next};
+          const newHistory={...history,[String(next)]:{status:"enviado",data:sent.input.value,transportadora:carrier.input.value.trim(),rastreio:track.input.value.trim(),notas:notes.input.value.trim()}};
+          const newNotes=clubShipmentNotes(clubNotes(withoutClubShipments(p.observacoes),updated),newHistory);
+          const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:next>=c.meses?"entregue":"em_preparacao",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:newNotes}});
+          if(result.ok!==true)throw Error("Não foi possível confirmar o envio.");
+          notify("Caixa "+next+" confirmada. Próximo vencimento atualizado.");await openPage("acompanhamento");
         }));
-        box.append(item);
+        box.append(panel);
+      }
+      if(c.enviados){
+        const past=element("details");past.append(element("summary","Histórico de envios ("+c.enviados+")"));
+        for(let i=1;i<=c.enviados;i++){
+          const h=history[String(i)]||{};
+          const item=element("div",undefined,"item");
+          item.append(line("Caixa",i+" de "+c.meses));
+          item.append(line("Postagem",h.data?clubDateLabel(new Date(h.data+"T12:00:00")):"Data não informada"));
+          if(h.transportadora)item.append(line("Transportadora",h.transportadora));
+          if(h.rastreio)item.append(line("Rastreamento",h.rastreio));
+          if(h.notas)item.append(line("Observações",h.notas));
+          past.append(item);
+        }
+        box.append(past);
       }
       list.append(box);
     }
   }
-  search.input.addEventListener("input",render);
-  render();
+  search.input.addEventListener("input",render);render();
 }
 
 // DASHBOARD
