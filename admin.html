@@ -985,140 +985,176 @@ function manual(area){
 
 // PRODUTOS
 
-function products(area){
-  const create=card("➕ Cadastrar produto");
-  const form=element("form");
-
-  const f={
-    nome:field("Nome do produto"),
-    colecao:field("Coleção"),
-    preco:field("Preço (R$)",0,"number"),
-    descricao:field("Descrição","","textarea"),
-    imagem_url:field("URL da imagem")
+function productPhoto(label, currentUrl = "") {
+  const wrap = element("div");
+  wrap.append(element("label", label));
+  const preview = document.createElement("img");
+  preview.alt = "Prévia da foto do produto";
+  preview.style.cssText = "display:none;width:160px;height:160px;object-fit:contain;background:white;border:2px solid #181818;border-radius:12px;margin:10px 0";
+  const file = document.createElement("input");
+  file.type = "file";
+  file.accept = "image/jpeg,image/png,image/webp";
+  const status = element("p", "JPG, PNG ou WebP de até 2,5 MB.", "muted");
+  const url = field("Endereço atual da imagem (opcional)", currentUrl);
+  url.input.placeholder = "Preenchido automaticamente após o upload";
+  const show = source => {
+    if (source) { preview.src = source; preview.style.display = "block"; }
+    else { preview.removeAttribute("src"); preview.style.display = "none"; }
   };
+  show(currentUrl);
+  file.onchange = () => {
+    const f = file.files?.[0];
+    if (!f) { show(url.input.value.trim()); return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type) || f.size > 2500000 || !f.size) {
+      file.value = "";
+      notify("Escolha uma foto JPG, PNG ou WebP de até 2,5 MB.", true);
+      show(url.input.value.trim());
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => show(reader.result);
+    reader.readAsDataURL(f);
+  };
+  url.input.oninput = () => { if (!file.files?.length) show(url.input.value.trim()); };
+  wrap.append(preview, file, status, url.wrap);
+  return {wrap, file, url: url.input};
+}
 
-  for(const x of Object.values(f)){
-    form.append(x.wrap);
+async function uploadProductPhoto(photo) {
+  const file = photo.file.files?.[0];
+  if (!file) return photo.url.value.trim();
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 2500000 || !file.size) {
+    throw Error("Selecione JPG, PNG ou WebP de até 2,5 MB.");
   }
+  const encoded = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = () => reject(Error("Não foi possível ler a foto."));
+    reader.readAsDataURL(file);
+  });
+  const result = await operations("produto_imagem_upload", {
+    tipo: file.type,
+    imagem_base64: encoded
+  });
+  if (!result.ok || !result.imagem_url) throw Error("Falha ao enviar a foto.");
+  photo.url.value = result.imagem_url;
+  photo.file.value = "";
+  return result.imagem_url;
+}
 
-  f.nome.input.required=true;
-  f.preco.input.required=true;
-
-  const available=checkbox(
-    "Produto disponível",true
-  );
-  const featured=checkbox(
-    "Produto em destaque",false
-  );
-
-  form.append(available.wrap,featured.wrap);
-
-  const save=element(
-    "button","Cadastrar produto","btn"
-  );
-  save.type="submit";
+function products(area){
+  const create = card("➕ Cadastrar produto");
+  const form = element("form");
+  const f = {
+    nome: field("Nome do produto"),
+    colecao: field("Coleção"),
+    preco: field("Preço (R$)", 0, "number"),
+    descricao: field("Descrição", "", "textarea"),
+    ordem: field("Ordem na vitrine (1 = primeiro)", 0, "number")
+  };
+  f.ordem.input.step = "1";
+  for (const x of Object.values(f)) form.append(x.wrap);
+  const photo = productPhoto("Foto do produto");
+  form.append(photo.wrap);
+  f.nome.input.required = true;
+  f.preco.input.required = true;
+  const available = checkbox("Produto disponível", true);
+  const featured = checkbox("Produto em destaque", false);
+  form.append(available.wrap, featured.wrap);
+  const save = element("button", "Cadastrar produto", "btn");
+  save.type = "submit";
   form.append(save);
-
-  form.onsubmit=async event=>{
+  form.onsubmit = async event => {
     event.preventDefault();
-    save.disabled=true;
-
-    try{
-      await request("/api/admin-salvar-produto",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          nome:f.nome.input.value,
-          colecao:f.colecao.input.value,
-          preco:Number(f.preco.input.value),
-          descricao:f.descricao.input.value,
-          imagem_url:f.imagem_url.input.value,
-          disponivel:available.input.checked,
-          destaque:featured.input.checked
+    save.disabled = true;
+    try {
+      const imagem_url = await uploadProductPhoto(photo);
+      const result = await request("/api/admin-salvar-produto", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          nome: f.nome.input.value,
+          colecao: f.colecao.input.value,
+          preco: Number(f.preco.input.value),
+          descricao: f.descricao.input.value,
+          imagem_url,
+          disponivel: available.input.checked,
+          destaque: featured.input.checked
         })
       });
-
+      const ordem = Number(f.ordem.input.value);
+      if (result.produto?.id && Number.isSafeInteger(ordem) && ordem >= 0 && ordem <= 10000 && ordem !== 0) {
+        await operations("produto_ordem", {id: result.produto.id, ordem});
+      }
       await openPage("produtos");
-      notify("Produto cadastrado.");
-
-    }catch(error){
-      notify(error.message,true);
-    }finally{
-      save.disabled=false;
-    }
+      notify("Produto cadastrado com sucesso.");
+    } catch (error) { notify(error.message, true); }
+    finally { save.disabled = false; }
   };
-
   create.append(form);
   area.append(create);
 
-  const list=card("✏️ Editar produtos");
+  const list = card("✏️ Gerenciar produtos cadastrados");
+  list.append(element("p", "Edite, troque a foto, ordene, oculte ou exclua anúncios. Produtos ocultos continuam no CRM.", "muted"));
   area.append(list);
-
-  if(!state.produtos.length){
-    list.append(element(
-      "p","Nenhum produto cadastrado."
-    ));
+  if (!state.produtos.length) {
+    list.append(element("p", "Nenhum produto cadastrado."));
     return;
   }
-
-  for(const p of state.produtos){
-    const item=element("div",undefined,"item");
-    item.append(element("h3",p.nome));
-
-    const inputs={
-      nome:field("Nome",p.nome),
-      colecao:field("Coleção",p.colecao),
-      preco:field("Preço",p.preco,"number"),
-      descricao:field(
-        "Descrição",p.descricao,"textarea"
-      ),
-      imagem_url:field(
-        "URL da imagem",p.imagem_url
-      )
+  for (const p of state.produtos) {
+    const item = element("details", undefined, "item");
+    item.append(element("summary", `${p.nome} — ${money(p.preco)} ${p.disponivel ? "• Disponível" : "• Oculto"}`));
+    const inputs = {
+      nome: field("Nome", p.nome),
+      colecao: field("Coleção", p.colecao),
+      preco: field("Preço", p.preco, "number"),
+      descricao: field("Descrição", p.descricao, "textarea"),
+      ordem: field("Ordem na vitrine", p.ordem ?? 0, "number")
     };
-
-    for(const x of Object.values(inputs)){
-      item.append(x.wrap);
-    }
-
-    const av=checkbox(
-      "Disponível",p.disponivel
-    );
-    const ft=checkbox(
-      "Destaque",p.destaque
-    );
-
-    item.append(av.wrap,ft.wrap);
-
-    item.append(action(
-      "Salvar alterações",
-      async()=>{
-        const result=await operations(
-          "produto_editar",
-          {
-            id:p.id,
-            produto:{
-              nome:inputs.nome.input.value,
-              colecao:inputs.colecao.input.value,
-              preco:Number(
-                inputs.preco.input.value
-              ),
-              descricao:inputs.descricao.input.value,
-              imagem_url:inputs.imagem_url.input.value,
-              disponivel:av.input.checked,
-              destaque:ft.input.checked
-            }
-          }
-        );
-
-        if(result.ok!==true){
-          throw Error("Produto não foi atualizado");
+    inputs.ordem.input.step = "1";
+    for (const x of Object.values(inputs)) item.append(x.wrap);
+    const photo = productPhoto("Foto do anúncio", p.imagem_url || "");
+    item.append(photo.wrap);
+    const av = checkbox("Disponível", p.disponivel);
+    const ft = checkbox("Destaque", p.destaque);
+    item.append(av.wrap, ft.wrap);
+    const buttons = element("div", undefined, "row");
+    buttons.append(action("Salvar alterações", async () => {
+      const imagem_url = await uploadProductPhoto(photo);
+      const ordem = Number(inputs.ordem.input.value);
+      if (!Number.isSafeInteger(ordem) || ordem < 0 || ordem > 10000) throw Error("Ordem deve ser um número inteiro de 0 a 10000.");
+      const result = await operations("produto_editar", {
+        id: p.id,
+        produto: {
+          nome: inputs.nome.input.value,
+          colecao: inputs.colecao.input.value,
+          preco: Number(inputs.preco.input.value),
+          descricao: inputs.descricao.input.value,
+          imagem_url,
+          disponivel: av.input.checked,
+          destaque: ft.input.checked,
+          ordem
         }
-
-        notify("Produto atualizado no banco.");
-      }
-    ));
-
+      });
+      if (!result.ok) throw Error("Produto não foi atualizado.");
+      await openPage("produtos");
+      notify("Produto atualizado com sucesso.");
+    }));
+    buttons.append(action("Ocultar anúncio", async () => {
+      if (!confirm(`Ocultar "${p.nome}" da loja? O cadastro continuará no CRM.`)) return;
+      const result = await operations("produto_ocultar", {id: p.id});
+      if (!result.ok) throw Error("Não foi possível ocultar o anúncio.");
+      await openPage("produtos");
+      notify("Produto ocultado.");
+    }));
+    buttons.append(action("Excluir anúncio", async () => {
+      if (!confirm(`Excluir DEFINITIVAMENTE o cadastro de "${p.nome}"? Essa ação não pode ser desfeita.`)) return;
+      const result = await operations("produto_excluir", {id: p.id});
+      if (!result.ok) throw Error("Não foi possível excluir o anúncio.");
+      await openPage("produtos");
+      notify("Anúncio excluído do cadastro.");
+    }));
+    item.append(buttons);
     list.append(item);
   }
 }
