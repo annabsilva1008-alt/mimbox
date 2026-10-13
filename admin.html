@@ -809,7 +809,7 @@ function clubTracking(area){
         box.append(plan.wrap,first.wrap);
         box.append(action("Ativar acompanhamento",async()=>{
           if(!first.input.value)throw Error("Informe a data do primeiro envio.");
-          await saveClubOrder(p,{nome,meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
+          await saveClubOrder(p,{nome:name,meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
           notify("Acompanhamento ativado.");await openPage("acompanhamento");
         }));
         list.append(box);continue;
