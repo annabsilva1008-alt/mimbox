@@ -139,6 +139,14 @@ export default async function handler(req, res) {
         });
       }
 
+      if (acao === "clientes") {
+        const pedidos = await db(
+          "pedidos", "GET",
+          "?select=id,numero_pedido,cliente_id,criado_em,valor_total,status_pagamento,status_entrega,forma_entrega,observacoes,itens,clientes(nome,email,telefone)&order=criado_em.desc&limit=500"
+        );
+        return res.json({ pedidos });
+      }
+
       if (acao === "estoque") {
         return res.json({
           itens: await db(
@@ -290,16 +298,28 @@ export default async function handler(req, res) {
 
       const current = await db("pedidos", "GET",
         `?id=eq.${enc(id)}&select=id,observacoes&limit=1`);
-      if (!current.length) return res.status(404).json({ erro: "Pedido não encontrado" });
+
+      if (!current.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
       const previousTag = String(current[0].observacoes || "")
         .match(/\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/)?.[0] || "";
+
       let notes = clean(x.observacoes, 3000);
+
       if (previousTag && !notes.includes("[MIMBOX_CLUBE:")) {
         notes = (notes ? notes + "\n" : "") + previousTag;
       }
+
       if (notes.length > 1000) {
-        return res.status(400).json({ erro: "Observações muito longas" });
+        return res.status(400).json({
+          erro: "Observações muito longas"
+        });
       }
+
       const pedidos = await db(
         "pedidos",
         "PATCH",
@@ -345,24 +365,190 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    if (acao === "pedido_atendimento") {
+      const id = req.body?.id;
+      const tipo = clean(req.body?.tipo, 30);
+
+      if (!goodId(id) ||
+          !["enviar", "retirar", "cancelar"].includes(tipo)) {
+        return res.status(400).json({
+          erro: "Operação inválida"
+        });
+      }
+
+      const pedidos = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,status_pagamento,status_entrega,forma_entrega,observacoes&limit=1`
+      );
+
+      const pedido = pedidos[0];
+
+      if (!pedido) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      if (!["pago", "paid", "aprovado", "approved"].includes(
+        String(pedido.status_pagamento || "").toLowerCase()
+      )) {
+        return res.status(409).json({
+          erro: "Pedido sem pagamento confirmado"
+        });
+      }
+
+      if (["cancelado", "entregue"].includes(
+        pedido.status_entrega
+      )) {
+        return res.status(409).json({
+          erro: "Pedido já encerrado"
+        });
+      }
+
+      if (String(pedido.observacoes || "")
+        .includes("[MIMBOX_CLUBE:")) {
+        return res.status(409).json({
+          erro: "Pedidos do Clube devem ser gerenciados em Entregas pendentes, caixa por caixa"
+        });
+      }
+
+      if (tipo === "enviar" &&
+          pedido.forma_entrega === "retirada") {
+        return res.status(400).json({
+          erro: "Este pedido é para retirada"
+        });
+      }
+
+      if (tipo === "retirar" &&
+          pedido.forma_entrega !== "retirada") {
+        return res.status(400).json({
+          erro: "Este pedido é para entrega"
+        });
+      }
+
+      const status_entrega =
+        tipo === "cancelar" ? "cancelado"
+        : tipo === "enviar" ? "enviado"
+        : "entregue";
+
+      const rows = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { status_entrega }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    if (acao === "observacao_salvar") {
+      const id = req.body?.id;
+      const nova = clean(req.body?.texto, 650);
+
+      if (!goodId(id) || !nova) {
+        return res.status(400).json({
+          erro: "Informe uma observação válida"
+        });
+      }
+
+      const pedidos = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,observacoes&limit=1`
+      );
+
+      if (!pedidos.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      const atual = String(
+        pedidos[0].observacoes || ""
+      );
+
+      const registro =
+        `[${new Date().toISOString()
+          .slice(0,16)
+          .replace("T"," ")} UTC] ${nova}`;
+
+      const completo =
+        (atual ? atual + "\n" : "") + registro;
+
+      if (completo.length > 1000) {
+        return res.status(409).json({
+          erro: "Limite de observações deste pedido atingido. Resuma as anotações antigas antes de continuar."
+        });
+      }
+
+      const rows = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { observacoes: completo }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
     if (acao === "pedido_status") {
       const id = req.body?.id;
-      const status_entrega = clean(req.body?.status_entrega, 40);
-      const status_pagamento = clean(req.body?.status_pagamento, 40);
-      if (!goodId(id) || !statuses.includes(status_entrega) ||
-          !["pendente", "pago", "cancelado"].includes(status_pagamento)) {
-        return res.status(400).json({ erro: "Status de pedido inválido" });
+      const status_entrega =
+        clean(req.body?.status_entrega, 40);
+      const status_pagamento =
+        clean(req.body?.status_pagamento, 40);
+
+      if (
+        !goodId(id) ||
+        !statuses.includes(status_entrega) ||
+        !["pendente", "pago", "cancelado"].includes(
+          status_pagamento
+        )
+      ) {
+        return res.status(400).json({
+          erro: "Status de pedido inválido"
+        });
       }
-      const existing = await db("pedidos", "GET",
-        `?id=eq.${enc(id)}&select=id,numero_pedido,status_pagamento&limit=1`);
-      if (!existing.length) return res.status(404).json({ erro: "Pedido não encontrado" });
-      // Confirmações de pagamento da InfinitePay não podem ser alteradas manualmente.
-      if (!String(existing[0].numero_pedido || "").startsWith("MANUAL-")) {
-        return res.status(403).json({ erro: "Edite apenas pedidos manuais nesta tela" });
+
+      const existing = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,numero_pedido,status_pagamento&limit=1`
+      );
+
+      if (!existing.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
       }
-      const rows = await db("pedidos", "PATCH", `?id=eq.${enc(id)}`,
-        { status_entrega, status_pagamento });
-      return res.json({ ok: rows.length > 0 });
+
+      // Pedidos da InfinitePay não têm pagamento
+      // alterado manualmente nesta tela.
+      if (!String(existing[0].numero_pedido || "")
+        .startsWith("MANUAL-")) {
+        return res.status(403).json({
+          erro: "Edite apenas pedidos manuais nesta tela"
+        });
+      }
+
+      const rows = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        {
+          status_entrega,
+          status_pagamento
+        }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
     }
 
     if (acao === "pedido_manual") {
@@ -373,7 +559,9 @@ export default async function handler(req, res) {
 
       if (
         clean(c.nome, 150).length < 2 ||
-        !/^\S+@\S+\.\S+$/.test(clean(c.email, 254)) ||
+        !/^\S+@\S+\.\S+$/.test(
+          clean(c.email, 254)
+        ) ||
         !clean(p.descricao, 250) ||
         !Number.isFinite(total) ||
         total < 0 ||
@@ -402,11 +590,15 @@ export default async function handler(req, res) {
       const cliente_id = clientes[0]?.id;
 
       if (!cliente_id) {
-        throw Error("Não foi possível cadastrar cliente");
+        throw Error(
+          "Não foi possível cadastrar cliente"
+        );
       }
 
       const codigo =
-        `MANUAL-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        `MANUAL-${Date.now()}-${Math.floor(
+          Math.random() * 10000
+        )}`;
 
       const pedidos = await db(
         "pedidos",
@@ -420,10 +612,14 @@ export default async function handler(req, res) {
           status_pagamento: "pendente",
           status_entrega: "aguardando",
           itens: [{
-            descricao: clean(p.descricao, 250),
+            descricao: clean(
+              p.descricao, 250
+            ),
             quantidade
           }],
-          observacoes: clean(p.observacoes, 1000)
+          observacoes: clean(
+            p.observacoes, 1000
+          )
         }
       );
 
@@ -438,7 +634,9 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error("admin-operacoes", err);
+    console.error(
+      "admin-operacoes", err
+    );
 
     return res.status(500).json({
       erro: "Falha na operação: " + err.message
