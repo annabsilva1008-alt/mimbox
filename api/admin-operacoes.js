@@ -288,6 +288,18 @@ export default async function handler(req, res) {
         });
       }
 
+      const current = await db("pedidos", "GET",
+        `?id=eq.${enc(id)}&select=id,observacoes&limit=1`);
+      if (!current.length) return res.status(404).json({ erro: "Pedido não encontrado" });
+      const previousTag = String(current[0].observacoes || "")
+        .match(/\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/)?.[0] || "";
+      let notes = clean(x.observacoes, 3000);
+      if (previousTag && !notes.includes("[MIMBOX_CLUBE:")) {
+        notes = (notes ? notes + "\n" : "") + previousTag;
+      }
+      if (notes.length > 1000) {
+        return res.status(400).json({ erro: "Observações muito longas" });
+      }
       const pedidos = await db(
         "pedidos",
         "PATCH",
@@ -295,7 +307,7 @@ export default async function handler(req, res) {
         {
           status_entrega: x.status_entrega,
           transportadora: clean(x.transportadora, 150),
-          observacoes: clean(x.observacoes, 1000)
+          observacoes: notes
         }
       );
 
@@ -331,6 +343,26 @@ export default async function handler(req, res) {
       }
 
       return res.json({ ok: true });
+    }
+
+    if (acao === "pedido_status") {
+      const id = req.body?.id;
+      const status_entrega = clean(req.body?.status_entrega, 40);
+      const status_pagamento = clean(req.body?.status_pagamento, 40);
+      if (!goodId(id) || !statuses.includes(status_entrega) ||
+          !["pendente", "pago", "cancelado"].includes(status_pagamento)) {
+        return res.status(400).json({ erro: "Status de pedido inválido" });
+      }
+      const existing = await db("pedidos", "GET",
+        `?id=eq.${enc(id)}&select=id,numero_pedido,status_pagamento&limit=1`);
+      if (!existing.length) return res.status(404).json({ erro: "Pedido não encontrado" });
+      // Confirmações de pagamento da InfinitePay não podem ser alteradas manualmente.
+      if (!String(existing[0].numero_pedido || "").startsWith("MANUAL-")) {
+        return res.status(403).json({ erro: "Edite apenas pedidos manuais nesta tela" });
+      }
+      const rows = await db("pedidos", "PATCH", `?id=eq.${enc(id)}`,
+        { status_entrega, status_pagamento });
+      return res.json({ ok: rows.length > 0 });
     }
 
     if (acao === "pedido_manual") {
