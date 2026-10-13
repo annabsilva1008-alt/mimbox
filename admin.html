@@ -681,7 +681,21 @@ function orders(area){
     return;
   }
 
-  for(const p of state.pedidos){
+  const pedidosOrdenados = [...state.pedidos].sort((a, b) => {
+    const prioridade = pedido => {
+      const status = String(pedido.status_pagamento || "").toLowerCase();
+      if (["pago", "paid", "aprovado", "approved"].includes(status)) return 0;
+      if (["pendente", "pending", "aguardando", "aguardando_pagamento"].includes(status)) return 2;
+      return 1;
+    };
+    const diferenca = prioridade(a) - prioridade(b);
+    if (diferenca !== 0) return diferenca;
+    const dataA = new Date(a.criado_em || a.created_at || 0).getTime() || 0;
+    const dataB = new Date(b.criado_em || b.created_at || 0).getTime() || 0;
+    return dataB - dataA;
+  });
+
+  for(const p of pedidosOrdenados){
     const c=card(
       "Pedido "+(p.numero_pedido||p.id)
     );
