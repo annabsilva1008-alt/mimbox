@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <title>Seu pedido | Mimbox</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #f7edcf;
+      color: #191919;
+      font-family: Arial, sans-serif;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 500px;
+      background: #fffdf6;
+      border: 3px solid #191919;
+      border-radius: 22px;
+      padding: 36px 25px;
+      text-align: center;
+      box-shadow: 8px 8px 0 #191919;
+    }
+
+    .brand {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      margin-bottom: 28px;
+    }
+
+    .brand span {
+      color: #e83e38;
+    }
+
+    .icon {
+      font-size: 55px;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      font-size: 27px;
+      line-height: 1.2;
+      margin: 0 0 16px;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .notice {
+      margin: 24px 0;
+      padding: 15px;
+      background: #ffe59a;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      margin-top: 15px;
+      background: #ed443a;
+      color: white;
+      border: 2px solid #191919;
+      border-radius: 12px;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 3px 3px 0 #191919;
+    }
+
+    .secondary {
+      background: #f8cf43;
+      color: #191919;
+    }
+
+    .order {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #777;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="card">
+
+    <div class="brand">
+      mim<span>box.</span>
+    </div>
+
+    <div class="icon">📦</div>
+
+    <h1>Seu pedido está no caminho certo!</h1>
+
+    <p>
+      Oba! Você voltou para a Mimbox.
+      Agora é só aguardar a confirmação
+      do pagamento e a preparação da sua box.
+    </p>
+
+    <div class="notice">
+      <strong>Uma informação importante:</strong>
+      a confirmação do pagamento é processada
+      automaticamente pela nossa plataforma.
+      O retorno a esta página, sozinho,
+      não significa que o pagamento foi aprovado.
+    </div>
+
+    <a class="button" href="/">
+      VOLTAR PARA A MIMBOX
+    </a>
+
+    <a class="button secondary"
+       href="https://www.instagram.com/mimbox.br/"
+       target="_blank"
+       rel="noopener noreferrer">
+      ACOMPANHAR A MIMBOX NO INSTAGRAM
+    </a>
+
+    <div class="order" id="order"></div>
+
+  </main>
+
+  <script>
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const orderNsu = params.get("order_nsu");
+
+    if (
+      orderNsu &&
+      /^mimbox-[0-9a-f-]{36}$/i.test(orderNsu)
+    ) {
+      document.getElementById("order")
+        .textContent = "Pedido: " + orderNsu;
+    }
+  </script>
+
+</body>
+</html>
