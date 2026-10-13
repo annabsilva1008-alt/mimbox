@@ -507,6 +507,12 @@ async function openPage(page){
     if(page==="dashboard"||page==="pedidos"){
       const data=await request("/api/admin-pedidos");
       state.pedidos=data.pedidos||[];
+      const joined = await operations("clientes");
+      const byId = new Map((joined.pedidos || []).map(p => [p.id,p]));
+      state.pedidos = state.pedidos.map(p => ({
+        ...p, clientes:byId.get(p.id)?.clientes || p.clientes,
+        observacoes:byId.get(p.id)?.observacoes ?? p.observacoes
+      }));
     }
 
     if(page==="produtos"){
@@ -525,7 +531,7 @@ async function openPage(page){
     }
 
     if(page==="clientes"){
-      const data=await request("/api/admin-pedidos");
+      const data=await operations("clientes");
       state.pedidos=data.pedidos||[];
     }
 
@@ -558,6 +564,68 @@ async function openPage(page){
   }
 }
 
+
+function isPaid(p) {
+  return ["pago","paid","aprovado","approved"].includes(
+    String(p.status_pagamento || "").toLowerCase()
+  );
+}
+function needsAction(p) {
+  return isPaid(p) &&
+    !["enviado","entregue","cancelado"].includes(
+      String(p.status_entrega || "").toLowerCase()
+    );
+}
+function customerOf(p) {
+  return Array.isArray(p.clientes) ? p.clientes[0] : p.clientes;
+}
+function notesWithoutClub(p) {
+  return cleanClubNotes(p.observacoes || "");
+}
+function customerNotes(area, p, refreshPage) {
+  const section = element("details");
+  section.append(element("summary","📝 Histórico e observações"));
+  section.append(line("Registros", notesWithoutClub(p) || "Nenhuma observação."));
+  const note = field("Adicionar registro à jornada do cliente","","textarea");
+  note.input.maxLength = 650;
+  section.append(note.wrap);
+  section.append(action("Salvar observação", async () => {
+    if (!note.input.value.trim()) throw Error("Escreva uma observação.");
+    const result = await operations("observacao_salvar", {
+      id:p.id, texto:note.input.value.trim()
+    });
+    if (!result.ok) throw Error("Não foi possível salvar.");
+    await openPage(refreshPage);
+    notify("Observação registrada no histórico do pedido.");
+  }));
+  area.append(section);
+}
+function orderActions(area, p, page) {
+  if (!needsAction(p)) return;
+  if (clubInfo(p.observacoes)) {
+    area.append(element("p",
+      "Assinatura Mimbox Clube: confirme cada caixa na aba Entregas pendentes.","muted"));
+    return;
+  }
+  const method = p.forma_entrega === "retirada" ? "retirar" : "enviar";
+  const label = method === "retirar" ? "✓ Confirmar retirada" : "✓ Confirmar envio";
+  area.append(action(label, async () => {
+    if (!confirm("Confirmar " + (method === "retirar" ? "a retirada" : "o envio") +
+      " do pedido " + (p.numero_pedido || p.id) + "?")) return;
+    const result = await operations("pedido_atendimento",{id:p.id,tipo:method});
+    if (!result.ok) throw Error("Não foi possível atualizar o pedido.");
+    await openPage(page);
+    notify("Pedido atualizado com sucesso.");
+  }));
+  area.append(action("✕ Cancelar pedido", async () => {
+    if (!confirm("Cancelar o pedido " + (p.numero_pedido || p.id) +
+      "? Isso NÃO estorna o pagamento na InfinitePay.")) return;
+    const result = await operations("pedido_atendimento",{id:p.id,tipo:"cancelar"});
+    if (!result.ok) throw Error("Não foi possível cancelar o pedido.");
+    await openPage(page);
+    notify("Pedido cancelado no CRM. Confira separadamente eventual estorno.");
+  }));
+}
 
 // DADOS DO CLUBE: gravados nas observações do pedido já existente.
 // Não exige tabela nova nem altera o checkout.
@@ -627,10 +695,7 @@ function dashboard(area){
   const pago = p => ["pago", "paid", "aprovado", "approved"].includes(
     String(p.status_pagamento || "").trim().toLowerCase()
   );
-  const finalizado = p => ["entregue", "cancelado"].includes(
-    String(p.status_entrega || "").trim().toLowerCase()
-  );
-  const pendentesDeEnvio = state.pedidos.filter(p => pago(p) && !finalizado(p));
+  const pendentesDeEnvio = state.pedidos.filter(needsAction);
   const grid = element("div", undefined, "grid");
 
   const metrics = [
@@ -670,7 +735,8 @@ function dashboard(area){
         line("Entrega", p.forma_entrega === "retirada" ? "Retirada" : "Transportadora / entrega"),
         line("Andamento", p.status_entrega || "Aguardando preparação")
       );
-      item.append(action("Abrir pedidos", () => openPage("pedidos")));
+      orderActions(item, p, "dashboard");
+      customerNotes(item, p, "dashboard");
       attention.append(item);
     }
   }
@@ -782,6 +848,8 @@ function orders(area){
       }));
       c.append(edit);
     }
+    orderActions(c, p, "pedidos");
+    customerNotes(c, p, "pedidos");
     area.append(c);
   }
 }
@@ -1267,41 +1335,58 @@ function shipments(area){
 // CLIENTES DOS PEDIDOS
 
 function customers(area){
-  const c=card("👥 Clientes dos pedidos");
-  const unique=new Map();
+  const intro = card("👥 Buscar cliente e acompanhar jornada");
+  const search = field("Buscar por nome, e-mail ou WhatsApp");
+  search.input.placeholder = "Digite o nome, e-mail ou telefone";
+  intro.append(search.wrap);
+  const results = element("div");
+  area.append(intro, results);
 
-  for(const p of state.pedidos){
-    const customer=Array.isArray(p.clientes)
-      ?p.clientes[0]:p.clientes;
-
-    if(!customer)continue;
-
-    const key=customer.email||
-      customer.telefone||
-      customer.nome;
-
-    if(key)unique.set(key,customer);
+  const groups = new Map();
+  for (const p of state.pedidos) {
+    const c = customerOf(p);
+    if (!c) continue;
+    const key = String(c.email || c.telefone || c.nome || "").toLowerCase();
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key,{customer:c,orders:[]});
+    groups.get(key).orders.push(p);
   }
 
-  if(!unique.size){
-    c.append(element(
-      "p","Nenhum cliente encontrado."
-    ));
+  function render(){
+    results.replaceChildren();
+    const term = search.input.value.trim().toLowerCase();
+    let count = 0;
+    for (const {customer,orders} of groups.values()) {
+      const haystack = [customer.nome,customer.email,customer.telefone]
+        .join(" ").toLowerCase();
+      if (term && !haystack.includes(term)) continue;
+      count++;
+      const c = card(customer.nome || "Cliente");
+      c.append(line("E-mail",customer.email),line("WhatsApp",customer.telefone));
+      c.append(line("Pedidos registrados",orders.length));
+      const ordered = [...orders].sort((a,b) =>
+        new Date(b.criado_em || 0) - new Date(a.criado_em || 0));
+      for (const p of ordered) {
+        const item = element("div",undefined,"item");
+        item.append(element("h3","Pedido " + (p.numero_pedido || p.id)));
+        item.append(line("Data",p.criado_em ?
+          new Date(p.criado_em).toLocaleDateString("pt-BR") : "Não informada"));
+        item.append(line("Valor",money(p.valor_total)));
+        item.append(line("Pagamento",p.status_pagamento));
+        item.append(line("Andamento",p.status_entrega));
+        if (clubInfo(p.observacoes)) {
+          const club = clubInfo(p.observacoes);
+          item.append(line("Clube",club.enviados + "/" + club.meses + " caixas"));
+        }
+        customerNotes(item,p,"clientes");
+        c.append(item);
+      }
+      results.append(c);
+    }
+    if (!count) results.append(card("Nenhum cliente encontrado"));
   }
-
-  for(const customer of unique.values()){
-    const row=element("div",undefined,"item");
-
-    row.append(
-      element("h3",customer.nome||"Cliente"),
-      line("E-mail",customer.email),
-      line("WhatsApp",customer.telefone)
-    );
-
-    c.append(row);
-  }
-
-  area.append(c);
+  search.input.addEventListener("input",render);
+  render();
 }
 
 checkSession();
