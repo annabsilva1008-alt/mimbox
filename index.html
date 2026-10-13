@@ -829,7 +829,7 @@
   legacyCards.forEach(card=>{card.dataset.legacyProduct='1'});
   async function sync(){
     try{
-      const res=await fetch('/api/produtos-publicos',{cache:'no-store'});
+      const res=await fetch('/api/admin-produtos?publico=1',{cache:'no-store'});
       if(!res.ok)throw Error('Catálogo HTTP '+res.status);
       const data=await res.json();if(!Array.isArray(data.produtos))throw Error('Resposta de catálogo inválida');
       const all=data.produtos.filter(p=>p&&typeof p.nome==='string');
