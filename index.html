@@ -829,23 +829,23 @@
   legacyCards.forEach(card=>{card.dataset.legacyProduct='1'});
   async function sync(){
     try{
-      const res=await fetch('/api/admin-produtos?publico=1',{cache:'no-store'});
-      if(!res.ok)return;
-      const data=await res.json();if(!Array.isArray(data.produtos))return;
+      const res=await fetch('/api/produtos-publicos',{cache:'no-store'});
+      if(!res.ok)throw Error('Catálogo HTTP '+res.status);
+      const data=await res.json();if(!Array.isArray(data.produtos))throw Error('Resposta de catálogo inválida');
       const all=data.produtos.filter(p=>p&&typeof p.nome==='string');
-      const seen=new Set();
-      for(const p of all){
-        if(isClub(p)){updateClub(p);continue}
-        const key=norm(p.nome);
-        let card=legacyNames.get(key);
-        if(!card && !seen.has(key) && p.disponivel!==false)card=createCard(p);
-        if(card){updateCard(card,p);seen.add(key)}
+      // A vitrine é 100% controlada pelo Supabase: nunca mantém anúncios antigos.
+      grid.replaceChildren();
+      const ativos=all.filter(p=>!isClub(p) && p.disponivel!==false);
+      ativos.sort((a,b)=>(Number(a.ordem)||0)-(Number(b.ordem)||0)||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
+      for(const p of ativos)createCard(p);
+      for(const p of all.filter(isClub))updateClub(p);
+      if(!ativos.length){
+        const aviso=document.createElement('p');
+        aviso.textContent='Novas coleções em preparação. Volte em breve!';
+        aviso.className='catalog-empty';
+        grid.append(aviso);
       }
-      // Legacy cards stay visible until their matching records have been imported.
-      // Once imported, their price, availability, description and photos follow CRM.
-      const order=new Map(all.filter(p=>!isClub(p)).map((p,i)=>[norm(p.nome),Number.isFinite(Number(p.ordem))?Number(p.ordem):1000+i]));
-      [...grid.querySelectorAll('.product-card')].sort((a,b)=>(order.get(norm(a.querySelector('h3')?.textContent))??99999)-(order.get(norm(b.querySelector('h3')?.textContent))??99999)).forEach(c=>grid.append(c));
-    }catch(err){console.warn('Catálogo CRM indisponível; vitrine original mantida.',err)}
+    }catch(err){console.error('Falha ao consultar catálogo CRM:',err);grid.replaceChildren();const aviso=document.createElement('p');aviso.textContent='Não foi possível carregar as coleções agora. Atualize a página em instantes.';aviso.className='catalog-error';grid.append(aviso)}
   }
   sync();
 })();
