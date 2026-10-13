@@ -187,6 +187,34 @@ export default async function handler(req, res) {
       });
     }
 
+    // EXCLUIR PRODUTO DEFINITIVAMENTE
+    if (acao === "produto_excluir") {
+      const id = req.body?.id;
+
+      if (!goodId(id)) {
+        return res.status(400).json({
+          erro: "ID do produto inválido"
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "DELETE",
+        `?id=eq.${enc(id)}`
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          erro: "Produto não encontrado no CRM"
+        });
+      }
+
+      return res.json({
+        ok: true,
+        mensagem: "Produto excluído definitivamente"
+      });
+    }
+
     if (acao === "produto_editar") {
       const id = req.body?.id;
       const p = req.body?.produto || {};
@@ -296,8 +324,11 @@ export default async function handler(req, res) {
         });
       }
 
-      const current = await db("pedidos", "GET",
-        `?id=eq.${enc(id)}&select=id,observacoes&limit=1`);
+      const current = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,observacoes&limit=1`
+      );
 
       if (!current.length) {
         return res.status(404).json({
@@ -305,12 +336,18 @@ export default async function handler(req, res) {
         });
       }
 
-      const previousTag = String(current[0].observacoes || "")
-        .match(/\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/)?.[0] || "";
+      const previousTag = String(
+        current[0].observacoes || ""
+      ).match(
+        /\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/
+      )?.[0] || "";
 
       let notes = clean(x.observacoes, 3000);
 
-      if (previousTag && !notes.includes("[MIMBOX_CLUBE:")) {
+      if (
+        previousTag &&
+        !notes.includes("[MIMBOX_CLUBE:")
+      ) {
         notes = (notes ? notes + "\n" : "") + previousTag;
       }
 
@@ -369,8 +406,10 @@ export default async function handler(req, res) {
       const id = req.body?.id;
       const tipo = clean(req.body?.tipo, 30);
 
-      if (!goodId(id) ||
-          !["enviar", "retirar", "cancelar"].includes(tipo)) {
+      if (
+        !goodId(id) ||
+        !["enviar", "retirar", "cancelar"].includes(tipo)
+      ) {
         return res.status(400).json({
           erro: "Operação inválida"
         });
@@ -390,47 +429,61 @@ export default async function handler(req, res) {
         });
       }
 
-      if (!["pago", "paid", "aprovado", "approved"].includes(
-        String(pedido.status_pagamento || "").toLowerCase()
-      )) {
+      if (
+        !["pago", "paid", "aprovado", "approved"].includes(
+          String(
+            pedido.status_pagamento || ""
+          ).toLowerCase()
+        )
+      ) {
         return res.status(409).json({
           erro: "Pedido sem pagamento confirmado"
         });
       }
 
-      if (["cancelado", "entregue"].includes(
-        pedido.status_entrega
-      )) {
+      if (
+        ["cancelado", "entregue"].includes(
+          pedido.status_entrega
+        )
+      ) {
         return res.status(409).json({
           erro: "Pedido já encerrado"
         });
       }
 
-      if (String(pedido.observacoes || "")
-        .includes("[MIMBOX_CLUBE:")) {
+      if (
+        String(pedido.observacoes || "")
+          .includes("[MIMBOX_CLUBE:")
+      ) {
         return res.status(409).json({
           erro: "Pedidos do Clube devem ser gerenciados em Entregas pendentes, caixa por caixa"
         });
       }
 
-      if (tipo === "enviar" &&
-          pedido.forma_entrega === "retirada") {
+      if (
+        tipo === "enviar" &&
+        pedido.forma_entrega === "retirada"
+      ) {
         return res.status(400).json({
           erro: "Este pedido é para retirada"
         });
       }
 
-      if (tipo === "retirar" &&
-          pedido.forma_entrega !== "retirada") {
+      if (
+        tipo === "retirar" &&
+        pedido.forma_entrega !== "retirada"
+      ) {
         return res.status(400).json({
           erro: "Este pedido é para entrega"
         });
       }
 
       const status_entrega =
-        tipo === "cancelar" ? "cancelado"
-        : tipo === "enviar" ? "enviado"
-        : "entregue";
+        tipo === "cancelar"
+          ? "cancelado"
+          : tipo === "enviar"
+            ? "enviado"
+            : "entregue";
 
       const rows = await db(
         "pedidos",
@@ -472,8 +525,8 @@ export default async function handler(req, res) {
 
       const registro =
         `[${new Date().toISOString()
-          .slice(0,16)
-          .replace("T"," ")} UTC] ${nova}`;
+          .slice(0, 16)
+          .replace("T", " ")} UTC] ${nova}`;
 
       const completo =
         (atual ? atual + "\n" : "") + registro;
@@ -529,8 +582,10 @@ export default async function handler(req, res) {
 
       // Pedidos da InfinitePay não têm pagamento
       // alterado manualmente nesta tela.
-      if (!String(existing[0].numero_pedido || "")
-        .startsWith("MANUAL-")) {
+      if (
+        !String(existing[0].numero_pedido || "")
+          .startsWith("MANUAL-")
+      ) {
         return res.status(403).json({
           erro: "Edite apenas pedidos manuais nesta tela"
         });
