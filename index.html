@@ -492,6 +492,9 @@
   ];
   function updateDeliveryMethod() {
     const pickup = deliveryMethod.value === 'pickup';
+    selectedFreight = null;
+    const freightResults = document.getElementById('freight-results');
+    if (freightResults) freightResults.textContent = '';
     document.getElementById('shipping-status').textContent = pickup ? 'Retirada grátis, sem endereço.' : 'Informe o CEP para consultar transportadoras. Frete grátis em compras acima de R$ 300.';
     freightOptions.hidden = pickup;
     pickupNote.hidden = !pickup;
@@ -519,22 +522,22 @@
     try {
       const response = await fetch('/api/calcular-frete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cep })
+        body: JSON.stringify({ cep, itemCount: cart.reduce((sum, item) => sum + Number(item.qty || 1), 0), subtotal: subtotal() })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Não foi possível consultar o frete.');
-      const options = Array.isArray(data) ? data : (data.options || data.services || data.quotes || []);
-      const valid = options.filter(x => x && !x.error && Number.isFinite(Number(x.price ?? x.custom_price)));
+      const options = Array.isArray(data) ? data : (data.opcoes || data.options || data.services || data.quotes || []);
+      const valid = options.filter(x => x && !x.error && Number.isFinite(Number(x.valor ?? x.custom_price ?? x.price)));
       if (!valid.length) { results.textContent = 'Nenhuma transportadora disponível para esse CEP.'; return; }
       results.replaceChildren();
       valid.forEach((option, i) => {
         const label = document.createElement('label');
         label.style.cssText = 'display:block;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;cursor:pointer';
         const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'freight-service'; radio.value = String(option.id ?? i);
-        radio.addEventListener('change', () => { selectedFreight = { id: option.id, name: option.name, company: option.company?.name }; });
-        const price = Number(option.custom_price ?? option.price);
-        const name = [option.company?.name || option.company, option.name].filter(x => typeof x === 'string').join(' — ');
-        const days = option.delivery_time ?? option.custom_delivery_time;
+        radio.addEventListener('change', () => { selectedFreight = { id: option.id, cep, name: option.servico ?? option.name, company: option.transportadora ?? option.company?.name }; });
+        const price = Number(option.valor ?? option.custom_price ?? option.price);
+        const name = [option.transportadora || option.company?.name || option.company, option.servico || option.name].filter(x => typeof x === 'string').join(' — ');
+        const days = option.prazo ?? option.custom_delivery_time ?? option.delivery_time;
         label.append(radio, document.createTextNode(' ' + (name || 'Transportadora') + ' · R$ ' + price.toFixed(2).replace('.', ',') + (days ? ' · ' + days + ' dias úteis estimados' : '')));
         results.append(label);
       });
@@ -549,6 +552,8 @@
   cepInput.addEventListener('input', () => {
     const digits = cepInput.value.replace(/\D/g, '').slice(0, 8);
     cepInput.value = digits.length > 5 ? digits.slice(0,5) + '-' + digits.slice(5) : digits;
+    selectedFreight = null;
+    document.getElementById('freight-results').textContent = '';
     if (digits.length !== 8) {
       cepStatus.textContent = 'Digite os 8 números do CEP para buscar o endereço.';
       return;
@@ -628,9 +633,12 @@
     }
 
 
-    if (deliveryMethod.value !== 'pickup') {
-      showCheckoutMessage('A cotação já pode ser consultada, mas o pagamento com entrega aguarda a integração segura do frete. Por enquanto, selecione retirada.');
-      return;
+    if (deliveryMethod.value === 'shipping') {
+      const currentCep = document.getElementById('checkout-cep').value.replace(/\D/g, '');
+      if (!selectedFreight || selectedFreight.cep !== currentCep) {
+        showCheckoutMessage('Calcule o frete e selecione uma transportadora antes de pagar.');
+        return;
+      }
     }
     const submitButton = checkoutForm.querySelector('button[type="submit"]');
     const originalText = submitButton.textContent;
@@ -660,6 +668,7 @@
         state: valueOf('state').toUpperCase()
       },
       deliveryMethod: deliveryMethod.value,
+      shippingServiceId: deliveryMethod.value === 'shipping' ? selectedFreight.id : undefined,
       preferences: valueOf('preferences'),
       avoid: valueOf('avoid')
     };
