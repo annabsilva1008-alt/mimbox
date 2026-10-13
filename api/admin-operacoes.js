@@ -1,5 +1,7 @@
 
-const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const base = (process.env.SUPABASE_URL || "")
+  .replace(/\/$/, "");
+
 const key = process.env.SUPABASE_SECRET_KEY;
 
 const headers = () => ({
@@ -13,15 +15,29 @@ const clean = (v, max = 500) =>
 
 const enc = v => encodeURIComponent(String(v));
 
+// Upload em JSON/base64 para permanecer na função já existente.
+// Limite menor que o bucket (5 MB) devido ao limite de requisição da Vercel.
+const MAX_IMAGE_BYTES = 2_500_000;
+const IMAGE_TYPES = {
+  "image/jpeg": { ext: "jpg", magic: b => b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+  "image/png": { ext: "png", magic: b => b.length >= 8 && b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) },
+  "image/webp": { ext: "webp", magic: b => b.length >= 12 && b.toString("ascii",0,4) === "RIFF" && b.toString("ascii",8,12) === "WEBP" }
+};
+
 async function db(table, method = "GET", query = "", body) {
-  const r = await fetch(`${base}/rest/v1/${table}${query}`, {
-    method,
-    headers: {
-      ...headers(),
-      Prefer: "return=representation"
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) })
-  });
+  const r = await fetch(
+    `${base}/rest/v1/${table}${query}`,
+    {
+      method,
+      headers: {
+        ...headers(),
+        Prefer: "return=representation"
+      },
+      ...(body === undefined
+        ? {}
+        : { body: JSON.stringify(body) })
+    }
+  );
 
   const raw = await r.text();
   let data;
@@ -34,7 +50,7 @@ async function db(table, method = "GET", query = "", body) {
 
   if (!r.ok) {
     throw Error(
-      typeof data === "object" && data !== null
+      typeof data === "object"
         ? data.message || data.details || "Erro Supabase"
         : String(data)
     );
@@ -57,12 +73,15 @@ async function admin(req) {
 
   if (!token) return false;
 
-  const r = await fetch(`${base}/auth/v1/user`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${token}`
+  const r = await fetch(
+    `${base}/auth/v1/user`,
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${token}`
+      }
     }
-  });
+  );
 
   if (!r.ok) return false;
 
@@ -88,7 +107,9 @@ const statuses = [
 ];
 
 const goodId = id =>
-  /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(id || ""));
+  /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(
+    String(id || "")
+  );
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -116,22 +137,20 @@ export default async function handler(req, res) {
       ? req.query.acao
       : req.body?.acao;
 
-    // CONSULTAS DO CRM
     if (req.method === "GET") {
       if (acao === "produtos") {
         return res.json({
           produtos: await db(
             "produtos",
             "GET",
-            "?select=*&order=nome.asc&limit=300"
+            "?select=*&order=ordem.asc,nome.asc&limit=300"
           )
         });
       }
 
       if (acao === "clientes") {
         const pedidos = await db(
-          "pedidos",
-          "GET",
+          "pedidos", "GET",
           "?select=id,numero_pedido,cliente_id,criado_em,valor_total,status_pagamento,status_entrega,forma_entrega,observacoes,itens,clientes(nome,email,telefone)&order=criado_em.desc&limit=500"
         );
         return res.json({ pedidos });
@@ -142,7 +161,7 @@ export default async function handler(req, res) {
           itens: await db(
             "estoque_mimbox",
             "GET",
-            "?select=*&order=nome.asc&limit=300"
+            "?select=*&order=ordem.asc,nome.asc&limit=300"
           )
         });
       }
@@ -177,98 +196,40 @@ export default async function handler(req, res) {
       });
     }
 
-    // EXCLUSÃO DEFINITIVA DE PRODUTO
-    if (acao === "produto_excluir") {
-      const id = req.body?.id;
-
-      if (!goodId(id)) {
-        return res.status(400).json({
-          erro: "ID do produto inválido"
-        });
-      }
-
-      const rows = await db(
-        "produtos",
-        "DELETE",
-        `?id=eq.${enc(id)}`
-      );
-
-      if (!rows.length) {
-        return res.status(404).json({
-          erro: "Produto não encontrado no CRM"
-        });
-      }
-
-      return res.json({
-        ok: true,
-        mensagem: "Produto excluído definitivamente"
-      });
-    }
-
-    // UPLOAD DE FOTO PARA SUPABASE STORAGE
     if (acao === "produto_imagem_upload") {
-      const tipo = String(req.body?.tipo || "");
-      const imagemBase64 = String(
-        req.body?.imagem_base64 || ""
-      );
-
-      const extensoes = {
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/webp": "webp"
-      };
+      const tipo = clean(req.body?.tipo, 50);
+      const dados = req.body?.imagem_base64;
+      const config = IMAGE_TYPES[tipo];
 
       if (
-        !extensoes[tipo] ||
-        !imagemBase64 ||
-        imagemBase64.length > 3500000 ||
-        !/^[A-Za-z0-9+/]+={0,2}$/.test(imagemBase64)
+        !config ||
+        typeof dados !== "string" ||
+        !dados ||
+        dados.length > 3_400_000 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(dados)
       ) {
         return res.status(400).json({
-          erro: "Imagem inválida ou muito grande"
+          erro: "Envie JPG, PNG ou WebP com até 2,5 MB."
         });
       }
 
-      const bytes = Buffer.from(imagemBase64, "base64");
+      const bytes = Buffer.from(dados, "base64");
 
-      if (!bytes.length || bytes.length > 2500000) {
+      if (
+        !bytes.length ||
+        bytes.length > MAX_IMAGE_BYTES ||
+        !config.magic(bytes)
+      ) {
         return res.status(400).json({
-          erro: "A imagem deve ter até 2,5 MB"
-        });
-      }
-
-      const assinaturaValida =
-        (
-          tipo === "image/jpeg" &&
-          bytes[0] === 0xff &&
-          bytes[1] === 0xd8 &&
-          bytes[2] === 0xff
-        ) ||
-        (
-          tipo === "image/png" &&
-          bytes.subarray(0, 8).equals(
-            Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
-          )
-        ) ||
-        (
-          tipo === "image/webp" &&
-          bytes.toString("ascii", 0, 4) === "RIFF" &&
-          bytes.toString("ascii", 8, 12) === "WEBP"
-        );
-
-      if (!assinaturaValida) {
-        return res.status(400).json({
-          erro: "O arquivo não corresponde ao tipo de imagem informado"
+          erro: "Imagem inválida ou maior que 2,5 MB."
         });
       }
 
       const { randomUUID } = await import("node:crypto");
-
+      const caminho = `catalogo/${randomUUID()}.${config.ext}`;
       const bucket = "produtos-mimbox";
-      const caminho =
-        `catalogo/${randomUUID()}.${extensoes[tipo]}`;
 
-      const resposta = await fetch(
+      const uploaded = await fetch(
         `${base}/storage/v1/object/${bucket}/${caminho}`,
         {
           method: "POST",
@@ -276,87 +237,34 @@ export default async function handler(req, res) {
             apikey: key,
             Authorization: `Bearer ${key}`,
             "Content-Type": tipo,
+            "Cache-Control": "public, max-age=3600",
             "x-upsert": "false"
           },
           body: bytes
         }
       );
 
-      if (!resposta.ok) {
-        const detalhe = await resposta.text();
-        throw Error(
-          "Falha no armazenamento da imagem: " +
-          detalhe.slice(0, 300)
-        );
+      if (!uploaded.ok) {
+        const erro = await uploaded.text();
+        console.error("Storage upload:", uploaded.status, erro);
+
+        return res.status(502).json({
+          erro: "Não foi possível enviar a foto ao Storage."
+        });
       }
 
       return res.json({
         ok: true,
-        imagem_url:
-          `${base}/storage/v1/object/public/${bucket}/${caminho}`
+        imagem_url: `${base}/storage/v1/object/public/${bucket}/${caminho}`
       });
     }
 
-    // GALERIA DE FOTOS DO PRODUTO (ATÉ 8 IMAGENS)
-    if (acao === "produto_galeria_salvar") {
-      const id = req.body?.id;
-      const imagens = req.body?.imagens;
-
-      if (
-        !goodId(id) ||
-        !Array.isArray(imagens) ||
-        imagens.length > 8 ||
-        imagens.some(
-          url =>
-            typeof url !== "string" ||
-            url.length > 2048 ||
-            !/^https:\/\/[^\s]+$/i.test(url)
-        )
-      ) {
-        return res.status(400).json({
-          erro: "Galeria inválida: envie até 8 URLs HTTPS."
-        });
-      }
-
-      const unicas = [
-        ...new Set(imagens.map(url => url.trim()))
-      ];
-
-      const existentes = await db(
-        "produtos",
-        "GET",
-        `?id=eq.${enc(id)}&select=id&limit=1`
-      );
-
-      if (!existentes.length) {
-        return res.status(404).json({
-          erro: "Produto não encontrado."
-        });
-      }
-
-      const rows = await db(
-        "produtos",
-        "PATCH",
-        `?id=eq.${enc(id)}`,
-        {
-          imagens: unicas,
-          imagem_url: unicas[0] || ""
-        }
-      );
-
-      return res.json({
-        ok: rows.length > 0,
-        imagens: unicas
-      });
-    }
-
-    // OCULTAR PRODUTO SEM EXCLUIR DO CRM
     if (acao === "produto_ocultar") {
       const id = req.body?.id;
 
       if (!goodId(id)) {
         return res.status(400).json({
-          erro: "ID inválido"
+          erro: "Produto inválido"
         });
       }
 
@@ -367,16 +275,29 @@ export default async function handler(req, res) {
         { disponivel: false }
       );
 
-      if (!rows.length) {
-        return res.status(404).json({
-          erro: "Produto não encontrado"
+      return res.json({ ok: rows.length > 0 });
+    }
+
+    if (acao === "produto_excluir") {
+      const id = req.body?.id;
+
+      if (!goodId(id)) {
+        return res.status(400).json({
+          erro: "Produto inválido"
         });
       }
 
-      return res.json({ ok: true });
+      // O histórico dos pedidos permanece na tabela pedidos;
+      // não apaga fotos do Storage.
+      const rows = await db(
+        "produtos",
+        "DELETE",
+        `?id=eq.${enc(id)}`
+      );
+
+      return res.json({ ok: rows.length > 0 });
     }
 
-    // ORDEM NA VITRINE
     if (acao === "produto_ordem") {
       const id = req.body?.id;
       const ordem = Number(req.body?.ordem);
@@ -399,16 +320,9 @@ export default async function handler(req, res) {
         { ordem }
       );
 
-      if (!rows.length) {
-        return res.status(404).json({
-          erro: "Produto não encontrado"
-        });
-      }
-
-      return res.json({ ok: true });
+      return res.json({ ok: rows.length > 0 });
     }
 
-    // EDITAR PRODUTO
     if (acao === "produto_editar") {
       const id = req.body?.id;
       const p = req.body?.produto || {};
@@ -431,24 +345,14 @@ export default async function handler(req, res) {
         descricao: clean(p.descricao, 2000),
         imagem_url: clean(p.imagem_url, 2048),
         disponivel: !!p.disponivel,
-        destaque: !!p.destaque
+        destaque: !!p.destaque,
+        ...(p.ordem !== undefined &&
+            Number.isSafeInteger(Number(p.ordem)) &&
+            Number(p.ordem) >= 0 &&
+            Number(p.ordem) <= 10000
+          ? { ordem: Number(p.ordem) }
+          : {})
       };
-
-      if (p.ordem !== undefined) {
-        const ordem = Number(p.ordem);
-
-        if (
-          !Number.isSafeInteger(ordem) ||
-          ordem < 0 ||
-          ordem > 10000
-        ) {
-          return res.status(400).json({
-            erro: "Ordem inválida"
-          });
-        }
-
-        produto.ordem = ordem;
-      }
 
       const rows = await db(
         "produtos",
@@ -457,12 +361,9 @@ export default async function handler(req, res) {
         produto
       );
 
-      return res.json({
-        ok: rows.length > 0
-      });
+      return res.json({ ok: rows.length > 0 });
     }
 
-    // CADASTRAR ITEM DE ESTOQUE
     if (acao === "estoque_criar") {
       const x = req.body?.item || {};
       const quantidade = Number(x.quantidade);
@@ -497,7 +398,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // EDITAR ESTOQUE
     if (acao === "estoque_editar") {
       const { id } = req.body || {};
       const quantidade = Number(req.body?.quantidade);
@@ -522,12 +422,9 @@ export default async function handler(req, res) {
         { quantidade, minimo }
       );
 
-      return res.json({
-        ok: rows.length > 0
-      });
+      return res.json({ ok: rows.length > 0 });
     }
 
-    // EDITAR ENVIO
     if (acao === "envio_editar") {
       const { id } = req.body || {};
       const x = req.body?.envio || {};
@@ -563,7 +460,8 @@ export default async function handler(req, res) {
 
       if (
         previousTag &&
-        !notes.includes("[MIMBOX_CLUBE:")
+        !notes.includes("[MIMBOX_CLUBE:") &&
+        !notes.includes("[MIMBOX_TIPO:avulso]")
       ) {
         notes = (notes ? notes + "\n" : "") + previousTag;
       }
@@ -602,9 +500,7 @@ export default async function handler(req, res) {
           "envios_mimbox",
           "PATCH",
           `?pedido_id=eq.${enc(id)}`,
-          {
-            rastreio: clean(x.rastreio, 150)
-          }
+          { rastreio: clean(x.rastreio, 150) }
         );
       } else {
         await db(
@@ -621,7 +517,6 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
-    // ATENDIMENTO DO PEDIDO
     if (acao === "pedido_atendimento") {
       const id = req.body?.id;
       const tipo = clean(req.body?.tipo, 30);
@@ -651,9 +546,7 @@ export default async function handler(req, res) {
 
       if (
         !["pago", "paid", "aprovado", "approved"].includes(
-          String(
-            pedido.status_pagamento || ""
-          ).toLowerCase()
+          String(pedido.status_pagamento || "").toLowerCase()
         )
       ) {
         return res.status(409).json({
@@ -699,11 +592,9 @@ export default async function handler(req, res) {
       }
 
       const status_entrega =
-        tipo === "cancelar"
-          ? "cancelado"
-          : tipo === "enviar"
-            ? "enviado"
-            : "entregue";
+        tipo === "cancelar" ? "cancelado"
+        : tipo === "enviar" ? "enviado"
+        : "entregue";
 
       const rows = await db(
         "pedidos",
@@ -717,7 +608,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // SALVAR OBSERVAÇÃO
     if (acao === "observacao_salvar") {
       const id = req.body?.id;
       const nova = clean(req.body?.texto, 650);
@@ -746,8 +636,8 @@ export default async function handler(req, res) {
 
       const registro =
         `[${new Date().toISOString()
-          .slice(0, 16)
-          .replace("T", " ")} UTC] ${nova}`;
+          .slice(0,16)
+          .replace("T"," ")} UTC] ${nova}`;
 
       const completo =
         (atual ? atual + "\n" : "") + registro;
@@ -770,11 +660,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // ALTERAR STATUS DE PEDIDO MANUAL
     if (acao === "pedido_status") {
       const id = req.body?.id;
+
       const status_entrega =
         clean(req.body?.status_entrega, 40);
+
       const status_pagamento =
         clean(req.body?.status_pagamento, 40);
 
@@ -828,10 +719,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // CADASTRAR PEDIDO MANUAL
     if (acao === "pedido_manual") {
       const c = req.body?.cliente || {};
       const p = req.body?.pedido || {};
+
       const total = Number(p.valor_total);
       const quantidade = Number(p.quantidade);
 
@@ -895,9 +786,12 @@ export default async function handler(req, res) {
             ),
             quantidade
           }],
-          observacoes: clean(
-            p.observacoes, 1000
-          )
+          observacoes: (
+            clean(p.observacoes, 900) +
+            "\n[MIMBOX_TIPO:" +
+            (p.tipo_pedido === "clube" ? "clube" : "avulso") +
+            "]"
+          ).trim()
         }
       );
 
@@ -912,7 +806,9 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error("admin-operacoes", err);
+    console.error(
+      "admin-operacoes", err
+    );
 
     return res.status(500).json({
       erro: "Falha na operação: " + err.message
