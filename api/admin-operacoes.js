@@ -298,7 +298,6 @@ export default async function handler(req, res) {
     }
 
     // GALERIA DE FOTOS DO PRODUTO (ATÉ 8 IMAGENS)
-    // Requer coluna produtos.imagens (jsonb) no Supabase.
     if (acao === "produto_galeria_salvar") {
       const id = req.body?.id;
       const imagens = req.body?.imagens;
@@ -351,6 +350,64 @@ export default async function handler(req, res) {
       });
     }
 
+    // OCULTAR PRODUTO SEM EXCLUIR DO CRM
+    if (acao === "produto_ocultar") {
+      const id = req.body?.id;
+
+      if (!goodId(id)) {
+        return res.status(400).json({
+          erro: "ID inválido"
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { disponivel: false }
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          erro: "Produto não encontrado"
+        });
+      }
+
+      return res.json({ ok: true });
+    }
+
+    // ORDEM NA VITRINE
+    if (acao === "produto_ordem") {
+      const id = req.body?.id;
+      const ordem = Number(req.body?.ordem);
+
+      if (
+        !goodId(id) ||
+        !Number.isSafeInteger(ordem) ||
+        ordem < 0 ||
+        ordem > 10000
+      ) {
+        return res.status(400).json({
+          erro: "Ordem inválida"
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { ordem }
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          erro: "Produto não encontrado"
+        });
+      }
+
+      return res.json({ ok: true });
+    }
+
     // EDITAR PRODUTO
     if (acao === "produto_editar") {
       const id = req.body?.id;
@@ -376,6 +433,22 @@ export default async function handler(req, res) {
         disponivel: !!p.disponivel,
         destaque: !!p.destaque
       };
+
+      if (p.ordem !== undefined) {
+        const ordem = Number(p.ordem);
+
+        if (
+          !Number.isSafeInteger(ordem) ||
+          ordem < 0 ||
+          ordem > 10000
+        ) {
+          return res.status(400).json({
+            erro: "Ordem inválida"
+          });
+        }
+
+        produto.ordem = ordem;
+      }
 
       const rows = await db(
         "produtos",
