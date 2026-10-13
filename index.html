@@ -766,7 +766,7 @@
   }
   async function sync() {
     try {
-      const response = await fetch('/api/produtos-publicos', {cache:'no-store'});
+      const response = await fetch('/api/admin-produtos?publico=1', {cache:'no-store'});
       if (!response.ok) return;
       const data = await response.json();
       if (!Array.isArray(data.produtos)) return;
