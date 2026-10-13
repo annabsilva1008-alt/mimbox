@@ -22,7 +22,7 @@ function lerCookie(req) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
 
   if (req.method !== "GET") {
     return res.status(405).json({
@@ -30,7 +30,10 @@ export default async function handler(req, res) {
     });
   }
 
-  const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const base = String(
+    process.env.SUPABASE_URL || ""
+  ).replace(/\/$/, "");
+
   const secret = process.env.SUPABASE_SECRET_KEY;
 
   if (!base || !secret) {
@@ -39,80 +42,110 @@ export default async function handler(req, res) {
     });
   }
 
-  const token = lerCookie(req);
+  const publico =
+    req.query?.publico === "1";
 
-  if (!token) {
-    return res.status(401).json({
-      erro: "Faça login no painel"
-    });
+  if (publico) {
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=120"
+    );
+  } else {
+    res.setHeader("Cache-Control", "no-store");
   }
 
   try {
-    // Confirma que a sessão pertence a um usuário válido.
-    const usuarioResposta = await fetch(
-      `${base}/auth/v1/user`,
-      {
-        headers: {
-          apikey: secret,
-          Authorization: `Bearer ${token}`
-        }
+    // O acesso administrativo continua protegido.
+    if (!publico) {
+      const token = lerCookie(req);
+
+      if (!token) {
+        return res.status(401).json({
+          erro: "Faça login no painel"
+        });
       }
-    );
 
-    if (!usuarioResposta.ok) {
-      return res.status(401).json({
-        erro: "Sessão inválida ou expirada"
-      });
-    }
-
-    const usuario = await usuarioResposta.json();
-
-    if (!usuario.id) {
-      return res.status(401).json({
-        erro: "Usuário inválido"
-      });
-    }
-
-    // Confirma a permissão administrativa no banco.
-    const adminResposta = await fetch(
-      `${base}/rest/v1/administradores?usuario_id=eq.${encodeURIComponent(usuario.id)}&select=usuario_id`,
-      {
-        headers: {
-          apikey: secret,
-          Accept: "application/json"
+      const usuarioResposta = await fetch(
+        `${base}/auth/v1/user`,
+        {
+          headers: {
+            apikey: secret,
+            Authorization: `Bearer ${token}`
+          }
         }
+      );
+
+      if (!usuarioResposta.ok) {
+        return res.status(401).json({
+          erro: "Sessão inválida ou expirada"
+        });
       }
-    );
 
-    if (!adminResposta.ok) {
-      return res.status(503).json({
-        erro: "Falha ao verificar permissões"
-      });
+      const usuario = await usuarioResposta.json();
+
+      if (!usuario.id) {
+        return res.status(401).json({
+          erro: "Usuário inválido"
+        });
+      }
+
+      const adminResposta = await fetch(
+        `${base}/rest/v1/administradores?usuario_id=eq.${encodeURIComponent(usuario.id)}&select=usuario_id`,
+        {
+          headers: {
+            apikey: secret,
+            Accept: "application/json"
+          }
+        }
+      );
+
+      if (!adminResposta.ok) {
+        return res.status(503).json({
+          erro: "Falha ao verificar permissões"
+        });
+      }
+
+      const administradores =
+        await adminResposta.json();
+
+      if (
+        !Array.isArray(administradores) ||
+        administradores.length !== 1
+      ) {
+        return res.status(403).json({
+          erro: "Acesso não autorizado"
+        });
+      }
     }
 
-    const administradores = await adminResposta.json();
+    // Campos que podem ser mostrados na loja.
+    const campos =
+      "id,nome,descricao,colecao,preco," +
+      "imagem_url,disponivel,destaque,ordem";
 
-    if (
-      !Array.isArray(administradores) ||
-      administradores.length !== 1
-    ) {
-      return res.status(403).json({
-        erro: "Acesso não autorizado"
-      });
-    }
+    const consulta =
+      `${base}/rest/v1/produtos` +
+      `?select=${campos}` +
+      `&order=ordem.asc,criado_em.asc` +
+      `&limit=200`;
 
-    // Consulta os produtos, sem alterar nenhum registro.
     const produtosResposta = await fetch(
-      `${base}/rest/v1/produtos?select=id,nome,descricao,colecao,preco,imagem_url,disponivel,destaque,ordem&order=ordem.asc,criado_em.asc`,
+      consulta,
       {
         headers: {
           apikey: secret,
+          Authorization: `Bearer ${secret}`,
           Accept: "application/json"
         }
       }
     );
 
     if (!produtosResposta.ok) {
+      console.error(
+        "Erro ao consultar produtos:",
+        produtosResposta.status
+      );
+
       return res.status(503).json({
         erro: "Não foi possível consultar os produtos"
       });
@@ -120,12 +153,20 @@ export default async function handler(req, res) {
 
     const produtos = await produtosResposta.json();
 
+    if (!Array.isArray(produtos)) {
+      return res.status(503).json({
+        erro: "Resposta inválida do catálogo"
+      });
+    }
+
     return res.status(200).json({
       sucesso: true,
       produtos
     });
 
-  } catch {
+  } catch (erro) {
+    console.error("admin-produtos:", erro);
+
     return res.status(503).json({
       erro: "Serviço temporariamente indisponível"
     });
