@@ -172,6 +172,11 @@ main{
   main{padding:15px}
   .grid{grid-template-columns:1fr}
 }
+.gallery-items{display:grid;gap:10px;margin:12px 0}
+.gallery-entry{display:flex;align-items:center;gap:15px;background:white;border:1px solid #bbb;border-radius:10px;padding:10px}
+.gallery-entry img{width:100px;height:100px;object-fit:contain;border-radius:8px;background:#f5f5f5}
+.gallery-entry .btn{padding:7px 10px;font-size:12px}
+.gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
 </style>
 </head>
 <body>
@@ -1045,6 +1050,90 @@ async function uploadProductPhoto(photo) {
   return result.imagem_url;
 }
 
+
+// Galeria visual: a primeira imagem é a capa da vitrine.
+function productGallery(produto = {}) {
+  const wrap = element("section", undefined, "gallery-editor");
+  wrap.append(element("h3", "📸 Galeria de fotos (até 8)"));
+  wrap.append(element("p", "Arraste pela ordem usando as setas. A primeira foto é a principal. JPG, PNG ou WebP, até 2,5 MB por foto.", "muted"));
+  let imagens = Array.isArray(produto.imagens)
+    ? produto.imagens.filter(x => typeof x === "string" && x.trim())
+    : [];
+  if (produto.imagem_url && !imagens.includes(produto.imagem_url)) {
+    imagens.unshift(produto.imagem_url);
+  }
+  imagens = [...new Set(imagens)].slice(0, 8);
+  const items = element("div", undefined, "gallery-items");
+  const files = document.createElement("input");
+  files.type = "file";
+  files.accept = "image/jpeg,image/png,image/webp";
+  files.multiple = true;
+  const url = field("Ou adicionar imagem por URL HTTPS");
+  url.input.placeholder = "https://...";
+  const addUrl = action("Adicionar URL", () => {
+    const value = url.input.value.trim();
+    if (!/^https:\/\/[^\s]+$/i.test(value)) throw Error("Informe uma URL HTTPS válida.");
+    if (imagens.includes(value)) throw Error("Esta imagem já está na galeria.");
+    if (imagens.length >= 8) throw Error("Limite de 8 fotos atingido.");
+    imagens.push(value);
+    url.input.value = "";
+    render();
+  });
+  function render() {
+    items.replaceChildren();
+    if (!imagens.length) items.append(element("p", "Nenhuma foto adicionada.", "muted"));
+    imagens.forEach((src, index) => {
+      const row = element("div", undefined, "gallery-entry");
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "Foto " + (index + 1);
+      img.loading = "lazy";
+      const info = element("div");
+      info.append(element("strong", index === 0 ? "⭐ Principal" : "Foto " + (index + 1)));
+      const controls = element("div", undefined, "row");
+      if (index > 0) controls.append(action("↑ Subir", () => {
+        [imagens[index-1], imagens[index]] = [imagens[index], imagens[index-1]];
+        render();
+      }));
+      if (index < imagens.length - 1) controls.append(action("↓ Descer", () => {
+        [imagens[index+1], imagens[index]] = [imagens[index], imagens[index+1]];
+        render();
+      }));
+      controls.append(action("Remover", () => {
+        imagens.splice(index, 1);
+        render();
+      }));
+      info.append(controls);
+      row.append(img, info);
+      items.append(row);
+    });
+  }
+  async function uploadPending() {
+    const pending = Array.from(files.files || []);
+    if (imagens.length + pending.length > 8) throw Error("A galeria aceita até 8 fotos.");
+    for (const file of pending) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || !file.size || file.size > 2500000) {
+        throw Error("Cada foto precisa ser JPG, PNG ou WebP com até 2,5 MB.");
+      }
+    }
+    for (const file of pending) {
+      const encoded = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = () => reject(Error("Não foi possível ler " + file.name));
+        reader.readAsDataURL(file);
+      });
+      const result = await operations("produto_imagem_upload", {tipo:file.type, imagem_base64:encoded});
+      if (!result.ok || !result.imagem_url) throw Error("Falha no upload de " + file.name);
+      if (!imagens.includes(result.imagem_url)) imagens.push(result.imagem_url);
+    }
+    files.value = "";
+    render();
+  }
+  wrap.append(items, files, url.wrap, addUrl);
+  render();
+  return {wrap, uploadPending, getImages: () => [...imagens]};
+}
 function isClubCatalogProduct(p){
   const text = String((p.nome||"")+" "+(p.colecao||"")).toLowerCase();
   return /mimbox\s*clube|clube\s*mimbox|clube\s*[369]\s*mes|plano\s*[369]\s*mes/.test(text);
@@ -1076,13 +1165,13 @@ function clubsCatalog(area){
   }
   const note=card("Gerenciamento e segurança");
   note.append(element("p","Os preços e as descrições destes registros podem ser editados na aba Produtos. A contratação e o preço efetivamente cobrado dependem também da API de checkout, que não é alterada por esta página."));
-  note.append(element("p","Galerias com várias fotos dependem de suporte da API e do banco de dados. O upload de uma foto principal continua disponível em Produtos.","muted"));
+  note.append(element("p","A galeria é gerenciada na aba Produtos. A exibição de várias fotos no site ainda depende da atualização da vitrine.","muted"));
   area.append(note);
 }
 
 function products(area){
   const info=card("Catálogo administrável");
-  info.append(element("p","Aqui você edita as boxes e os planos do Clube registrados no Supabase. A foto principal é enviada pelo formulário abaixo."));
+  info.append(element("p","Aqui você edita as boxes e os planos do Clube registrados no Supabase. Você pode adicionar até 8 fotos por produto, escolher a principal e reorganizar a galeria."));
   info.append(element("p","Antes de cadastrar um produto que já existe no site, procure-o na lista abaixo para evitar duplicatas.","muted"));
   area.append(info);
   const create = card("➕ Cadastrar produto");
@@ -1096,8 +1185,8 @@ function products(area){
   };
   f.ordem.input.step = "1";
   for (const x of Object.values(f)) form.append(x.wrap);
-  const photo = productPhoto("Foto do produto");
-  form.append(photo.wrap);
+  const gallery = productGallery();
+  form.append(gallery.wrap);
   f.nome.input.required = true;
   f.preco.input.required = true;
   const available = checkbox("Produto disponível", true);
@@ -1110,7 +1199,9 @@ function products(area){
     event.preventDefault();
     save.disabled = true;
     try {
-      const imagem_url = await uploadProductPhoto(photo);
+      await gallery.uploadPending();
+      const imagens = gallery.getImages();
+      const imagem_url = imagens[0] || "";
       const result = await request("/api/admin-salvar-produto", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -1124,6 +1215,10 @@ function products(area){
           destaque: featured.input.checked
         })
       });
+      if (result.produto?.id && imagens.length) {
+        const saved = await operations("produto_galeria_salvar", {id:result.produto.id, imagens});
+        if (!saved.ok) throw Error("Produto criado, mas não foi possível salvar a galeria. Abra o produto e tente novamente.");
+      }
       const ordem = Number(f.ordem.input.value);
       if (result.produto?.id && Number.isSafeInteger(ordem) && ordem >= 0 && ordem <= 10000 && ordem !== 0) {
         await operations("produto_ordem", {id: result.produto.id, ordem});
@@ -1155,14 +1250,16 @@ function products(area){
     };
     inputs.ordem.input.step = "1";
     for (const x of Object.values(inputs)) item.append(x.wrap);
-    const photo = productPhoto("Foto do anúncio", p.imagem_url || "");
-    item.append(photo.wrap);
+    const gallery = productGallery(p);
+    item.append(gallery.wrap);
     const av = checkbox("Disponível", p.disponivel);
     const ft = checkbox("Destaque", p.destaque);
     item.append(av.wrap, ft.wrap);
     const buttons = element("div", undefined, "row");
     buttons.append(action("Salvar alterações", async () => {
-      const imagem_url = await uploadProductPhoto(photo);
+      await gallery.uploadPending();
+      const imagens = gallery.getImages();
+      const imagem_url = imagens[0] || "";
       const ordem = Number(inputs.ordem.input.value);
       if (!Number.isSafeInteger(ordem) || ordem < 0 || ordem > 10000) throw Error("Ordem deve ser um número inteiro de 0 a 10000.");
       const result = await operations("produto_editar", {
@@ -1179,6 +1276,8 @@ function products(area){
         }
       });
       if (!result.ok) throw Error("Produto não foi atualizado.");
+      const saved = await operations("produto_galeria_salvar", {id:p.id, imagens});
+      if (!saved.ok) throw Error("Dados salvos, mas houve falha ao salvar a galeria.");
       await openPage("produtos");
       notify("Produto atualizado com sucesso.");
     }));
