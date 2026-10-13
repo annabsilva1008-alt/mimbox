@@ -25,10 +25,24 @@ export default async function handler(req, res) {
       });
     }
 
+    const itemCount = Number(req.body?.itemCount ?? 1);
+    const subtotal = Number(req.body?.subtotal ?? 0);
+
+    if (
+      !Number.isInteger(itemCount) ||
+      itemCount < 1 ||
+      itemCount > 100 ||
+      !Number.isFinite(subtotal) ||
+      subtotal < 0
+    ) {
+      return res.status(400).json({
+        error: "Dados do carrinho inválidos."
+      });
+    }
+
     const token = process.env.MELHOR_ENVIO_TOKEN;
 
     if (!token) {
-      console.error("Token do Melhor Envio não configurado.");
       return res.status(503).json({
         error: "Cotação de frete indisponível."
       });
@@ -47,38 +61,59 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           from: { postal_code: ORIGIN_CEP },
           to: { postal_code: cep },
-          package: PACKAGE
+          package: {
+            ...PACKAGE,
+            weight: Number(
+              (PACKAGE.weight * itemCount).toFixed(2)
+            )
+          },
+          options: {
+            insurance_value: Number(
+              (subtotal / 100).toFixed(2)
+            ),
+            receipt: false,
+            own_hand: false
+          }
         })
       }
     );
 
-    if (!response.ok) {
-      console.error("Erro Melhor Envio:", response.status);
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !Array.isArray(data)) {
       return res.status(502).json({
         error: "Não foi possível consultar o frete."
       });
     }
 
-    const data = await response.json();
-
-    const opcoes = (Array.isArray(data) ? data : [])
+    const opcoes = data
       .filter(opcao =>
+        opcao &&
         !opcao.error &&
-        opcao.id &&
-        Number.isFinite(Number(opcao.custom_price ?? opcao.price))
+        opcao.id != null &&
+        Number.isFinite(
+          Number(opcao.custom_price ?? opcao.price)
+        ) &&
+        Number(opcao.custom_price ?? opcao.price) >= 0
       )
       .map(opcao => ({
         id: opcao.id,
-        transportadora: opcao.company?.name || "Transportadora",
+        transportadora:
+          opcao.company?.name || "Transportadora",
         servico: opcao.name,
-        valor: Number(opcao.custom_price ?? opcao.price),
-        prazo: opcao.custom_delivery_time ?? opcao.delivery_time
+        valor: Number(
+          opcao.custom_price ?? opcao.price
+        ),
+        prazo:
+          opcao.custom_delivery_time ??
+          opcao.delivery_time
       }));
 
     return res.status(200).json({ opcoes });
 
   } catch (error) {
     console.error("Erro ao calcular frete:", error);
+
     return res.status(500).json({
       error: "Não foi possível calcular o frete."
     });
