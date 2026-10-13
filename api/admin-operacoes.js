@@ -1,7 +1,5 @@
 
-const base = (process.env.SUPABASE_URL || "")
-  .replace(/\/$/, "");
-
+const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const key = process.env.SUPABASE_SECRET_KEY;
 
 const headers = () => ({
@@ -16,19 +14,14 @@ const clean = (v, max = 500) =>
 const enc = v => encodeURIComponent(String(v));
 
 async function db(table, method = "GET", query = "", body) {
-  const r = await fetch(
-    `${base}/rest/v1/${table}${query}`,
-    {
-      method,
-      headers: {
-        ...headers(),
-        Prefer: "return=representation"
-      },
-      ...(body === undefined
-        ? {}
-        : { body: JSON.stringify(body) })
-    }
-  );
+  const r = await fetch(`${base}/rest/v1/${table}${query}`, {
+    method,
+    headers: {
+      ...headers(),
+      Prefer: "return=representation"
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) })
+  });
 
   const raw = await r.text();
   let data;
@@ -41,7 +34,7 @@ async function db(table, method = "GET", query = "", body) {
 
   if (!r.ok) {
     throw Error(
-      typeof data === "object"
+      typeof data === "object" && data !== null
         ? data.message || data.details || "Erro Supabase"
         : String(data)
     );
@@ -64,15 +57,12 @@ async function admin(req) {
 
   if (!token) return false;
 
-  const r = await fetch(
-    `${base}/auth/v1/user`,
-    {
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${token}`
-      }
+  const r = await fetch(`${base}/auth/v1/user`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${token}`
     }
-  );
+  });
 
   if (!r.ok) return false;
 
@@ -98,9 +88,7 @@ const statuses = [
 ];
 
 const goodId = id =>
-  /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(
-    String(id || "")
-  );
+  /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(id || ""));
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -128,6 +116,7 @@ export default async function handler(req, res) {
       ? req.query.acao
       : req.body?.acao;
 
+    // CONSULTAS DO CRM
     if (req.method === "GET") {
       if (acao === "produtos") {
         return res.json({
@@ -141,7 +130,8 @@ export default async function handler(req, res) {
 
       if (acao === "clientes") {
         const pedidos = await db(
-          "pedidos", "GET",
+          "pedidos",
+          "GET",
           "?select=id,numero_pedido,cliente_id,criado_em,valor_total,status_pagamento,status_entrega,forma_entrega,observacoes,itens,clientes(nome,email,telefone)&order=criado_em.desc&limit=500"
         );
         return res.json({ pedidos });
@@ -187,7 +177,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // EXCLUIR PRODUTO DEFINITIVAMENTE
+    // EXCLUSÃO DEFINITIVA DE PRODUTO
     if (acao === "produto_excluir") {
       const id = req.body?.id;
 
@@ -215,6 +205,99 @@ export default async function handler(req, res) {
       });
     }
 
+    // UPLOAD DE FOTO PARA SUPABASE STORAGE
+    if (acao === "produto_imagem_upload") {
+      const tipo = String(req.body?.tipo || "");
+      const imagemBase64 = String(
+        req.body?.imagem_base64 || ""
+      );
+
+      const extensoes = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+      };
+
+      if (
+        !extensoes[tipo] ||
+        !imagemBase64 ||
+        imagemBase64.length > 3500000 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(imagemBase64)
+      ) {
+        return res.status(400).json({
+          erro: "Imagem inválida ou muito grande"
+        });
+      }
+
+      const bytes = Buffer.from(imagemBase64, "base64");
+
+      if (!bytes.length || bytes.length > 2500000) {
+        return res.status(400).json({
+          erro: "A imagem deve ter até 2,5 MB"
+        });
+      }
+
+      const assinaturaValida =
+        (
+          tipo === "image/jpeg" &&
+          bytes[0] === 0xff &&
+          bytes[1] === 0xd8 &&
+          bytes[2] === 0xff
+        ) ||
+        (
+          tipo === "image/png" &&
+          bytes.subarray(0, 8).equals(
+            Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+          )
+        ) ||
+        (
+          tipo === "image/webp" &&
+          bytes.toString("ascii", 0, 4) === "RIFF" &&
+          bytes.toString("ascii", 8, 12) === "WEBP"
+        );
+
+      if (!assinaturaValida) {
+        return res.status(400).json({
+          erro: "O arquivo não corresponde ao tipo de imagem informado"
+        });
+      }
+
+      const { randomUUID } = await import("node:crypto");
+
+      const bucket = "produtos-mimbox";
+      const caminho =
+        `catalogo/${randomUUID()}.${extensoes[tipo]}`;
+
+      const resposta = await fetch(
+        `${base}/storage/v1/object/${bucket}/${caminho}`,
+        {
+          method: "POST",
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": tipo,
+            "x-upsert": "false"
+          },
+          body: bytes
+        }
+      );
+
+      if (!resposta.ok) {
+        const detalhe = await resposta.text();
+        throw Error(
+          "Falha no armazenamento da imagem: " +
+          detalhe.slice(0, 300)
+        );
+      }
+
+      return res.json({
+        ok: true,
+        imagem_url:
+          `${base}/storage/v1/object/public/${bucket}/${caminho}`
+      });
+    }
+
+    // EDITAR PRODUTO
     if (acao === "produto_editar") {
       const id = req.body?.id;
       const p = req.body?.produto || {};
@@ -247,9 +330,12 @@ export default async function handler(req, res) {
         produto
       );
 
-      return res.json({ ok: rows.length > 0 });
+      return res.json({
+        ok: rows.length > 0
+      });
     }
 
+    // CADASTRAR ITEM DE ESTOQUE
     if (acao === "estoque_criar") {
       const x = req.body?.item || {};
       const quantidade = Number(x.quantidade);
@@ -284,6 +370,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // EDITAR ESTOQUE
     if (acao === "estoque_editar") {
       const { id } = req.body || {};
       const quantidade = Number(req.body?.quantidade);
@@ -308,9 +395,12 @@ export default async function handler(req, res) {
         { quantidade, minimo }
       );
 
-      return res.json({ ok: rows.length > 0 });
+      return res.json({
+        ok: rows.length > 0
+      });
     }
 
+    // EDITAR ENVIO
     if (acao === "envio_editar") {
       const { id } = req.body || {};
       const x = req.body?.envio || {};
@@ -385,7 +475,9 @@ export default async function handler(req, res) {
           "envios_mimbox",
           "PATCH",
           `?pedido_id=eq.${enc(id)}`,
-          { rastreio: clean(x.rastreio, 150) }
+          {
+            rastreio: clean(x.rastreio, 150)
+          }
         );
       } else {
         await db(
@@ -402,6 +494,7 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // ATENDIMENTO DO PEDIDO
     if (acao === "pedido_atendimento") {
       const id = req.body?.id;
       const tipo = clean(req.body?.tipo, 30);
@@ -497,6 +590,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // SALVAR OBSERVAÇÃO
     if (acao === "observacao_salvar") {
       const id = req.body?.id;
       const nova = clean(req.body?.texto, 650);
@@ -549,6 +643,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // ALTERAR STATUS DE PEDIDO MANUAL
     if (acao === "pedido_status") {
       const id = req.body?.id;
       const status_entrega =
@@ -606,6 +701,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // CADASTRAR PEDIDO MANUAL
     if (acao === "pedido_manual") {
       const c = req.body?.cliente || {};
       const p = req.body?.pedido || {};
@@ -689,9 +785,7 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error(
-      "admin-operacoes", err
-    );
+    console.error("admin-operacoes", err);
 
     return res.status(500).json({
       erro: "Falha na operação: " + err.message
