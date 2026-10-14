@@ -353,7 +353,7 @@
 <div class="cart-items" id="cart-items"></div>
 <div class="cart-summary" hidden="" id="cart-summary"><div class="checkout-steps" id="checkout-steps">1. Pedido   →   2. Recebimento   →   3. Pagamento</div>
 <div class="cart-line"><span>Subtotal</span><strong id="cart-subtotal">R$ 0,00</strong></div>
-<p class="cart-shipping-note">Retirada gratuita ou envio por transportadora. Frete grátis em compras acima de R$ 300.</p>
+<p class="cart-shipping-note">Retirada grátis: Rua Américo Brasiliense, 2078 — Chácara Santo Antônio, SP. Terça a quinta, 10h–18h (outros dias sob agendamento). Ou escolha envio por transportadora. Frete grátis em compras acima de R$ 300.</p>
 <button class="btn cart-checkout" id="cart-checkout" type="button">Continuar para recebimento →</button>
 <form class="cart-checkout-form" hidden="" id="cart-checkout-form"><button class="cart-clear" id="checkout-back" type="button">← Voltar ao pedido</button>
 <p class="form-note">Só precisamos do seu nome e WhatsApp. Você escolhe Pix ou cartão na InfinitePay.</p>
@@ -378,7 +378,14 @@
 <label>Cidade<input autocomplete="address-level2" id="checkout-city" maxlength="80" name="city" required=""/></label>
 <label>Estado (UF)<input autocomplete="address-level1" id="checkout-state" maxlength="2" name="state" placeholder="SP" required=""/></label>
 </div>
-<p class="form-note" hidden="" id="pickup-note">Retirada disponível para clientes da cidade de São Paulo. As instruções serão informadas após a confirmação do pedido.</p>
+<div class="form-note" id="pickup-note" role="note" style="background:#fff3bf;border:1px solid #222;border-radius:10px;padding:12px;line-height:1.6">
+<strong>📍 Retirada grátis — Mimbox</strong><br>
+Agência da Shopee — Rua Américo Brasiliense, 2078, Chácara Santo Antônio, São Paulo/SP — CEP 04715-005.<br>
+Referência: próximo à Granja Julieta.<br>
+<strong>Terça a quinta, das 10h às 18h.</strong><br>
+Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%20Fiz%20um%20pedido%20pelo%20site%20e%20gostaria%20de%20combinar%20a%20retirada%20em%20outro%20dia.%20Podem%20me%20ajudar%3F" target="_blank" rel="noopener noreferrer" style="font-weight:800;text-decoration:underline">combine pelo nosso WhatsApp</a>.<br>
+<small>Aguarde a confirmação de que o pedido está pronto antes de ir ao local.</small>
+</div>
 <div id="club-preferences-fields">
 <label>Preferências para o clube (opcional)<textarea maxlength="600" name="preferences" placeholder="Temas que gosta, cores, estilos, observações..."></textarea></label>
 <label>Algo que devemos evitar? (opcional)<textarea maxlength="400" name="avoid" placeholder="Temas, cores ou itens que prefere não receber."></textarea></label>
@@ -525,7 +532,7 @@
     selectedFreight = null;
     const freightResults = document.getElementById('freight-results');
     if (freightResults) freightResults.textContent = '';
-    document.getElementById('shipping-status').textContent = pickup ? 'Retirada grátis, sem endereço.' : 'Informe o CEP para consultar transportadoras. Frete grátis em compras acima de R$ 300.';
+    document.getElementById('shipping-status').textContent = pickup ? 'Retirada grátis — Rua Américo Brasiliense, 2078, Chácara Santo Antônio, São Paulo/SP. Terça a quinta, 10h–18h.' : 'Informe o CEP para consultar transportadoras. Frete grátis em compras acima de R$ 300.';
     freightOptions.hidden = pickup;
     pickupNote.hidden = !pickup;
     document.getElementById('checkout-address-fields').hidden = pickup;
