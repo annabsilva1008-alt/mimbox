@@ -259,6 +259,25 @@ export default async function handler(req, res) {
       });
     }
 
+    if (acao === "produto_galeria_salvar") {
+      const id = req.body?.id;
+      const imagens = req.body?.imagens;
+
+      if (!goodId(id) || !Array.isArray(imagens) || imagens.length > 8 ||
+          imagens.some(url => typeof url !== "string" || url.length > 2048 ||
+            !/^https:\/\/[^\s]+$/i.test(url)) ||
+          new Set(imagens).size !== imagens.length) {
+        return res.status(400).json({ erro: "Galeria inválida. Use até 8 URLs HTTPS diferentes." });
+      }
+
+      const rows = await db("produtos", "PATCH", `?id=eq.${enc(id)}`, {
+        imagens,
+        imagem_url: imagens[0] || ""
+      });
+      if (!rows.length) return res.status(404).json({ erro: "Produto não encontrado" });
+      return res.json({ ok: true, produto: rows[0] });
+    }
+
     if (acao === "produto_ocultar") {
       const id = req.body?.id;
 
