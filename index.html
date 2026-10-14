@@ -224,6 +224,15 @@
 .mimbox-gallery-arrow:focus-visible,.mimbox-gallery-thumb:focus-visible{outline:3px solid #1266d6;outline-offset:2px}
 @media(max-width:480px){.mimbox-gallery-arrow{width:30px;height:30px;font-size:22px}.mimbox-gallery-thumb{flex-basis:29px;width:29px;height:29px}}
 </style>
+<style id="mimbox-produto-foto-cover-v2">
+/* Fotografia de produto preenche toda a area, sem margens amarelas. */
+.collection-grid .product-card .product-art.mimbox-gallery > img {
+  width:100%; height:100%; display:block; object-fit:cover; object-position:center;
+  padding:0; margin:0;
+}
+/* Evita que o hover aumente a foto e corte ainda mais o produto. */
+.collection-grid .product-card:hover .product-art.mimbox-gallery > img { transform:none; }
+</style>
 </head>
 <body>
 <div class="announcement topbar"><div class="topbar-main"><a href="https://wa.me/5511954556660" rel="noreferrer" target="_blank">☏ (11) 95455-6660</a> <span>✦</span> <a href="https://www.instagram.com/mimbox.br/" rel="noreferrer" target="_blank">◎ @mimbox.br</a></div><div class="shipping-note">Enviamos para todo o Brasil · Criado em São Paulo, feito para surpreender</div></div>
