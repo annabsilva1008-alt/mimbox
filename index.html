@@ -884,25 +884,55 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
     card.style.opacity=btn.disabled?'.65':'';card.dataset.crmProdutoId=String(p.id??'');
   }
   legacyCards.forEach(card=>{card.dataset.legacyProduct='1'});
+  // O catálogo é carregado do ADM. Não apagar a vitrine antes de validar a resposta.
+  let catalogLoaded=false;
+  const loadingNotice=document.createElement('p');
+  loadingNotice.className='catalog-loading';
+  loadingNotice.setAttribute('role','status');
+  loadingNotice.textContent='Atualizando coleções...';
+  grid.insertAdjacentElement('afterend',loadingNotice);
   async function sync(){
     try{
-      const res=await fetch('/api/admin-produtos?publico=1',{cache:'no-store'});
+      const res=await fetch('/api/admin-produtos?publico=1',{cache:'no-store',credentials:'same-origin'});
       if(!res.ok)throw Error('Catálogo HTTP '+res.status);
-      const data=await res.json();if(!Array.isArray(data.produtos))throw Error('Resposta de catálogo inválida');
-      const all=data.produtos.filter(p=>p&&typeof p.nome==='string');
-      // A vitrine é 100% controlada pelo Supabase: nunca mantém anúncios antigos.
-      grid.replaceChildren();
-      const ativos=all.filter(p=>!isClub(p) && p.disponivel!==false);
+      const data=await res.json();
+      const raw=Array.isArray(data)?data:(Array.isArray(data?.produtos)?data.produtos:(Array.isArray(data?.data)?data.data:null));
+      if(!raw)throw Error('Formato inesperado na API de produtos');
+      const all=raw.filter(p=>p&&typeof p.nome==='string'&&p.nome.trim());
+      const ativos=all.filter(p=>!isClub(p)&&p.disponivel!==false);
       ativos.sort((a,b)=>(Number(a.ordem)||0)-(Number(b.ordem)||0)||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
-      for(const p of ativos)createCard(p);
+      // Criar os novos cards antes de trocar o conteúdo para evitar a vitrine vazia.
+      const staging=document.createElement('div');
+      const previousGrid=grid;
+      const built=[];
+      for(const p of ativos){
+        const card=document.createElement('article');card.className='product-card';
+        card.innerHTML='<div class="product-art cream"></div><div class="product-info"><h3></h3><div class="sample-price"></div><p></p><button type="button" class="small-btn add-to-cart">Adicionar ao carrinho ↗</button></div>';
+        built.push([card,p]);
+      }
+      // A função de galeria inicia seus observadores quando os cards estão no DOM.
+      grid.replaceChildren();
+      for(const [card,p] of built){grid.append(card);updateCard(card,p)}
       for(const p of all.filter(isClub))updateClub(p);
       if(!ativos.length){
-        const aviso=document.createElement('p');
-        aviso.textContent='Novas coleções em preparação. Volte em breve!';
-        aviso.className='catalog-empty';
-        grid.append(aviso);
+        const aviso=document.createElement('p');aviso.className='catalog-empty';
+        aviso.textContent='Nenhuma coleção disponível no momento.';grid.append(aviso);
       }
-    }catch(err){console.error('Falha ao consultar catálogo CRM:',err);grid.replaceChildren();const aviso=document.createElement('p');aviso.textContent='Não foi possível carregar as coleções agora. Atualize a página em instantes.';aviso.className='catalog-error';grid.append(aviso)}
+      catalogLoaded=true;
+      loadingNotice.remove();
+    }catch(err){
+      console.error('Falha ao sincronizar catálogo com ADM:',err);
+      loadingNotice.textContent='Não foi possível atualizar o catálogo. Tentaremos novamente automaticamente.';
+      // Não expor preços ou disponibilidade antigos como se fossem atuais.
+      if(!catalogLoaded){
+        legacyCards.forEach(card=>{
+          if(!card.isConnected)grid.append(card);
+          const btn=card.querySelector('.add-to-cart');
+          if(btn){btn.disabled=true;btn.textContent='Compra temporariamente indisponível'}
+        });
+      }
+      setTimeout(sync,20000);
+    }
   }
   sync();
 })();
