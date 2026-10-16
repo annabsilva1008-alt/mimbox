@@ -1,3 +1,158 @@
+
+Carregando mensagens mais antigas…
+Chat, temos que voltar a falar sobre o site!
+Vamos retomar o site da Mimbox — mimbox.com.br.
+
+Na última etapa, estávamos ajustando a galeria de produtos para permitir várias fotos por coleção, com uma imagem principal e as demais em carrossel.
+
+Também ficou pendente o erro “Sessão administrativa inválida” no painel ADM.
+
+Você quer continuar de onde paramos ou vamos trabalhar em uma nova alteração no site?
+
+Pode me dizer o que deseja mudar que seguimos direto para a implementação, preservando o que já está funcionando.
+
+Anexo do usuário
+Eu acho que conforme eu estou acrescentando mais produtos, ele acaba ficando feio! Além disso, senti a necessidade de tornar clicavel as fotos de anuncio do produtos pois o cliente sente curiosidade e não consegue ver maior. Falando nisso, seria legal se o proprio site ficasse rodando as fotos ( de forma lenta)
+Concordo com os dois pontos. Pela imagem, o problema é que a vitrine da Mimbox está crescendo, mas o layout continua pensado para poucos produtos. Os cards ficam pequenos, as informações apertadas e as estampas perdem destaque.
+
+Eu faria uma atualização na vitrine, mantendo a identidade visual da marca.
+
+1. Reorganizar os produtos
+Em vez de deixar todos os produtos espremidos na mesma grade, sugiro:
+
+3 produtos por linha no computador, com cards maiores.
+
+2 por linha no celular, adaptando o tamanho das imagens.
+
+Descrição curta nos cards, deixando o texto completo para os detalhes do produto.
+
+Filtros por coleção ou categoria, conforme o catálogo crescer.
+
+Manter o fundo lilás, mas dar mais espaço entre os produtos.
+
+2. Fotos clicáveis e ampliadas
+Ao clicar na foto de um produto, o cliente abriria uma galeria maior, sem sair da página.
+
+PRÉVIA DA GALERIA
+
+La DoubleJ Rainbow Glass Set of 8 | Mohd Shop
+Foto 3 de 3
+
+Prévia ilustrativa do comportamento, não das fotos reais da Mimbox.
+3. Carrossel automático e lento
+Acho uma ótima ideia, principalmente porque a Mimbox vende produtos com estampas diferentes.
+
+Minha configuração seria:
+
+Comportamento
+
+Configuração
+
+Troca automática
+
+A cada 5 segundos
+
+Transição
+
+Suave
+
+Ao passar o mouse
+
+Pausar
+
+Ao clicar na foto
+
+Abrir ampliada
+
+Setas
+
+Avançar e voltar manualmente
+
+Fotos
+
+Usar todas as cadastradas no CRM, até 8
+
+Acessibilidade
+
+Respeitar preferência por movimento reduzido
+
+Um detalhe importante: eu não faria os cards inteiros se movimentarem. Deixaria somente as fotos mudando dentro de cada card. Assim a vitrine continua organizada e o cliente consegue ler as informações sem distrações.
+
+Também colocaria um pequeno indicador, como 1/4, para mostrar que existem outras fotos.
+
+Próximo passo
+Me envie o index.html atual do site, aquele que está publicado agora.
+
+Vou preparar uma versão atualizada com a grade reorganizada, fotos ampliáveis e carrossel automático, sem alterar o checkout, os preços, o Clube Mimbox ou as outras funções existentes.
+
+Anexo do usuário
+Anexo do usuário
+Quero deixar tipo assim:
+Agora entendi o visual que você quer para a vitrine da Mimbox!
+
+As duas referências têm algo em comum: fotos grandes, produtos bem distribuídos e pouquíssima informação competindo com as imagens.
+
+Quero combinar a organização da BAW com o estilo visual da primeira loja, sem perder a identidade retrô e colorida da Mimbox.
+
+Como vamos deixar
+Kotr – Framerpanda
+
+1. Fotos grandes e alinhadas
+
+Três produtos por linha no computador, ocupando toda a largura disponível. Sem aqueles cards pequenos e apertados.
+
+New In
+– Eleanor Bowmer
+
+2. Galeria automática
+
+Cada produto alterna suas próprias fotos lentamente, a cada 5 segundos. Ao clicar, abre uma visualização ampliada com setas.
+
+The Best 25 Midjourney Prompts for Packaging Design
+
+3. Identidade Mimbox preservada
+
+Fundo creme, detalhes amarelos, contornos pretos e títulos marcantes. O estilo fica mais profissional, mas não vira uma loja genérica.
+
+Abaixo de cada foto, deixaremos somente nome da coleção, preço e botão de adicionar ao carrinho. A descrição completa aparece quando o cliente abre os detalhes do produto.
+
+Também sugiro que a vitrine tenha filtros como Todas, Copos, Cinzeiros e Kits, conforme os produtos cadastrados.
+
+Para implementar: me envie o index.html mais recente da Mimbox. Vou modificar o arquivo existente, preservando carrinho, checkout, Clube Mimbox e integração com o CRM.
+
+A ideia é que, daqui para frente, você possa cadastrar quantos produtos quiser sem precisar reorganizar manualmente o site.
+
+
+index(2).html
+HTML
+( Toma cuidado para nn desconfigurar a opção de conseguir alterar os produtos pelo protal admin)
+Atualizei o index.html da Mimbox seguindo as referências que você enviou, sem modificar a integração de produtos com o portal ADM.
+
+ Baixar index.html atualizado
+
+O que mudou
+Vitrine maior: 3 produtos por linha no computador e 2 no celular.
+
+Fotos em destaque: imagens maiores, com menos bordas e informações mais organizadas.
+
+Carrossel automático: as fotos mudam a cada 5,5 segundos.
+
+Fotos clicáveis: ao clicar, o cliente abre a imagem ampliada e pode navegar pelas outras.
+
+Pausa automática: o carrossel pausa quando o cliente passa o mouse sobre a foto.
+
+O que preservei
+Mantive o carregamento dos produtos pela API /api/admin-produtos?publico=1, incluindo nome, preço, descrição, disponibilidade, ordem e fotos cadastradas no Supabase.
+
+Também preservei as funções existentes do carrinho, checkout e Clube Mimbox.
+
+Importante: a alteração foi feita no arquivo, mas ainda não foi testada no site publicado. Antes de substituir o index.html no GitHub, recomendo guardar uma cópia do atual.
+
+Assim, continuamos podendo cadastrar e editar os produtos pelo CRM, sem precisar alterar o código a cada nova coleção.
+
+
+mimbox-index-vitrine-atualizada.html
+HTML
 <!DOCTYPE html>
 
 <html lang="pt-BR">
@@ -232,6 +387,31 @@
 }
 /* Evita que o hover aumente a foto e corte ainda mais o produto. */
 .collection-grid .product-card:hover .product-art.mimbox-gallery > img { transform:none; }
+</style>
+<style id="mimbox-vitrine-editorial-2026">
+/* Vitrine inspirada nas referências, sem alterar a integração com o CRM. */
+.collections .container{max-width:1400px;width:calc(100% - 64px)}
+.collection-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 20px;align-items:stretch}
+.collection-grid .product-card{min-width:0;border:0;border-radius:3px;box-shadow:none;background:transparent;transition:none}
+.collection-grid .product-card:hover{transform:none;box-shadow:none}
+.collection-grid .product-art{height:auto;aspect-ratio:4/4.5;border:0;border-radius:2px;background:#f5ebd5}
+.collection-grid .product-art.mimbox-gallery>img{width:100%;height:100%;padding:0;margin:0;object-fit:cover;object-position:center;cursor:zoom-in;transition:opacity .35s ease}
+.collection-grid .product-info{padding:14px 3px 8px;display:flex;flex-direction:column;gap:7px}
+.collection-grid .product-info h3{font-size:clamp(17px,1.5vw,23px);line-height:1.2;margin:0;min-height:0}
+.collection-grid .product-info p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:13px;line-height:1.45;margin:0}
+.collection-grid .product-info .sample-price{font-size:19px;margin:0}
+.collection-grid .product-info .add-to-cart{align-self:flex-start;margin-top:6px}
+.mimbox-gallery-count{position:absolute;bottom:12px;left:12px;z-index:3;background:#fffdf1;color:#211b1b;border:1px solid #211b1b;border-radius:20px;padding:5px 9px;font-size:12px;font-weight:800;pointer-events:none}
+.mimbox-gallery-zoom{position:absolute;top:12px;right:12px;z-index:4;background:#fffdf1;border:1.5px solid #211b1b;border-radius:50%;width:37px;height:37px;font-size:22px;cursor:pointer}
+.mimbox-gallery-arrow{top:50%;opacity:.9}
+.mimbox-gallery-thumbs{display:none}
+.mimbox-photo-overlay{position:fixed;inset:0;z-index:200000;background:rgba(20,16,15,.92);display:flex;align-items:center;justify-content:center;padding:55px 64px}
+.mimbox-photo-full{display:block;max-width:100%;max-height:100%;object-fit:contain;border-radius:4px}
+.mimbox-photo-close,.mimbox-photo-back,.mimbox-photo-forward{position:absolute;z-index:2;display:grid;place-items:center;background:#fffdf1;color:#211b1b;border:2px solid #211b1b;border-radius:50%;width:44px;height:44px;cursor:pointer;font-size:32px;line-height:1}
+.mimbox-photo-close{right:20px;top:18px}.mimbox-photo-back{left:12px;top:50%;transform:translateY(-50%)}.mimbox-photo-forward{right:12px;top:50%;transform:translateY(-50%)}
+.mimbox-photo-counter{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#fffdf1;border-radius:16px;padding:5px 14px;font-weight:800}
+@media(max-width:900px){.collection-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 14px}.collections .container{width:calc(100% - 32px)}}
+@media(max-width:520px){.collection-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 10px}.collection-grid .product-art{aspect-ratio:4/5}.collection-grid .product-info h3{font-size:15px}.collection-grid .product-info p{display:none}.collection-grid .product-info .sample-price{font-size:16px}.collection-grid .product-info .add-to-cart{font-size:11px;padding:8px}.mimbox-gallery-arrow{width:27px;height:27px;font-size:20px}.mimbox-gallery-zoom{width:29px;height:29px;font-size:18px}.mimbox-photo-overlay{padding:60px 12px}.mimbox-photo-back{left:5px}.mimbox-photo-forward{right:5px}}
 </style>
 </head>
 <body>
@@ -760,60 +940,67 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
   const legacyNames = new Map(legacyCards.map(card => [norm(card.querySelector('.product-info h3')?.textContent),card]));
   const isClub = p => /clube|assinatura/.test(norm(p.colecao)) || /clube mimbox/.test(norm(p.nome));
   const months = p => {const s=norm(p.nome+' '+p.colecao); return /(^| )3( |$)|tres meses/.test(s)?3:/(^| )6( |$)|seis meses/.test(s)?6:/9 meses/.test(s)?9:0};
+  // Galeria visual: apenas lê fotos do CRM. Não altera cadastro, API ou carrinho.
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let activeModal=null;
+  function openPhotoViewer(urls,initial,name){
+    if(activeModal)activeModal.remove();
+    const overlay=document.createElement('div');overlay.className='mimbox-photo-overlay';
+    overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
+    overlay.setAttribute('aria-label','Fotos ampliadas de '+name);
+    const photo=document.createElement('img');photo.className='mimbox-photo-full';
+    photo.alt=name;
+    const close=document.createElement('button');close.type='button';close.className='mimbox-photo-close';close.textContent='×';close.setAttribute('aria-label','Fechar fotos');
+    const previous=document.createElement('button');previous.type='button';previous.className='mimbox-photo-back';previous.textContent='‹';previous.setAttribute('aria-label','Foto anterior');
+    const following=document.createElement('button');following.type='button';following.className='mimbox-photo-forward';following.textContent='›';following.setAttribute('aria-label','Próxima foto');
+    const counter=document.createElement('span');counter.className='mimbox-photo-counter';
+    let pos=initial;
+    function render(){photo.src=urls[pos];photo.alt=name+' — foto '+(pos+1)+' de '+urls.length;counter.textContent=(pos+1)+' / '+urls.length}
+    function step(delta){pos=(pos+delta+urls.length)%urls.length;render()}
+    const oldOverflow=document.body.style.overflow;
+    function dismiss(){overlay.remove();document.body.style.overflow=oldOverflow;document.removeEventListener('keydown',keyboard);activeModal=null}
+    function keyboard(e){if(e.key==='Escape')dismiss();else if(e.key==='ArrowRight')step(1);else if(e.key==='ArrowLeft')step(-1)}
+    close.addEventListener('click',dismiss);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)dismiss()});
+    previous.addEventListener('click',()=>step(-1));following.addEventListener('click',()=>step(1));
+    overlay.append(photo,close,counter);
+    if(urls.length>1)overlay.append(previous,following);
+    document.body.append(overlay);document.body.style.overflow='hidden';
+    document.addEventListener('keydown',keyboard);activeModal=overlay;render();close.focus();
+  }
   function gallery(card,p){
-    const art=card.querySelector('.product-art');
-    if(!art)return;
+    const art=card.querySelector('.product-art');if(!art)return;
     const urls=[...(Array.isArray(p.imagens)?p.imagens:[]),p.imagem_url]
       .filter(safeImg).map(u=>u.trim());
     const unique=[...new Set(urls)].slice(0,8);
-    if(!unique.length)return; // Preserva a arte original enquanto o CRM não tem fotos.
+    if(!unique.length)return;
     const oldImg=art.querySelector('img');
     const fallback=oldImg?.getAttribute('src')||'';
-    art.replaceChildren();
-    art.classList.add('mimbox-gallery');
-    const img=document.createElement('img');
-    img.src=unique[0];img.alt='Foto 1 de '+unique.length+' — '+p.nome;
-    img.loading='lazy';img.decoding='async';
-    img.addEventListener('error',()=>{
-      if(fallback && img.src!==fallback)img.src=fallback;
-      else img.style.visibility='hidden';
-    });
+    art.replaceChildren();art.classList.add('mimbox-gallery');
+    const img=document.createElement('img');img.src=unique[0];img.alt='Foto 1 de '+unique.length+' — '+p.nome;
+    img.loading='lazy';img.decoding='async';img.className='mimbox-product-photo';
+    img.addEventListener('error',()=>{if(fallback&&!img.dataset.fallback){img.dataset.fallback='1';img.src=fallback}else img.style.visibility='hidden'});
     art.append(img);
-    if(unique.length===1)return;
-    let index=0;
-    const prev=document.createElement('button');
-    const next=document.createElement('button');
-    const thumbs=document.createElement('div');
-    prev.type=next.type='button';
-    prev.className='mimbox-gallery-arrow mimbox-gallery-prev';
-    next.className='mimbox-gallery-arrow mimbox-gallery-next';
-    prev.textContent='‹';next.textContent='›';
-    prev.setAttribute('aria-label','Foto anterior de '+p.nome);
-    next.setAttribute('aria-label','Próxima foto de '+p.nome);
-    thumbs.className='mimbox-gallery-thumbs';
-    thumbs.setAttribute('aria-label','Fotos de '+p.nome);
-    const thumbButtons=unique.map((url,i)=>{
-      const button=document.createElement('button');
-      button.type='button';button.className='mimbox-gallery-thumb';
-      button.setAttribute('aria-label','Mostrar foto '+(i+1)+' de '+unique.length);
-      const thumbnail=document.createElement('img');
-      thumbnail.src=url;thumbnail.alt='';thumbnail.loading='lazy';
-      button.append(thumbnail);
-      button.addEventListener('click',e=>{e.stopPropagation();show(i)});
-      thumbs.append(button);return button;
-    });
-    function show(i){
-      index=(i+unique.length)%unique.length;
-      img.style.visibility='visible';img.src=unique[index];
-      img.alt='Foto '+(index+1)+' de '+unique.length+' — '+p.nome;
-      thumbButtons.forEach((button,j)=>{
-        button.classList.toggle('active',j===index);
-        button.setAttribute('aria-pressed',String(j===index));
-      });
-    }
-    prev.addEventListener('click',e=>{e.stopPropagation();show(index-1)});
-    next.addEventListener('click',e=>{e.stopPropagation();show(index+1)});
-    art.append(prev,next,thumbs);show(0);
+    let index=0,timer=null,visible=false;
+    const count=document.createElement('span');count.className='mimbox-gallery-count';art.append(count);
+    const zoom=document.createElement('button');zoom.type='button';zoom.className='mimbox-gallery-zoom';zoom.setAttribute('aria-label','Ampliar fotos de '+p.nome);zoom.textContent='⤢';art.append(zoom);
+    function show(i){index=(i+unique.length)%unique.length;img.style.visibility='visible';img.removeAttribute('data-fallback');img.src=unique[index];img.alt='Foto '+(index+1)+' de '+unique.length+' — '+p.nome;count.textContent=(index+1)+' / '+unique.length}
+    function stop(){if(timer){clearInterval(timer);timer=null}}
+    function start(){if(!reducedMotion&&unique.length>1&&visible&&!timer&&!document.hidden&&!activeModal){timer=setInterval(()=>show(index+1),5500)}}
+    function manual(delta){show(index+delta);stop();start()}
+    zoom.addEventListener('click',e=>{e.stopPropagation();stop();openPhotoViewer(unique,index,p.nome)});
+    img.addEventListener('click',()=>{stop();openPhotoViewer(unique,index,p.nome)});
+    if(unique.length>1){
+      const prev=document.createElement('button');prev.type='button';prev.className='mimbox-gallery-arrow mimbox-gallery-prev';prev.textContent='‹';prev.setAttribute('aria-label','Foto anterior de '+p.nome);
+      const next=document.createElement('button');next.type='button';next.className='mimbox-gallery-arrow mimbox-gallery-next';next.textContent='›';next.setAttribute('aria-label','Próxima foto de '+p.nome);
+      prev.addEventListener('click',e=>{e.stopPropagation();manual(-1)});next.addEventListener('click',e=>{e.stopPropagation();manual(1)});
+      art.append(prev,next);
+      art.addEventListener('mouseenter',stop);art.addEventListener('mouseleave',start);
+      art.addEventListener('focusin',stop);art.addEventListener('focusout',start);
+      const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)start();else stop()},{threshold:.25});observer.observe(art);
+      document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else start()});
+    }else count.style.display='none';
+    show(0);
   }
   function updateCard(card,p){
     const info=card.querySelector('.product-info'); const btn=card.querySelector('.add-to-cart');if(!info||!btn)return;
@@ -868,3 +1055,5 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
 </script>
 </body>
 </html>
+
+
