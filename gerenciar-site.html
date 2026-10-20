@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Gerenciar Site | Mimbox ADM</title>
+<style>
+:root{--yellow:#F8D43A;--red:#E74732;--blue:#2355AC;--cream:#F5EBD5;--ink:#211B1B;--white:#fffdf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+header{background:var(--ink);color:white;padding:18px max(20px,calc((100vw - 1100px)/2));display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-size:30px;font-weight:900;letter-spacing:-1.5px;color:var(--yellow)}
+header a{color:white;text-decoration:none;font-weight:700}
+main{max-width:1100px;margin:32px auto;padding:0 20px 60px}
+h1{font-size:clamp(28px,4vw,42px);margin:0 0 10px}p{line-height:1.5}
+.intro{margin-bottom:24px;color:#49423c}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start}
+.panel{background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:22px;margin-bottom:20px;box-shadow:4px 4px 0 var(--ink)}
+.panel h2{margin:0 0 18px;font-size:21px}
+label{display:block;font-weight:700;font-size:14px;margin:16px 0 7px}
+input,textarea{display:block;width:100%;padding:12px;border:2px solid #bdb5a8;border-radius:8px;font:inherit;background:white;color:var(--ink)}
+input:focus,textarea:focus{outline:3px solid #f8d43a88;border-color:var(--ink)}
+textarea{resize:vertical;min-height:85px}
+small{display:block;color:#605a53;margin-top:5px;line-height:1.4}
+.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}
+button,.button{border:2px solid var(--ink);border-radius:9px;background:var(--yellow);padding:13px 18px;font:inherit;font-weight:800;cursor:pointer;color:var(--ink)}
+button.secondary{background:white}button:disabled{opacity:.55;cursor:wait}
+#status{padding:14px;border-left:5px solid var(--blue);background:white;border-radius:4px;margin:16px 0;white-space:pre-wrap}
+#status.error{border-color:var(--red)}#status.success{border-color:#237447}
+[hidden]{display:none!important}
+.preview{position:sticky;top:18px;overflow:hidden}
+.hero-preview{background:var(--yellow);padding:24px;border-radius:10px;overflow-wrap:anywhere}
+.hero-preview img{width:100%;height:155px;object-fit:cover;border-radius:8px;margin-bottom:14px}
+.hero-preview h3{font-size:28px;line-height:1.05;margin:0 0 12px;overflow-wrap:anywhere}
+.hero-preview p{font-size:14px;margin:0 0 14px}
+.preview-button{display:inline-block;background:var(--red);color:white;border:2px solid var(--ink);border-radius:8px;padding:10px;font-weight:700;font-size:13px}
+.note{font-size:13px;color:#5d564e}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.preview{position:static}}
+</style>
+</head>
+<body>
+<header><div class="brand">mimbox.</div><a href="/admin.html">← Voltar ao ADM</a></header>
+<main>
+<h1>Gerenciar site</h1>
+<p class="intro">Edite as informações principais da loja. As alterações serão salvas no Supabase. A página pública só passará a exibi-las depois da integração com o site.</p>
+<div id="status" role="status" aria-live="polite">Verificando acesso administrativo...</div>
+<div id="editor" class="layout" hidden>
+<form id="site-form">
+<section class="panel">
+<h2>01 · Banner principal</h2>
+<label for="hero_titulo">Título principal</label><input id="hero_titulo" maxlength="100" required>
+<label for="hero_subtitulo">Subtítulo</label><textarea id="hero_subtitulo" maxlength="240"></textarea>
+<label for="hero_imagem">Endereço da imagem (HTTPS)</label><input id="hero_imagem" type="url" maxlength="2048" placeholder="https://..."><small>Use uma imagem já hospedada. O envio de arquivos será implementado em outra etapa.</small>
+<label for="hero_botao_texto">Texto do botão</label><input id="hero_botao_texto" maxlength="55">
+<label for="hero_botao_link">Link do botão</label><input id="hero_botao_link" maxlength="500" placeholder="/#colecoes"><small>Aceita links HTTPS, caminhos internos iniciados em / ou âncoras iniciadas em #.</small>
+</section>
+<section class="panel">
+<h2>02 · Google e SEO</h2>
+<label for="seo_titulo">Título SEO</label><input id="seo_titulo" maxlength="70">
+<label for="seo_descricao">Descrição SEO</label><textarea id="seo_descricao" maxlength="180"></textarea>
+</section>
+<section class="panel">
+<h2>03 · Contato e avisos</h2>
+<label for="whatsapp">WhatsApp</label><input id="whatsapp" maxlength="25" placeholder="5511999999999"><small>Somente números, incluindo código do país e DDD.</small>
+<label for="instagram">Link do Instagram (HTTPS)</label><input id="instagram" type="url" maxlength="200" placeholder="https://www.instagram.com/mimbox.br/">
+<label for="aviso">Aviso da loja</label><textarea id="aviso" maxlength="240"></textarea>
+</section>
+<div class="actions"><button id="save" type="submit">Salvar alterações</button><button class="secondary" id="reload" type="button">Recarregar dados</button></div>
+</form>
+<aside class="panel preview"><h2>Prévia do banner</h2><div class="hero-preview"><img id="preview-image" alt="Prévia da imagem do banner" hidden><h3 id="preview-title"></h3><p id="preview-subtitle"></p><span id="preview-button" class="preview-button"></span></div><p class="note">Prévia ilustrativa: não altera o layout publicado.</p></aside>
+</div>
+</main>
+<script>
+'use strict';
+const fields=['hero_titulo','hero_subtitulo','hero_imagem','hero_botao_texto','hero_botao_link','seo_titulo','seo_descricao','whatsapp','instagram','aviso'];
+const el=id=>document.getElementById(id);
+let lastSaved=null;
+let busy=false;
+function message(text,type=''){const node=el('status');node.textContent=text;node.className=type;}
+async function api(url,options={}){
+ const response=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});
+ let data;try{data=await response.json()}catch{throw Error('Resposta inválida do servidor. Verifique se o deploy foi concluído.');}
+ if(!response.ok)throw Error(data.erro||data.error||`Erro HTTP ${response.status}`);
+ return data;
+}
+function snapshot(){return Object.fromEntries(fields.map(key=>[key,el(key).value.trim()]));}
+function fill(content){fields.forEach(key=>{el(key).value=String(content?.[key]??'');});lastSaved=JSON.stringify(snapshot());preview();}
+function preview(){
+ el('preview-title').textContent=el('hero_titulo').value||'Título principal';
+ el('preview-subtitle').textContent=el('hero_subtitulo').value||'Subtítulo do banner';
+ el('preview-button').textContent=el('hero_botao_texto').value||'Botão';
+ const image=el('preview-image');const url=el('hero_imagem').value.trim();
+ if(/^https:\/\/\S+$/i.test(url)){if(image.getAttribute('src')!==url)image.src=url;image.hidden=false;}else{image.hidden=true;image.removeAttribute('src');}
+}
+el('preview-image').addEventListener('error',()=>{el('preview-image').hidden=true;});
+function setBusy(value){busy=value;el('save').disabled=value;el('reload').disabled=value;}
+async function load(){
+ setBusy(true);message('Carregando dados do site...');
+ try{
+  const data=await api('/api/admin-gerenciar?action=site_conteudo');
+  if(!data.ok||!data.conteudo)throw Error('O servidor não retornou o conteúdo esperado.');
+  fill(data.conteudo);el('editor').hidden=false;message('Dados carregados. Você já pode editar.');
+ }catch(error){message('Não foi possível carregar: '+error.message,'error');}
+ finally{setBusy(false);}
+}
+el('site-form').addEventListener('input',preview);
+el('site-form').addEventListener('submit',async event=>{
+ event.preventDefault();if(busy)return;
+ const content=snapshot();
+ if(content.whatsapp&&!/^\d{10,15}$/.test(content.whatsapp)){message('WhatsApp: informe de 10 a 15 números, sem espaços ou símbolos.','error');return;}
+ if(content.hero_imagem&&!/^https:\/\/\S+$/i.test(content.hero_imagem)){message('A imagem deve usar um endereço HTTPS.','error');return;}
+ if(content.instagram&&!/^https:\/\/\S+$/i.test(content.instagram)){message('O Instagram deve usar um endereço HTTPS.','error');return;}
+ setBusy(true);message('Salvando alterações...');
+ try{
+  const data=await api('/api/admin-gerenciar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'site_conteudo',conteudo:content})});
+  if(!data.ok)throw Error('O servidor não confirmou a gravação.');
+  fill(data.conteudo||content);message('Alterações salvas no Supabase. A loja pública ainda não foi conectada a esses campos.','success');
+ }catch(error){message('Não foi possível salvar: '+error.message,'error');}
+ finally{setBusy(false);}
+});
+el('reload').addEventListener('click',()=>{
+ if(JSON.stringify(snapshot())!==lastSaved&&!confirm('Descartar alterações não salvas e recarregar?'))return;
+ load();
+});
+window.addEventListener('beforeunload',event=>{
+ if(lastSaved!==null&&JSON.stringify(snapshot())!==lastSaved){event.preventDefault();event.returnValue='';}
+});
+(async()=>{
+ try{
+  const session=await api('/api/admin-session');
+  if(session.autenticado!==true)throw Error('Sessão não autorizada');
+  await load();
+ }catch(error){message('Acesso restrito. Entre no painel administrativo e volte a esta página. '+error.message,'error');}
+})();
+</script>
+</body>
+</html>
