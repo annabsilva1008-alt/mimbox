@@ -9,6 +9,7 @@ const headers = () => ({
 });
 
 const json = (res, code, data) => res.status(code).json(data);
+
 const str = (value, max = 500) =>
   String(value ?? "").trim().slice(0, max);
 
@@ -27,6 +28,7 @@ async function db(table, method = "GET", query = "", body) {
 
   const raw = await response.text();
   let data;
+
   try {
     data = JSON.parse(raw);
   } catch {
@@ -40,6 +42,7 @@ async function db(table, method = "GET", query = "", body) {
         : String(data)
     );
   }
+
   return data;
 }
 
@@ -63,6 +66,7 @@ async function authorized(req) {
   });
 
   if (!response.ok) return false;
+
   const user = await response.json();
   if (!user?.id) return false;
 
@@ -71,19 +75,27 @@ async function authorized(req) {
     "GET",
     `?usuario_id=eq.${encodeURIComponent(user.id)}&select=usuario_id&limit=1`
   );
+
   return Array.isArray(admins) && admins.length > 0;
 }
+
+// ==================================================
+// EDITOR DO SITE
+// ==================================================
 
 const SITE_KEY = "site_editor_v1";
 
 const SITE_DEFAULTS = {
   hero_titulo: "Presentes com personalidade.",
-  hero_subtitulo: "Coleções criativas e personalizados para deixar sua marca.",
+  hero_subtitulo:
+    "Coleções criativas e personalizados para deixar sua marca.",
   hero_imagem: "",
   hero_botao_texto: "Conheça as coleções",
   hero_botao_link: "/#colecoes",
-  seo_titulo: "Mimbox | Copos personalizados, brindes e coleções criativas",
-  seo_descricao: "Copos personalizados, brindes empresariais e coleções criativas. Conheça a Mimbox e peça seu orçamento.",
+  seo_titulo:
+    "Mimbox | Copos personalizados, brindes e coleções criativas",
+  seo_descricao:
+    "Copos personalizados, brindes empresariais e coleções criativas. Conheça a Mimbox e peça seu orçamento.",
   whatsapp: "",
   instagram: "",
   aviso: ""
@@ -108,6 +120,7 @@ function validarConteudoSite(input) {
   }
 
   const output = {};
+
   for (const [campo, limite] of Object.entries(SITE_LIMITS)) {
     output[campo] = String(
       input[campo] ?? SITE_DEFAULTS[campo]
@@ -115,20 +128,29 @@ function validarConteudoSite(input) {
   }
 
   for (const campo of ["hero_imagem", "instagram"]) {
-    if (output[campo] && !/^https:\/\/[^\s]+$/i.test(output[campo])) {
+    if (
+      output[campo] &&
+      !/^https:\/\/[^\s]+$/i.test(output[campo])
+    ) {
       throw new Error(`${campo}: use uma URL HTTPS`);
     }
   }
 
   if (
     output.hero_botao_link &&
-    !/^(https:\/\/[^\s]+|\/(?!\/)[^\s]*|#[^\s]*)$/i.test(output.hero_botao_link)
+    !/^(https:\/\/[^\s]+|\/(?!\/)[^\s]*|#[^\s]*)$/i.test(
+      output.hero_botao_link
+    )
   ) {
     throw new Error("Link do botão inválido");
   }
 
   return output;
 }
+
+// ==================================================
+// STATUS DE ENTREGA
+// ==================================================
 
 const deliveryStatuses = [
   "aguardando",
@@ -139,27 +161,84 @@ const deliveryStatuses = [
   "cancelado"
 ];
 
+// ==================================================
+// API PRINCIPAL
+// ==================================================
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
   if (!["GET", "POST"].includes(req.method)) {
-    return json(res, 405, { erro: "Método não permitido" });
+    return json(res, 405, {
+      erro: "Método não permitido"
+    });
   }
 
   if (!BASE || !KEY) {
-    return json(res, 503, { erro: "Supabase não configurado" });
+    return json(res, 503, {
+      erro: "Supabase não configurado"
+    });
   }
 
   try {
+
+    // ==============================================
+    // CONTEÚDO PÚBLICO DO SITE
+    // Não exige login.
+    // Não disponibiliza pedidos, clientes ou chaves.
+    // ==============================================
+
+    if (
+      req.method === "GET" &&
+      req.query.action === "site_publico"
+    ) {
+      const rows = await db(
+        "configuracoes_loja",
+        "GET",
+        `?chave=eq.${SITE_KEY}&select=valor&limit=1`
+      );
+
+      const salvo = rows[0]?.valor;
+      const conteudo = {};
+
+      // Retorna somente campos permitidos.
+      for (const campo of Object.keys(SITE_DEFAULTS)) {
+        conteudo[campo] =
+          typeof salvo?.[campo] === "string"
+            ? salvo[campo]
+            : SITE_DEFAULTS[campo];
+      }
+
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=60, stale-while-revalidate=300"
+      );
+
+      return json(res, 200, {
+        ok: true,
+        conteudo
+      });
+    }
+
+    // ==============================================
+    // PROTEÇÃO ADMINISTRATIVA
+    // Todas as outras ações exigem login.
+    // ==============================================
+
     if (!(await authorized(req))) {
       return json(res, 401, {
         erro: "Acesso administrativo não autorizado"
       });
     }
 
-    const action = req.method === "GET"
-      ? req.query.action
-      : req.body?.action;
+    const action =
+      req.method === "GET"
+        ? req.query.action
+        : req.body?.action;
+
+    // ==============================================
+    // GERENCIAMENTO DE CONTEÚDO DO SITE
+    // ==============================================
 
     if (action === "site_conteudo") {
       if (req.method === "GET") {
@@ -179,38 +258,65 @@ export default async function handler(req, res) {
       }
 
       let conteudo;
+
       try {
-        conteudo = validarConteudoSite(req.body?.conteudo);
+        conteudo = validarConteudoSite(
+          req.body?.conteudo
+        );
       } catch (erro) {
-        return json(res, 400, { erro: erro.message });
+        return json(res, 400, {
+          erro: erro.message
+        });
       }
 
       await db(
         "configuracoes_loja",
         "POST",
         "?on_conflict=chave",
-        { chave: SITE_KEY, valor: conteudo }
+        {
+          chave: SITE_KEY,
+          valor: conteudo
+        }
       );
 
-      return json(res, 200, { ok: true, conteudo });
+      return json(res, 200, {
+        ok: true,
+        conteudo
+      });
     }
 
+    // ==============================================
+    // DASHBOARD
+    // ==============================================
+
     if (action === "overview") {
-      const [pedidos, produtos, clientes, config] =
-        await Promise.all([
-          db(
-            "pedidos",
-            "GET",
-            "?select=*,clientes(nome,telefone,email)&order=criado_em.desc&limit=200"
-          ),
-          db("produtos", "GET", "?select=*&limit=200"),
-          db("clientes", "GET", "?select=*&limit=200"),
-          db(
-            "configuracoes_loja",
-            "GET",
-            "?chave=eq.principal&select=valor&limit=1"
-          )
-        ]);
+      const [
+        pedidos,
+        produtos,
+        clientes,
+        config
+      ] = await Promise.all([
+        db(
+          "pedidos",
+          "GET",
+          "?select=*,clientes(nome,telefone,email)&order=criado_em.desc&limit=200"
+        ),
+        db(
+          "produtos",
+          "GET",
+          "?select=*&limit=200"
+        ),
+        db(
+          "clientes",
+          "GET",
+          "?select=*&limit=200"
+        ),
+        db(
+          "configuracoes_loja",
+          "GET",
+          "?chave=eq.principal&select=valor&limit=1"
+        )
+      ]);
 
       return json(res, 200, {
         pedidos,
@@ -220,33 +326,76 @@ export default async function handler(req, res) {
       });
     }
 
+    // ==============================================
+    // CONFIGURAÇÕES DA LOJA
+    // ==============================================
+
     if (action === "config") {
       const c = req.body?.config || {};
+
       const config = {
         retirada_ativa: !!c.retirada_ativa,
-        retirada_local: str(c.retirada_local, 250),
-        retirada_horarios: str(c.retirada_horarios, 300),
-        retirada_instrucoes: str(c.retirada_instrucoes, 800),
-        loja_aviso: str(c.loja_aviso, 300),
-        whatsapp: str(c.whatsapp, 25),
-        instagram: str(c.instagram, 200)
+        retirada_local: str(
+          c.retirada_local,
+          250
+        ),
+        retirada_horarios: str(
+          c.retirada_horarios,
+          300
+        ),
+        retirada_instrucoes: str(
+          c.retirada_instrucoes,
+          800
+        ),
+        loja_aviso: str(
+          c.loja_aviso,
+          300
+        ),
+        whatsapp: str(
+          c.whatsapp,
+          25
+        ),
+        instagram: str(
+          c.instagram,
+          200
+        )
       };
 
       await db(
         "configuracoes_loja",
         "POST",
         "?on_conflict=chave",
-        { chave: "principal", valor: config }
+        {
+          chave: "principal",
+          valor: config
+        }
       );
 
-      return json(res, 200, { ok: true, config });
+      return json(res, 200, {
+        ok: true,
+        config
+      });
     }
 
-    if (action === "pedido_status") {
-      const id = str(req.body?.id, 100);
-      const status = str(req.body?.status_entrega, 50);
+    // ==============================================
+    // ALTERAR STATUS DO PEDIDO
+    // ==============================================
 
-      if (!id || !deliveryStatuses.includes(status)) {
+    if (action === "pedido_status") {
+      const id = str(
+        req.body?.id,
+        100
+      );
+
+      const status = str(
+        req.body?.status_entrega,
+        50
+      );
+
+      if (
+        !id ||
+        !deliveryStatuses.includes(status)
+      ) {
         return json(res, 400, {
           erro: "Pedido ou status inválido"
         });
@@ -256,11 +405,15 @@ export default async function handler(req, res) {
         "pedidos",
         "PATCH",
         `?id=eq.${encodeURIComponent(id)}&select=id,status_entrega`,
-        { status_entrega: status }
+        {
+          status_entrega: status
+        }
       );
 
       if (!result.length) {
-        return json(res, 404, { erro: "Pedido não encontrado" });
+        return json(res, 404, {
+          erro: "Pedido não encontrado"
+        });
       }
 
       return json(res, 200, {
@@ -269,31 +422,59 @@ export default async function handler(req, res) {
       });
     }
 
+    // ==============================================
+    // OBSERVAÇÕES DO PEDIDO
+    // ==============================================
+
     if (action === "pedido_nota") {
-      const id = str(req.body?.id, 100);
-      const nota = str(req.body?.nota, 1000);
+      const id = str(
+        req.body?.id,
+        100
+      );
+
+      const nota = str(
+        req.body?.nota,
+        1000
+      );
 
       if (!id) {
-        return json(res, 400, { erro: "Pedido inválido" });
+        return json(res, 400, {
+          erro: "Pedido inválido"
+        });
       }
 
       const result = await db(
         "pedidos",
         "PATCH",
         `?id=eq.${encodeURIComponent(id)}&select=id,observacoes`,
-        { observacoes: nota }
+        {
+          observacoes: nota
+        }
       );
 
       if (!result.length) {
-        return json(res, 404, { erro: "Pedido não encontrado" });
+        return json(res, 404, {
+          erro: "Pedido não encontrado"
+        });
       }
 
-      return json(res, 200, { ok: true });
+      return json(res, 200, {
+        ok: true
+      });
     }
+
+    // ==============================================
+    // ATUALIZAR PRODUTO
+    // ==============================================
 
     if (action === "produto") {
       const p = req.body?.produto || {};
-      const id = str(p.id, 100);
+
+      const id = str(
+        p.id,
+        100
+      );
+
       const preco = Number(p.preco);
 
       if (!id) {
@@ -313,11 +494,23 @@ export default async function handler(req, res) {
       }
 
       const data = {
-        nome: str(p.nome, 150),
-        colecao: str(p.colecao, 100),
+        nome: str(
+          p.nome,
+          150
+        ),
+        colecao: str(
+          p.colecao,
+          100
+        ),
         preco,
-        descricao: str(p.descricao, 2000),
-        imagem_url: str(p.imagem_url, 2048),
+        descricao: str(
+          p.descricao,
+          2000
+        ),
+        imagem_url: str(
+          p.imagem_url,
+          2048
+        ),
         disponivel: !!p.disponivel,
         destaque: !!p.destaque
       };
@@ -335,16 +528,33 @@ export default async function handler(req, res) {
         });
       }
 
-      return json(res, 200, { ok: true });
+      return json(res, 200, {
+        ok: true
+      });
     }
+
+    // ==============================================
+    // CRIAR PEDIDO MANUAL
+    // ==============================================
 
     if (action === "pedido_manual") {
       const c = req.body?.cliente || {};
       const p = req.body?.pedido || {};
 
-      const nome = str(c.nome, 150);
-      const email = str(c.email, 254).toLowerCase();
-      const telefone = str(c.telefone, 30);
+      const nome = str(
+        c.nome,
+        150
+      );
+
+      const email = str(
+        c.email,
+        254
+      ).toLowerCase();
+
+      const telefone = str(
+        c.telefone,
+        30
+      );
 
       if (
         nome.length < 2 ||
@@ -355,9 +565,17 @@ export default async function handler(req, res) {
         });
       }
 
-      const valor = Number(p.valor_total);
-      if (!Number.isFinite(valor) || valor < 0) {
-        return json(res, 400, { erro: "Valor inválido" });
+      const valor = Number(
+        p.valor_total
+      );
+
+      if (
+        !Number.isFinite(valor) ||
+        valor < 0
+      ) {
+        return json(res, 400, {
+          erro: "Valor inválido"
+        });
       }
 
       const forma = [
@@ -377,15 +595,23 @@ export default async function handler(req, res) {
         "clientes",
         "POST",
         "?select=id",
-        { nome, email, telefone }
+        {
+          nome,
+          email,
+          telefone
+        }
       );
 
       const idCliente = clientes[0]?.id;
+
       if (!idCliente) {
-        throw new Error("Cliente não pôde ser criado");
+        throw new Error(
+          "Cliente não pôde ser criado"
+        );
       }
 
       const codigo = `MANUAL-${Date.now()}`;
+
       const pedido = {
         numero_pedido: codigo,
         cliente_id: idCliente,
@@ -395,10 +621,16 @@ export default async function handler(req, res) {
         status_entrega: "aguardando",
         itens: [
           {
-            descricao: str(p.descricao, 200),
+            descricao: str(
+              p.descricao,
+              200
+            ),
             quantidade: Math.max(
               1,
-              Math.min(100, Number(p.quantidade) || 1)
+              Math.min(
+                100,
+                Number(p.quantidade) || 1
+              )
             )
           }
         ]
@@ -417,11 +649,20 @@ export default async function handler(req, res) {
       });
     }
 
+    // ==============================================
+    // AÇÃO NÃO RECONHECIDA
+    // ==============================================
+
     return json(res, 400, {
       erro: "Ação desconhecida"
     });
+
   } catch (erro) {
-    console.error("admin-gerenciar", erro);
+    console.error(
+      "admin-gerenciar",
+      erro
+    );
+
     return json(res, 500, {
       erro: erro.message || "Erro no servidor"
     });
