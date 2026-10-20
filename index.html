@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 
 <html lang="pt-BR">
@@ -937,7 +938,80 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
   sync();
 })();
 </script>
+
+<!-- Mimbox: integração pública com o editor do site (somente leitura). -->
+<script id="mimbox-site-editor-publico">
+(() => {
+  const endpoint = "/api/admin-gerenciar?action=site_publico";
+  const hero = document.querySelector("section.hero#inicio");
+  if (!hero) return;
+
+  const titulo = hero.querySelector("h1");
+  const subtitulo = hero.querySelector(".hero-copy");
+  const botao = hero.querySelector(".hero-actions a.btn");
+  const imagem = hero.querySelector(".hero-art img.mascot-reference");
+
+  function linkSeguro(valor) {
+    if (typeof valor !== "string") return null;
+    const url = valor.trim();
+    if (url.startsWith("/") && !url.startsWith("//")) return url;
+    if (url.startsWith("#")) return url;
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "https:" ? parsed.href : null;
+    } catch { return null; }
+  }
+
+  async function carregar() {
+    try {
+      const response = await fetch(endpoint, {
+        method: "GET",
+        credentials: "omit",
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!payload?.ok || !payload.conteudo || typeof payload.conteudo !== "object") return;
+      const c = payload.conteudo;
+
+      if (titulo && typeof c.hero_titulo === "string" && c.hero_titulo.trim()) {
+        titulo.textContent = c.hero_titulo.trim();
+      }
+      if (subtitulo && typeof c.hero_subtitulo === "string" && c.hero_subtitulo.trim()) {
+        subtitulo.textContent = c.hero_subtitulo.trim();
+      }
+      if (botao) {
+        if (typeof c.hero_botao_texto === "string" && c.hero_botao_texto.trim()) {
+          botao.textContent = c.hero_botao_texto.trim() + " ↗";
+        }
+        const destino = linkSeguro(c.hero_botao_link);
+        if (destino) botao.href = destino;
+      }
+      // A imagem oficial é preservada quando o editor não define uma imagem.
+      const novaImagem = linkSeguro(c.hero_imagem);
+      if (imagem && novaImagem && novaImagem.startsWith("https://")) {
+        imagem.src = novaImagem;
+      }
+      if (typeof c.seo_titulo === "string" && c.seo_titulo.trim()) {
+        document.title = c.seo_titulo.trim();
+      }
+      if (typeof c.seo_descricao === "string" && c.seo_descricao.trim()) {
+        const meta = document.querySelector('meta[name="description"]');
+        if (meta) meta.setAttribute("content", c.seo_descricao.trim());
+      }
+      // Os campos whatsapp, instagram e aviso ficam disponíveis no editor,
+      // mas não alteramos links comerciais ou áreas sem destino definido.
+    } catch (erro) {
+      console.warn("Mimbox: conteúdo do editor indisponível; mantendo a Home original.");
+    }
+  }
+
+  carregar();
+})();
+</script>
 </body>
 </html>
+
+
 
 
