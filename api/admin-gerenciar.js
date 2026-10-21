@@ -173,11 +173,17 @@ async function authorized(req) {
       value.startsWith("mimbox_admin_session=")
     );
 
-  const token = cookie
-    ? decodeURIComponent(
+  let token = "";
+
+  if (cookie) {
+    try {
+      token = decodeURIComponent(
         cookie.slice("mimbox_admin_session=".length)
-      )
-    : "";
+      );
+    } catch {
+      return false;
+    }
+  }
 
   if (!token) return false;
 
@@ -286,9 +292,13 @@ async function lerConteudoSite() {
     throw new Error("Resposta inválida ao consultar configurações do site");
   }
 
-  const salvo = rows[0]?.valor && typeof rows[0].valor === "object" && !Array.isArray(rows[0].valor)
-    ? rows[0].valor
-    : {};
+  const salvo =
+    rows[0]?.valor &&
+    typeof rows[0].valor === "object" &&
+    !Array.isArray(rows[0].valor)
+      ? rows[0].valor
+      : {};
+
   const conteudo = {};
 
   for (const campo of Object.keys(SITE_DEFAULTS)) {
@@ -299,6 +309,88 @@ async function lerConteudoSite() {
   }
 
   return conteudo;
+}
+
+// Upload de imagens na API existente
+async function uploadImagemSite(req, res) {
+  const campo = req.body?.campo;
+  const imagem = req.body?.imagem;
+  const limite = 700 * 1024;
+
+  if (
+    typeof campo !== "string" ||
+    !campo.endsWith("_imagem") ||
+    !Object.prototype.hasOwnProperty.call(
+      SITE_DEFAULTS,
+      campo
+    )
+  ) {
+    return json(res, 400, {
+      erro: "Campo de imagem inválido"
+    });
+  }
+
+  if (
+    typeof imagem !== "string" ||
+    !/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/.test(imagem)
+  ) {
+    return json(res, 400, {
+      erro: "Envie uma imagem WebP válida"
+    });
+  }
+
+  const bytes = Buffer.from(
+    imagem.slice("data:image/webp;base64,".length),
+    "base64"
+  );
+
+  if (
+    !bytes.length ||
+    bytes.length > limite ||
+    bytes.toString("ascii", 0, 4) !== "RIFF" ||
+    bytes.toString("ascii", 8, 12) !== "WEBP"
+  ) {
+    return json(res, 400, {
+      erro: "Imagem inválida ou maior que 700 KB"
+    });
+  }
+
+  const nome =
+    `${campo}/${Date.now()}-${crypto.randomUUID()}.webp`;
+
+  const response = await fetch(
+    `${BASE}/storage/v1/object/mimbox-imagens/${nome}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: KEY,
+        Authorization: `Bearer ${KEY}`,
+        "Content-Type": "image/webp",
+        "x-upsert": "false",
+        "Cache-Control": "31536000"
+      },
+      body: bytes
+    }
+  );
+
+  if (!response.ok) {
+    console.error(
+      "Falha no Storage",
+      response.status,
+      await response.text()
+    );
+
+    return json(res, 502, {
+      erro: "Falha ao enviar imagem ao Supabase"
+    });
+  }
+
+  return json(res, 200, {
+    ok: true,
+    url:
+      `${BASE}/storage/v1/object/public/` +
+      `mimbox-imagens/${nome}`
+  });
 }
 
 export default async function handler(req, res) {
@@ -317,7 +409,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Conteúdo público: não exige login.
+    // Conteúdo público
     if (
       req.method === "GET" &&
       req.query.action === "site_publico"
@@ -335,7 +427,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Todas as demais ações exigem login.
+    // Autenticação obrigatória para as demais ações
     if (!(await authorized(req))) {
       return json(res, 401, {
         erro: "Acesso administrativo não autorizado"
@@ -347,21 +439,43 @@ export default async function handler(req, res) {
         ? req.query.action
         : req.body?.action;
 
-    // ==========================================
-    // GERENCIAR CONTEÚDO DO SITE
-    // ==========================================
+    // Upload de imagem
+    if (action === "upload_imagem") {
+      if (req.method !== "POST") {
+        return json(res, 405, {
+          erro: "Use POST para upload"
+        });
+      }
 
+      const origin = req.headers.origin;
+
+      if (origin) {
+        let originHost;
+
+        try {
+          originHost = new URL(origin).host;
+        } catch {
+          return json(res, 403, {
+            erro: "Origem inválida"
+          });
+        }
+
+        if (originHost !== req.headers.host) {
+          return json(res, 403, {
+            erro: "Origem não autorizada"
+          });
+        }
+      }
+
+      return uploadImagemSite(req, res);
+    }
+
+    // GERENCIAR CONTEÚDO DO SITE
     if (action === "site_conteudo") {
       if (req.method === "GET") {
         return json(res, 200, {
           ok: true,
           conteudo: await lerConteudoSite()
-        });
-      }
-
-      if (req.method !== "POST") {
-        return json(res, 405, {
-          erro: "Método não permitido"
         });
       }
 
@@ -377,11 +491,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Mescla o conteúdo novo com o já salvo.
-      // Isso impede que o editor antigo apague
-      // os campos novos que não envia.
       const anterior = await lerConteudoSite();
-
       let conteudo;
 
       try {
@@ -411,10 +521,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
     // DASHBOARD
-    // ==========================================
-
     if (action === "overview") {
       const [
         pedidos,
@@ -452,14 +559,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
     // CONFIGURAÇÕES DA LOJA
-    // ==========================================
-
     if (action === "config") {
       if (req.method !== "POST") {
-        return json(res, 405, { erro: "Use POST para esta ação" });
+        return json(res, 405, {
+          erro: "Use POST para esta ação"
+        });
       }
+
       const c = req.body?.config || {};
 
       const config = {
@@ -488,14 +595,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
     // ALTERAR STATUS DO PEDIDO
-    // ==========================================
-
     if (action === "pedido_status") {
       if (req.method !== "POST") {
-        return json(res, 405, { erro: "Use POST para esta ação" });
+        return json(res, 405, {
+          erro: "Use POST para esta ação"
+        });
       }
+
       const id = str(req.body?.id, 100);
       const status = str(
         req.body?.status_entrega,
@@ -532,14 +639,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
     // OBSERVAÇÕES DO PEDIDO
-    // ==========================================
-
     if (action === "pedido_nota") {
       if (req.method !== "POST") {
-        return json(res, 405, { erro: "Use POST para esta ação" });
+        return json(res, 405, {
+          erro: "Use POST para esta ação"
+        });
       }
+
       const id = str(req.body?.id, 100);
       const nota = str(req.body?.nota, 1000);
 
@@ -569,14 +676,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
     // ATUALIZAR PRODUTO
-    // ==========================================
-
     if (action === "produto") {
       if (req.method !== "POST") {
-        return json(res, 405, { erro: "Use POST para esta ação" });
+        return json(res, 405, {
+          erro: "Use POST para esta ação"
+        });
       }
+
       const p = req.body?.produto || {};
       const id = str(p.id, 100);
       const preco = Number(p.preco);
@@ -625,14 +732,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==========================================
     // CRIAR PEDIDO MANUAL
-    // ==========================================
-
     if (action === "pedido_manual") {
       if (req.method !== "POST") {
-        return json(res, 405, { erro: "Use POST para esta ação" });
+        return json(res, 405, {
+          erro: "Use POST para esta ação"
+        });
       }
+
       const c = req.body?.cliente || {};
       const p = req.body?.pedido || {};
 
@@ -727,10 +834,6 @@ export default async function handler(req, res) {
         pedido: result[0]
       });
     }
-
-    // ==========================================
-    // AÇÃO NÃO RECONHECIDA
-    // ==========================================
 
     return json(res, 400, {
       erro: "Ação desconhecida"
