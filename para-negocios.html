@@ -1,0 +1,1634 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#F8D43A">
+
+<title>Brindes Personalizados para Empresas | Mimbox</title>
+<meta name="description" content="Copos personalizados, brindes corporativos e presentes criativos para empresas, eventos e equipes. Solicite seu orçamento na Mimbox.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --yellow: #F8D43A;
+  --red: #E74732;
+  --blue: #2355AC;
+  --cream: #F5EBD5;
+  --ink: #211B1B;
+  --white: #FFFDF8;
+  --line: #D8CCB7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--cream);
+  font-family: Montserrat, Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.container {
+  width: min(1180px, calc(100% - 40px));
+  margin: auto;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(48px, 7vw, 94px);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: .9;
+  letter-spacing: -.035em;
+  margin: 12px 0 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 16px 25px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  transition: transform .2s, background .2s;
+}
+
+.btn:hover {
+  background: white;
+  transform: translateY(-3px);
+}
+
+.btn-dark {
+  background: var(--ink);
+  color: white;
+}
+
+.btn-dark:hover {
+  color: var(--ink);
+}
+
+.btn-white {
+  background: white;
+  color: var(--ink);
+}
+
+/* CABEÇALHO */
+
+.header {
+  position: relative;
+  z-index: 20;
+  background: #F9F2E6;
+  border-bottom: 2px solid var(--ink);
+}
+
+.header-inner {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: var(--blue);
+}
+
+.brand span {
+  color: var(--red);
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.menu a {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--blue);
+  text-transform: uppercase;
+}
+
+.menu a:hover,
+.menu a[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-color: var(--red);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 7px;
+}
+
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: 2px solid var(--ink);
+  padding: 8px 12px;
+  font-size: 23px;
+}
+
+/* HERO */
+
+.hero {
+  display: grid;
+  grid-template-columns: 53% 47%;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.hero-copy {
+  position: relative;
+  background: var(--yellow);
+  padding: clamp(45px, 6vw, 100px) clamp(30px, 6vw, 100px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.hero-sticker {
+  display: inline-block;
+  padding: 12px 19px;
+  margin-bottom: 28px;
+  background: var(--red);
+  color: white;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  transform: rotate(-5deg);
+}
+
+.hero h1 {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(68px, 8vw, 130px);
+  font-weight: 900;
+  line-height: .82;
+  letter-spacing: -.04em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin: 0 0 32px;
+  overflow-wrap: break-word;
+}
+
+.hero p {
+  font-size: clamp(15px, 1.6vw, 19px);
+  font-weight: 600;
+  line-height: 1.6;
+  max-width: 520px;
+  margin: 0 0 32px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-visual {
+  position: relative;
+  min-height: 540px;
+  background: var(--blue);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.hero-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visual-fallback {
+  width: 85%;
+  aspect-ratio: 1;
+  border: 3px solid rgba(255,255,255,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-8deg);
+  background: var(--red);
+  box-shadow: 18px 18px 0 var(--yellow);
+}
+
+.visual-fallback strong {
+  display: block;
+  color: white;
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(65px, 9vw, 155px);
+  line-height: .8;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(8deg);
+}
+
+.visual-fallback span {
+  color: var(--yellow);
+}
+
+/* FAIXA */
+
+.ticker {
+  overflow: hidden;
+  background: var(--red);
+  color: white;
+  border-block: 3px solid var(--ink);
+  padding: 17px 0;
+}
+
+.ticker-inner {
+  white-space: nowrap;
+  text-align: center;
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(18px, 3vw, 30px);
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+/* INTRODUÇÃO */
+
+.intro {
+  padding: 110px 0;
+  text-align: center;
+}
+
+.intro .section-title {
+  color: var(--blue);
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.intro p {
+  max-width: 710px;
+  margin: 0 auto;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+/* PRODUTOS */
+
+.products {
+  background: #FFF9EF;
+  padding: 100px 0;
+  border-block: 3px solid var(--ink);
+}
+
+.products-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.products-heading .section-title {
+  color: var(--blue);
+  max-width: 700px;
+}
+
+.products-heading p {
+  max-width: 290px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.product-card {
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  overflow: hidden;
+}
+
+.product-image {
+  height: 300px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-image .placeholder {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 90px;
+  font-weight: 900;
+  color: rgba(0,0,0,.15);
+  transform: rotate(-12deg);
+}
+
+.product-card:nth-child(1) .product-image {
+  background: var(--yellow);
+}
+
+.product-card:nth-child(2) .product-image {
+  background: #F2A9AD;
+}
+
+.product-card:nth-child(3) .product-image {
+  background: #8EB6F3;
+}
+
+.product-content {
+  padding: 28px;
+}
+
+.product-content h3 {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 36px;
+  line-height: 1;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+}
+
+.product-content p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+
+.product-content a {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--blue);
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+/* DIFERENCIAIS */
+
+.benefits {
+  padding: 110px 0;
+}
+
+.benefits .section-title {
+  color: var(--blue);
+}
+
+.benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 40px;
+}
+
+.benefit {
+  padding: 26px 20px;
+  border-top: 5px solid var(--red);
+  background: #FFF9EF;
+}
+
+.benefit-number {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 65px;
+  font-weight: 900;
+  color: var(--red);
+  line-height: 1;
+}
+
+.benefit h3 {
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin: 18px 0 10px;
+}
+
+.benefit p {
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* COMO FUNCIONA */
+
+.steps {
+  padding: 100px 0;
+  background: var(--blue);
+  color: white;
+}
+
+.steps .section-title {
+  color: var(--yellow);
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  margin-top: 40px;
+}
+
+.step {
+  border: 2px solid rgba(255,255,255,.65);
+  padding: 30px;
+}
+
+.step-number {
+  display: inline-block;
+  background: var(--yellow);
+  color: var(--ink);
+  padding: 10px 16px;
+  font-weight: 900;
+  font-size: 22px;
+  transform: rotate(-6deg);
+}
+
+.step h3 {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 36px;
+  text-transform: uppercase;
+  margin: 26px 0 12px;
+}
+
+.step p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* ORÇAMENTO */
+
+.quote {
+  padding: 110px 0;
+}
+
+.quote-layout {
+  display: grid;
+  grid-template-columns: 43% 57%;
+  gap: 40px;
+  align-items: start;
+}
+
+.quote-copy {
+  padding-top: 20px;
+}
+
+.quote-copy .section-title {
+  color: var(--blue);
+}
+
+.quote-copy p {
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 410px;
+}
+
+.quote-note {
+  display: inline-block;
+  margin-top: 30px;
+  background: var(--yellow);
+  padding: 18px;
+  font-weight: 900;
+  font-size: 13px;
+  transform: rotate(-3deg);
+}
+
+.quote-form {
+  background: #FFFDF8;
+  padding: clamp(24px, 4vw, 45px);
+  border: 2px solid var(--ink);
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.quote-form h3 {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 43px;
+  text-transform: uppercase;
+  margin: 0 0 25px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.field {
+  margin-bottom: 19px;
+}
+
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 9px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  display: block;
+  width: 100%;
+  min-height: 49px;
+  border: 2px solid #D7CEBF;
+  border-radius: 0;
+  background: white;
+  padding: 12px 13px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+.form-submit {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.form-help {
+  margin: 16px 0 0;
+  color: #6C645B;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+#form-status {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 14px;
+  color: var(--red);
+  font-weight: 700;
+}
+
+/* CTA FINAL */
+
+.final-cta {
+  background: var(--red);
+  color: white;
+  padding: 75px 20px;
+  text-align: center;
+}
+
+.final-cta h2 {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: clamp(52px, 8vw, 105px);
+  line-height: .9;
+  text-transform: uppercase;
+  margin: 0 auto 28px;
+  max-width: 900px;
+}
+
+/* RODAPÉ */
+
+.footer {
+  background: var(--ink);
+  color: white;
+  padding: 55px 0 25px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 30px;
+  padding-bottom: 40px;
+}
+
+.footer-brand {
+  font-family: "Barlow Condensed", Impact, sans-serif;
+  font-size: 55px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.footer-brand span {
+  color: var(--yellow);
+}
+
+.footer p {
+  font-size: 12px;
+  line-height: 1.8;
+  max-width: 340px;
+}
+
+.footer h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  margin: 0 0 18px;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.footer-links a {
+  font-size: 12px;
+}
+
+.footer-links a:hover {
+  color: var(--yellow);
+}
+
+.footer-bottom {
+  border-top: 1px solid #5D5652;
+  padding-top: 24px;
+  font-size: 11px;
+  color: #C8BFB6;
+}
+
+/* RESPONSIVIDADE */
+
+@media (max-width: 1000px) {
+  .menu {
+    gap: 13px;
+  }
+
+  .menu a {
+    font-size: 10px;
+  }
+
+  .hero {
+    grid-template-columns: 52% 48%;
+  }
+
+  .hero h1 {
+    font-size: clamp(60px, 7vw, 90px);
+  }
+
+  .benefit-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quote-layout {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 25px;
+  }
+}
+
+@media (max-width: 750px) {
+  .header-inner {
+    min-height: 72px;
+  }
+
+  .brand {
+    font-size: 39px;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .menu {
+    display: none;
+    position: absolute;
+    top: 72px;
+    left: 0;
+    right: 0;
+    padding: 24px;
+    background: #F9F2E6;
+    border-bottom: 2px solid var(--ink);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 23px;
+  }
+
+  .menu.open {
+    display: flex;
+  }
+
+  .menu a {
+    font-size: 13px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    padding: 55px 25px 65px;
+  }
+
+  .hero h1 {
+    font-size: clamp(70px, 15vw, 115px);
+  }
+
+  .hero-visual {
+    min-height: 340px;
+    height: 340px;
+  }
+
+  .visual-fallback {
+    width: 260px;
+    height: 260px;
+  }
+
+  .visual-fallback strong {
+    font-size: 85px;
+  }
+
+  .intro,
+  .products,
+  .benefits,
+  .steps,
+  .quote {
+    padding: 75px 0;
+  }
+
+  .products-heading {
+    display: block;
+  }
+
+  .product-grid,
+  .steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-image {
+    height: 280px;
+  }
+
+  .benefit-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .quote-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-copy {
+    padding: 0 0 15px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .footer-grid > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 450px) {
+  .container {
+    width: calc(100% - 32px);
+  }
+
+  .hero h1 {
+    font-size: 67px;
+  }
+
+  .benefit-grid,
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-form {
+    padding: 22px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid > :first-child {
+    grid-column: auto;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+  <div class="container header-inner">
+    <a href="/" class="brand" aria-label="Mimbox, início">
+      mimbox<span>.</span>
+    </a>
+
+    <button
+      class="menu-toggle"
+      id="menu-toggle"
+      type="button"
+      aria-label="Abrir menu"
+      aria-expanded="false"
+      aria-controls="menu"
+    >☰</button>
+
+    <nav class="menu" id="menu" aria-label="Menu principal">
+      <a href="/">Início</a>
+      <a href="/personalizados.html">Personalizados</a>
+      <a href="/loja.html">Loja</a>
+      <a href="/para-negocios.html" aria-current="page">Para Empresas</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/sobre.html">Sobre</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="hero-copy">
+    <div class="hero-sticker">
+      MIMBOX PARA EMPRESAS
+    </div>
+
+    <h1 id="cms-negocios-titulo">
+      SUA MARCA<br>
+      MERECE SER<br>
+      LEMBRADA.
+    </h1>
+
+    <p id="cms-negocios-subtitulo">
+      Seu cliente recebe dezenas de brindes.
+      Faça o seu ser lembrado.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#orcamento" class="btn" id="cms-negocios-botao">
+        PEDIR MEU ORÇAMENTO ↗
+      </a>
+      <a href="#produtos" class="btn btn-white">
+        CONHECER PRODUTOS
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="visual-fallback" id="hero-fallback">
+      <strong>
+        SUA<br>
+        MARCA<br>
+        <span>AQUI!</span>
+      </strong>
+    </div>
+
+    <img
+      id="cms-negocios-banner"
+      alt="Brindes e produtos personalizados Mimbox"
+      hidden
+    >
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-inner">
+    SUA MARCA • SEU JEITO • SUA IDENTIDADE • MIMBOX •
+    SUA MARCA • SEU JEITO • SUA IDENTIDADE
+  </div>
+</div>
+
+<section class="intro">
+  <div class="container">
+    <div class="eyebrow">
+      NÃO É SÓ MAIS UM BRINDE.
+    </div>
+
+    <h2 class="section-title">
+      BRINDE BOM NÃO VAI
+      PRO FUNDO DA GAVETA.
+    </h2>
+
+    <p>
+      Chega de distribuir objetos que ninguém lembra de onde vieram.
+      Na Mimbox, transformamos a identidade da sua empresa em
+      produtos criativos, personalizados e feitos para continuar
+      presentes no dia a dia dos seus clientes.
+    </p>
+  </div>
+</section>
+
+<section class="products" id="produtos">
+  <div class="container">
+
+    <div class="products-heading">
+      <div>
+        <div class="eyebrow">
+          PERSONALIZAÇÃO COM PERSONALIDADE
+        </div>
+        <h2 class="section-title">
+          O QUE A GENTE
+          PODE CRIAR?
+        </h2>
+      </div>
+
+      <p>
+        Você traz a ideia, a identidade da marca
+        ou o evento. A gente ajuda a transformar
+        tudo isso em um produto especial.
+      </p>
+    </div>
+
+    <div class="product-grid">
+
+      <article class="product-card">
+        <div class="product-image">
+          <div class="placeholder" id="copos-placeholder">
+            01
+          </div>
+          <img
+            id="cms-negocios-brindes"
+            alt="Copos e brindes personalizados para empresas"
+            hidden
+          >
+        </div>
+
+        <div class="product-content">
+          <h3>COPOS PERSONALIZADOS</h3>
+          <p>
+            Copos para eventos, ações promocionais,
+            equipes, festas corporativas e campanhas.
+            Sua identidade em um produto que realmente
+            pode ser usado.
+          </p>
+          <a href="#orcamento">
+            SOLICITAR ORÇAMENTO ↗
+          </a>
+        </div>
+      </article>
+
+      <article class="product-card">
+        <div class="product-image">
+          <div class="placeholder" id="personalizados-placeholder">
+            02
+          </div>
+          <img
+            id="cms-negocios-personalizados"
+            alt="Produtos personalizados com a identidade da empresa"
+            hidden
+          >
+        </div>
+
+        <div class="product-content">
+          <h3>BRINDES CRIATIVOS</h3>
+          <p>
+            Ímãs, adesivos, porta-copos e outros
+            itens que podem levar a personalidade
+            da sua marca para além da embalagem.
+          </p>
+          <a href="#orcamento">
+            QUERO PERSONALIZAR ↗
+          </a>
+        </div>
+      </article>
+
+      <article class="product-card">
+        <div class="product-image">
+          <div class="placeholder">
+            03
+          </div>
+        </div>
+
+        <div class="product-content">
+          <h3>KITS ESPECIAIS</h3>
+          <p>
+            Uma combinação de produtos para presentear
+            clientes, colaboradores e parceiros em datas
+            comemorativas e ocasiões especiais.
+          </p>
+          <a href="#orcamento">
+            MONTAR MEU KIT ↗
+          </a>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="benefits">
+  <div class="container">
+    <div class="eyebrow">
+      POR QUE ESCOLHER A MIMBOX?
+    </div>
+
+    <h2 class="section-title">
+      MENOS ÓBVIO.<br>
+      MAIS MEMORÁVEL.
+    </h2>
+
+    <div class="benefit-grid">
+
+      <article class="benefit">
+        <div class="benefit-number">01</div>
+        <h3>SUA IDENTIDADE</h3>
+        <p>
+          Personalização com a arte, a mensagem
+          e a personalidade da sua empresa.
+        </p>
+      </article>
+
+      <article class="benefit">
+        <div class="benefit-number">02</div>
+        <h3>PRODUÇÃO SOB ENCOMENDA</h3>
+        <p>
+          Produção planejada conforme os detalhes
+          e a quantidade do seu pedido.
+        </p>
+      </article>
+
+      <article class="benefit">
+        <div class="benefit-number">03</div>
+        <h3>ATENDIMENTO PRÓXIMO</h3>
+        <p>
+          Conversamos sobre sua ideia e ajudamos
+          a definir uma solução para a ocasião.
+        </p>
+      </article>
+
+      <article class="benefit">
+        <div class="benefit-number">04</div>
+        <h3>ENVIO PARA O BRASIL</h3>
+        <p>
+          Produzimos em São Paulo e atendemos
+          pedidos para diferentes regiões do país.
+        </p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="steps">
+  <div class="container">
+    <div class="eyebrow">
+      SEM COMPLICAÇÃO
+    </div>
+
+    <h2 class="section-title">
+      COMO FUNCIONA?
+    </h2>
+
+    <div class="steps-grid">
+
+      <article class="step">
+        <div class="step-number">01</div>
+        <h3>CONTE SUA IDEIA</h3>
+        <p>
+          Informe o produto, a quantidade aproximada,
+          a data do evento e o que você deseja personalizar.
+        </p>
+      </article>
+
+      <article class="step">
+        <div class="step-number">02</div>
+        <h3>RECEBA O ORÇAMENTO</h3>
+        <p>
+          Avaliamos os detalhes e enviamos uma proposta
+          de acordo com o seu pedido.
+        </p>
+      </article>
+
+      <article class="step">
+        <div class="step-number">03</div>
+        <h3>VAMOS PRODUZIR!</h3>
+        <p>
+          Após a aprovação e confirmação do pedido,
+          iniciamos a produção conforme o prazo combinado.
+        </p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="quote" id="orcamento">
+  <div class="container quote-layout">
+
+    <div class="quote-copy">
+      <div class="eyebrow">
+        AGORA É COM VOCÊ
+      </div>
+
+      <h2 class="section-title">
+        BORA<br>
+        TIRAR ESSA<br>
+        IDEIA DO<br>
+        PAPEL?
+      </h2>
+
+      <p>
+        Conte o que sua empresa precisa.
+        Pode ser uma lembrança para 20 pessoas
+        ou uma ação para centenas de clientes.
+        Vamos avaliar sua ideia e preparar um orçamento.
+      </p>
+
+      <div class="quote-note">
+        SUA MARCA NÃO PRECISA SER MAIS DO MESMO.
+      </div>
+    </div>
+
+    <form class="quote-form" id="quote-form">
+      <h3>PEÇA SEU ORÇAMENTO ↗</h3>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="nome">Seu nome *</label>
+          <input
+            id="nome"
+            name="nome"
+            type="text"
+            autocomplete="name"
+            placeholder="Como podemos te chamar?"
+            maxlength="100"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="empresa">Empresa *</label>
+          <input
+            id="empresa"
+            name="empresa"
+            type="text"
+            placeholder="Nome da sua empresa"
+            maxlength="120"
+            required
+          >
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="telefone">WhatsApp *</label>
+          <input
+            id="telefone"
+            name="telefone"
+            type="tel"
+            autocomplete="tel"
+            placeholder="(11) 99999-9999"
+            maxlength="25"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            placeholder="voce@empresa.com.br"
+            maxlength="254"
+          >
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="produto">O que deseja personalizar? *</label>
+        <select id="produto" name="produto" required>
+          <option value="">Selecione uma opção</option>
+          <option>Copos personalizados</option>
+          <option>Brindes corporativos</option>
+          <option>Kits especiais</option>
+          <option>Produtos para eventos</option>
+          <option>Ainda não sei, preciso de ideias</option>
+          <option>Outro produto</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="quantidade">Quantidade aproximada *</label>
+          <input
+            id="quantidade"
+            name="quantidade"
+            type="number"
+            min="1"
+            max="100000"
+            placeholder="Ex.: 50"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="data">Data desejada</label>
+          <input
+            id="data"
+            name="data"
+            type="date"
+          >
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="detalhes">Conte um pouco da sua ideia</label>
+        <textarea
+          id="detalhes"
+          name="detalhes"
+          maxlength="1500"
+          placeholder="Qual é a ocasião? Já tem uma arte? Quer incluir a logo da empresa?"
+        ></textarea>
+      </div>
+
+      <button
+        class="btn btn-dark form-submit"
+        type="submit"
+      >
+        ENVIAR PEDIDO PELO WHATSAPP ↗
+      </button>
+
+      <p class="form-help">
+        Ao clicar, o WhatsApp será aberto com
+        as informações preenchidas. O pedido só
+        será enviado quando você confirmar a mensagem.
+      </p>
+
+      <p id="form-status" role="status" aria-live="polite"></p>
+    </form>
+
+  </div>
+</section>
+
+<section class="final-cta">
+  <h2>
+    SE É PRA SER LEMBRADO,<br>
+    QUE SEJA COM PERSONALIDADE.
+  </h2>
+
+  <a href="#orcamento" class="btn btn-white">
+    QUERO PERSONALIZAR ↗
+  </a>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+
+    <div class="footer-grid">
+
+      <div>
+        <a href="/" class="footer-brand">
+          mimbox<span>.</span>
+        </a>
+        <p>
+          Coleções criativas, presentes personalizados
+          e ideias que não nasceram para ser comuns.
+          Feito em São Paulo, para todo o Brasil.
+        </p>
+      </div>
+
+      <div>
+        <h3>EXPLORE</h3>
+        <nav class="footer-links">
+          <a href="/">Início</a>
+          <a href="/personalizados.html">Personalizados</a>
+          <a href="/loja.html">Loja Mimbox</a>
+          <a href="/para-negocios.html">Para Empresas</a>
+          <a href="/blog.html">Blog</a>
+          <a href="/sobre.html">Sobre</a>
+        </nav>
+      </div>
+
+      <div>
+        <h3>FALE COM A GENTE</h3>
+        <nav class="footer-links">
+          <a
+            href="https://www.instagram.com/mimbox.br/"
+            target="_blank"
+            rel="noopener noreferrer"
+            id="instagram-link"
+          >Instagram ↗</a>
+          <a href="#orcamento">Solicitar orçamento ↗</a>
+        </nav>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      © <span id="year"></span> Mimbox.
+      Feito com personalidade.
+    </div>
+
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+let whatsapp = "";
+
+// Menu mobile
+$("menu-toggle").addEventListener("click", () => {
+  const menu = $("menu");
+  const opened = menu.classList.toggle("open");
+
+  $("menu-toggle").setAttribute(
+    "aria-expanded",
+    String(opened)
+  );
+});
+
+document.querySelectorAll("#menu a").forEach(link => {
+  link.addEventListener("click", () => {
+    $("menu").classList.remove("open");
+    $("menu-toggle").setAttribute(
+      "aria-expanded",
+      "false"
+    );
+  });
+});
+
+// Ano automático
+$("year").textContent = new Date().getFullYear();
+
+// Imagens cadastradas no painel
+function setImage(imageId, placeholderId, url) {
+  if (!url || !/^https:\/\/\S+$/i.test(url)) {
+    return;
+  }
+
+  const img = $(imageId);
+  const placeholder = $(placeholderId);
+
+  if (!img) return;
+
+  img.onload = () => {
+    img.hidden = false;
+
+    if (placeholder) {
+      placeholder.hidden = true;
+    }
+  };
+
+  img.onerror = () => {
+    img.hidden = true;
+
+    if (placeholder) {
+      placeholder.hidden = false;
+    }
+  };
+
+  img.src = url;
+}
+
+// Conteúdo dinâmico do Gerenciar Site
+async function loadSiteContent() {
+  try {
+    const response = await fetch(
+      "/api/admin-gerenciar?action=site_publico",
+      {
+        cache: "no-store"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Conteúdo indisponível");
+    }
+
+    const result = await response.json();
+    const data = result.conteudo || {};
+
+    if (data.negocios_titulo?.trim()) {
+      $("cms-negocios-titulo").textContent =
+        data.negocios_titulo;
+    }
+
+    if (data.negocios_subtitulo?.trim()) {
+      $("cms-negocios-subtitulo").textContent =
+        data.negocios_subtitulo;
+    }
+
+    if (data.negocios_botao_texto?.trim()) {
+      $("cms-negocios-botao").textContent =
+        data.negocios_botao_texto;
+    }
+
+    if (data.negocios_botao_link?.trim()) {
+      const link = data.negocios_botao_link;
+
+      if (
+        /^https:\/\/\S+$/i.test(link) ||
+        /^\/(?!\/)/.test(link) ||
+        /^#[^\s]+$/.test(link)
+      ) {
+        $("cms-negocios-botao").href = link;
+      }
+    }
+
+    setImage(
+      "cms-negocios-banner",
+      "hero-fallback",
+      data.negocios_banner_imagem
+    );
+
+    setImage(
+      "cms-negocios-brindes",
+      "copos-placeholder",
+      data.negocios_brindes_imagem
+    );
+
+    setImage(
+      "cms-negocios-personalizados",
+      "personalizados-placeholder",
+      data.negocios_personalizados_imagem
+    );
+
+    if (/^\d{10,15}$/.test(data.whatsapp || "")) {
+      whatsapp = data.whatsapp;
+    }
+
+    if (
+      /^https:\/\/\S+$/i.test(data.instagram || "")
+    ) {
+      $("instagram-link").href = data.instagram;
+    }
+
+  } catch (error) {
+    console.warn(
+      "A página está usando seu conteúdo padrão.",
+      error.message
+    );
+  }
+}
+
+// Carregar WhatsApp também das configurações da loja
+async function loadContactConfig() {
+  if (whatsapp) return;
+
+  try {
+    const response = await fetch(
+      "/api/admin-gerenciar?action=site_publico",
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) return;
+
+    const result = await response.json();
+    const number = result.conteudo?.whatsapp;
+
+    if (/^\d{10,15}$/.test(number || "")) {
+      whatsapp = number;
+    }
+  } catch {
+    // O formulário informa caso não haja número.
+  }
+}
+
+// Formulário para WhatsApp
+$("quote-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const status = $("form-status");
+  status.textContent = "";
+
+  const form = event.currentTarget;
+
+  if (!form.reportValidity()) return;
+
+  if (!whatsapp) {
+    await loadContactConfig();
+  }
+
+  if (!whatsapp) {
+    status.textContent =
+      "O WhatsApp da loja ainda não está configurado. " +
+      "Cadastre o número no Gerenciar Site para receber orçamentos.";
+    return;
+  }
+
+  const nome = $("nome").value.trim();
+  const empresa = $("empresa").value.trim();
+  const telefone = $("telefone").value.trim();
+  const email = $("email").value.trim();
+  const produto = $("produto").value;
+  const quantidade = $("quantidade").value;
+  const data = $("data").value;
+  const detalhes = $("detalhes").value.trim();
+
+  const linhas = [
+    "Olá, Mimbox! Quero solicitar um orçamento para minha empresa.",
+    "",
+    "*Nome:* " + nome,
+    "*Empresa:* " + empresa,
+    "*WhatsApp:* " + telefone,
+    "*Produto:* " + produto,
+    "*Quantidade:* " + quantidade
+  ];
+
+  if (email) {
+    linhas.push("*E-mail:* " + email);
+  }
+
+  if (data) {
+    const partes = data.split("-");
+    const dataFormatada =
+      partes.length === 3
+        ? partes[2] + "/" + partes[1] + "/" + partes[0]
+        : data;
+
+    linhas.push("*Data desejada:* " + dataFormatada);
+  }
+
+  if (detalhes) {
+    linhas.push("*Detalhes:* " + detalhes);
+  }
+
+  linhas.push(
+    "",
+    "Gostaria de saber as opções e os valores disponíveis."
+  );
+
+  const url =
+    "https://wa.me/" +
+    whatsapp +
+    "?text=" +
+    encodeURIComponent(linhas.join("\n"));
+
+  const opened = window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  );
+
+  if (!opened) {
+    status.textContent =
+      "O navegador bloqueou a abertura do WhatsApp. " +
+      "Clique no link abaixo para continuar.";
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Abrir WhatsApp";
+    link.style.display = "block";
+    link.style.marginTop = "10px";
+    link.style.textDecoration = "underline";
+
+    status.append(link);
+  }
+});
+
+loadSiteContent();
+</script>
+
+</body>
+</html>
