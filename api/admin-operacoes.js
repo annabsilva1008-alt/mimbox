@@ -1,1770 +1,955 @@
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mimbox | Administração</title>
-<style>
-:root{
-  --yellow:#f8d749;
-  --blue:#2456a6;
-  --red:#e74739;
-  --cream:#f5eedf;
-  --black:#181818;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  background:var(--cream);
-  color:var(--black);
-  font-family:Arial,Helvetica,sans-serif;
-}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-input,select,textarea{
-  display:block;
-  width:100%;
-  padding:12px;
-  margin:7px 0 14px;
-  border:2px solid var(--black);
-  border-radius:8px;
-  background:white;
-}
-input[type=checkbox]{
-  display:inline;
-  width:auto;
-  margin-right:8px;
-}
-label{
-  display:block;
-  font-size:14px;
-  font-weight:700;
-  margin-top:12px;
-}
-textarea{resize:vertical;min-height:75px}
-h1,h2,h3{line-height:1.2}
-p{line-height:1.5}
-.hidden{display:none!important}
-.btn{
-  display:inline-block;
-  padding:12px 16px;
-  margin:6px 6px 6px 0;
-  background:var(--yellow);
-  border:2px solid var(--black);
-  border-radius:9px;
-  font-weight:800;
-}
-.btn.blue{background:var(--blue);color:white}
-.btn.white{background:white}
-.btn:disabled{opacity:.5;cursor:wait}
-.login{
-  min-height:100vh;
-  display:grid;
-  place-items:center;
-  padding:20px;
-}
-.login-box{
-  width:100%;
-  max-width:420px;
-  background:#fffdf7;
-  padding:30px;
-  border:3px solid var(--black);
-  border-radius:18px;
-  box-shadow:7px 7px 0 var(--black);
-}
-.logo{
-  color:var(--red);
-  font-size:36px;
-  font-weight:900;
-  letter-spacing:-2px;
-}
-.layout{
-  display:grid;
-  grid-template-columns:235px minmax(0,1fr);
-  min-height:100vh;
-}
-aside{
-  background:var(--black);
-  color:white;
-  padding:24px 15px;
-}
-aside .logo{color:var(--yellow)}
-nav{display:grid;gap:5px;margin-top:25px}
-nav button{
-  border:0;
-  border-radius:8px;
-  background:transparent;
-  color:white;
-  padding:13px;
-  text-align:left;
-  font-weight:700;
-}
-nav button:hover,nav button.active{
-  background:var(--blue);
-}
-main{
-  padding:25px;
-  min-width:0;
-  max-width:1450px;
-  width:100%;
-}
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:15px;
-  flex-wrap:wrap;
-}
-.card{
-  background:#fffdf7;
-  border:2px solid var(--black);
-  border-radius:15px;
-  padding:20px;
-  margin:18px 0;
-  box-shadow:4px 4px 0 var(--black);
-  overflow-wrap:anywhere;
-}
-.card h2{margin-top:0}
-.grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:15px;
-}
-.metric{font-size:30px;font-weight:900}
-.item{
-  padding:18px 0;
-  border-top:1px solid #ddd;
-}
-.notice{
-  background:white;
-  border-left:5px solid var(--blue);
-  padding:13px;
-  margin:15px 0;
-  overflow-wrap:anywhere;
-}
-.error{border-left-color:var(--red)}
-.muted{font-size:13px;color:#666}
-.row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  align-items:center;
-}
-.status{
-  display:inline-block;
-  background:var(--yellow);
-  border:1px solid var(--black);
-  border-radius:20px;
-  padding:5px 10px;
-  font-size:12px;
-  font-weight:bold;
-}
-@media(max-width:800px){
-  .layout{display:block}
-  aside{padding:15px}
-  nav{
-    display:flex;
-    overflow-x:auto;
-    margin-top:12px;
+const base = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const key = process.env.SUPABASE_SECRET_KEY;
+
+const headers = () => ({
+  apikey: key,
+  Authorization: `Bearer ${key}`,
+  "Content-Type": "application/json"
+});
+
+const clean = (v, max = 500) =>
+  String(v ?? "").trim().slice(0, max);
+
+const enc = v => encodeURIComponent(String(v));
+
+const MAX_IMAGE_BYTES = 2500000;
+
+const IMAGE_TYPES = {
+  "image/jpeg": {
+    ext: "jpg",
+    magic: b => b.length >= 3 &&
+      b[0] === 255 && b[1] === 216 && b[2] === 255
+  },
+  "image/png": {
+    ext: "png",
+    magic: b => b.length >= 8 &&
+      b.subarray(0, 8).equals(
+        Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+      )
+  },
+  "image/webp": {
+    ext: "webp",
+    magic: b => b.length >= 12 &&
+      b.toString("ascii", 0, 4) === "RIFF" &&
+      b.toString("ascii", 8, 12) === "WEBP"
   }
-  nav button{white-space:nowrap}
-  main{padding:15px}
-  .grid{grid-template-columns:1fr}
-}
-.gallery-items{display:grid;gap:10px;margin:12px 0}
-.gallery-entry{display:flex;align-items:center;gap:15px;background:white;border:1px solid #bbb;border-radius:10px;padding:10px}
-.gallery-entry img{width:100px;height:100px;object-fit:contain;border-radius:8px;background:#f5f5f5}
-.gallery-entry .btn{padding:7px 10px;font-size:12px}
-.gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
-</style>
-</head>
-<body>
-
-<section id="loading" class="login">
-  Verificando sessão...
-</section>
-
-<section id="login-screen" class="login hidden">
-  <div class="login-box">
-    <div class="logo">mimbox.</div>
-    <h1>Painel administrativo</h1>
-    <form id="login-form">
-      <label>E-mail</label>
-      <input id="login-email"
-        type="email" required
-        autocomplete="username">
-
-      <label>Senha</label>
-      <input id="login-password"
-        type="password" required
-        autocomplete="current-password">
-
-      <button class="btn" type="submit"
-        id="login-button">Entrar</button>
-    </form>
-    <p id="login-message"></p>
-  </div>
-</section>
-
-<div id="app" class="layout hidden">
-  <aside>
-    <div class="logo">mimbox.</div>
-    <p>Central administrativa</p>
-
-    <nav id="navigation">
-      <button data-page="dashboard">📊 Dashboard</button>
-      <button data-page="pedidos">📦 Pedidos do site</button>
-      <button data-page="manual">➕ Pedido manual</button>
-      <button data-page="produtos">🛍️ Produtos</button>
-       <button data-page="estoque">📋 Estoque</button>
-       <button data-page="envios">🚚 Envios</button>
-      <button data-page="acompanhamento">🎁 Acompanhamento Clube</button>
-
-      <button data-page="clientes">👥 Clientes</button>
-      <a href="/gerenciar-site.html" style="display:block;border-radius:8px;color:white;padding:13px;text-decoration:none;font-weight:700" onmouseover="this.style.background='var(--blue)'" onmouseout="this.style.background='transparent'">🎨 Gerenciar Site ↗</a>
-    </nav>
-  </aside>
-
-  <main>
-    <div class="header">
-      <div>
-        <h1 id="page-title">Dashboard</h1>
-        <p class="muted">Mimbox ADM</p>
-      </div>
-      <button class="btn white" id="logout">
-        Sair
-      </button>
-    </div>
-
-    <div id="message" role="status"></div>
-    <div id="content"></div>
-  </main>
-</div>
-
-<script>
-"use strict";
-
-const $ = id => document.getElementById(id);
-
-const state = {
-  pedidos: [],
-  filtroPedidos: "pagos",
-  produtos: [],
-  estoque: [],
-  envios: [],
-  clientes: []
 };
 
-const titles = {
-  dashboard:"Dashboard",
-  pedidos:"Pedidos do site",
-  manual:"Cadastrar pedido manual",
-  produtos:"Produtos",
-  clubes:"Planos do Mimbox Clube",
-  estoque:"Estoque",
-  acompanhamento:"Acompanhamento do Clube",
-  envios:"Entregas pendentes",
-  clientes:"Clientes"
-};
-
-const statuses = [
-  ["aguardando","Aguardando"],
-  ["em_preparacao","Em preparação"],
-  ["pronto_retirada","Pronto para retirada"],
-  ["enviado","Enviado"],
-  ["entregue","Entregue"],
-  ["cancelado","Cancelado"]
-];
-
-function element(tag,text,css){
-  const e=document.createElement(tag);
-  if(text!==undefined){
-    e.textContent=String(text??"");
-  }
-  if(css)e.className=css;
-  return e;
-}
-
-function card(title){
-  const e=element("section",undefined,"card");
-  e.append(element("h2",title));
-  return e;
-}
-
-function line(label,value){
-  const p=element("p");
-  const b=element("strong",label+": ");
-  p.append(
-    b,
-    document.createTextNode(
-      String(value??"Não informado")
-    )
-  );
-  return p;
-}
-
-function money(value){
-  return Number(value||0).toLocaleString(
-    "pt-BR",
-    {style:"currency",currency:"BRL"}
-  );
-}
-
-function field(label,value="",type="text"){
-  const wrap=element("div");
-  const title=element("label",label);
-  const input=type==="textarea"
-    ?document.createElement("textarea")
-    :document.createElement("input");
-
-  if(type!=="textarea")input.type=type;
-  input.value=value??"";
-
-  if(type==="number"){
-    input.min="0";
-    input.step="0.01";
-  }
-
-  wrap.append(title,input);
-  return {wrap,input};
-}
-
-function checkbox(label,checked=false){
-  const wrap=element("label");
-  const input=element("input");
-  input.type="checkbox";
-  input.checked=!!checked;
-  wrap.append(input,document.createTextNode(label));
-  return {wrap,input};
-}
-
-function selectField(label,options,value){
-  const wrap=element("div");
-  wrap.append(element("label",label));
-
-  const select=element("select");
-
-  for(const [v,t] of options){
-    const option=element("option",t);
-    option.value=v;
-    option.selected=v===value;
-    select.append(option);
-  }
-
-  wrap.append(select);
-  return {wrap,input:select};
-}
-
-function action(label,callback){
-  const b=element("button",label,"btn");
-  b.type="button";
-
-  b.onclick=async()=>{
-    b.disabled=true;
-    try{
-      await callback();
-    }catch(error){
-      notify(error.message,true);
-    }finally{
-      b.disabled=false;
+async function db(table, method = "GET", query = "", body) {
+  const response = await fetch(
+    `${base}/rest/v1/${table}${query}`,
+    {
+      method,
+      headers: {
+        ...headers(),
+        Prefer: "return=representation"
+      },
+      ...(body === undefined
+        ? {}
+        : { body: JSON.stringify(body) })
     }
-  };
-
-  return b;
-}
-
-function notify(text,error=false){
-  const area=$("message");
-  area.replaceChildren();
-
-  if(!text)return;
-
-  const box=element(
-    "div",text,"notice"+(error?" error":"")
   );
 
-  area.append(box);
-}
-
-function show(id){
-  for(const key of [
-    "loading","login-screen","app"
-  ]){
-    $(key).classList.toggle(
-      "hidden",key!==id
-    );
-  }
-}
-
-async function request(url,options={}){
-  const response=await fetch(url,{
-    credentials:"same-origin",
-    cache:"no-store",
-    ...options
-  });
-
+  const raw = await response.text();
   let data;
-  try{
-    data=await response.json();
-  }catch{
-    throw Error("Resposta inválida do servidor");
+
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    data = raw;
   }
 
-  if(!response.ok){
-    throw Error(
-      data.erro||
-      data.error||
-      "Erro HTTP "+response.status
+  if (!response.ok) {
+    throw new Error(
+      data && typeof data === "object"
+        ? data.message || data.details || "Erro Supabase"
+        : String(data)
     );
   }
 
   return data;
 }
 
-async function operations(acao,data){
-  if(data===undefined){
-    return request(
-      "/api/admin-operacoes?acao="+
-      encodeURIComponent(acao)
-    );
-  }
+async function admin(req) {
+  const cookie = (req.headers.cookie || "")
+    .split(";")
+    .map(s => s.trim())
+    .find(s => s.startsWith("mimbox_admin_session="));
 
-  return request("/api/admin-operacoes",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({acao,...data})
-  });
-}
-
-async function checkSession(){
-  try{
-    const data=await request("/api/admin-session");
-
-    if(data.autenticado===true){
-      show("app");
-      openPage("dashboard");
-    }else{
-      show("login-screen");
-    }
-  }catch{
-    show("login-screen");
-  }
-}
-
-$("login-form").onsubmit=async event=>{
-  event.preventDefault();
-
-  const b=$("login-button");
-  b.disabled=true;
-  $("login-message").textContent="Verificando...";
-
-  try{
-    await request("/api/admin-login",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        email:$("login-email").value.trim(),
-        senha:$("login-password").value
-      })
-    });
-
-    $("login-password").value="";
-    await checkSession();
-
-  }catch(error){
-    $("login-message").textContent=error.message;
-  }finally{
-    b.disabled=false;
-  }
-};
-
-$("logout").onclick=async()=>{
-  try{
-    await request("/api/admin-logout",{
-      method:"POST"
-    });
-    show("login-screen");
-  }catch(error){
-    notify(error.message,true);
-  }
-};
-
-$("navigation").onclick=event=>{
-  const b=event.target.closest("[data-page]");
-  if(b)openPage(b.dataset.page);
-};
-
-let paginaAtual = "";
-let carregamentoPedidos = false;
-
-async function atualizarPedidosAutomaticamente(){
-  if (document.hidden || !["dashboard","pedidos"].includes(paginaAtual) || carregamentoPedidos) return;
-  carregamentoPedidos = true;
-  try {
-    const data = await request("/api/admin-pedidos");
-    const novos = Array.isArray(data.pedidos) ? data.pedidos : [];
-    const assinatura = lista => JSON.stringify(lista.map(p => [p.id,p.status_pagamento,p.status_entrega,p.valor_total,p.observacoes,p.criado_em]));
-    if (assinatura(novos) !== assinatura(state.pedidos)) {
-      const antigos = new Map(state.pedidos.map(p => [p.id,p]));
-      state.pedidos = novos.map(p => ({
-        ...p,
-        observacoes: p.observacoes ?? antigos.get(p.id)?.observacoes,
-        clientes: p.clientes || antigos.get(p.id)?.clientes
-      }));
-      const area = $("content");
-      if (paginaAtual === "pedidos") { area.replaceChildren(); orders(area); }
-      if (paginaAtual === "dashboard") { area.replaceChildren(); dashboard(area); }
-    }
-  } catch (error) {
-    console.warn("Atualização automática dos pedidos:", error.message);
-  } finally { carregamentoPedidos = false; }
-}
-setInterval(atualizarPedidosAutomaticamente, 8000);
-
-async function openPage(page){
-  paginaAtual = page;
-  if(!titles[page])return;
-
-  $("page-title").textContent=titles[page];
-  notify("");
-
-  document.querySelectorAll("[data-page]")
-    .forEach(b=>{
-      b.classList.toggle(
-        "active",
-        b.dataset.page===page
-      );
-    });
-
-  const area=$("content");
-  area.replaceChildren(
-    element("p","Carregando informações...")
-  );
-
-  try{
-    if(page==="dashboard"||page==="pedidos"){
-      const data=await request("/api/admin-pedidos");
-      state.pedidos=data.pedidos||[];
-      const joined = await operations("clientes");
-      const byId = new Map((joined.pedidos || []).map(p => [p.id,p]));
-      state.pedidos = state.pedidos.map(p => ({
-        ...p, clientes:byId.get(p.id)?.clientes || p.clientes,
-        observacoes:byId.get(p.id)?.observacoes ?? p.observacoes
-      }));
-    }
-
-    if(page==="estoque"){
-       const data=await operations("estoque");
-       state.estoque=data.itens||[];
-     }
-
-     if(page==="produtos"||page==="clubes"){
-      const data=await operations("produtos");
-      state.produtos=data.produtos||[];
-    }
-
-    if(page==="acompanhamento"){
-      const data=await operations("clientes");
-      state.envios=data.pedidos||[];
-    }
-
-    if(page==="envios"){
-      const data=await operations("envios");
-      state.envios=data.envios||[];
-    }
-
-    if(page==="clientes"){
-      const data=await operations("clientes");
-      state.pedidos=data.pedidos||[];
-    }
-
-    if(paginaAtual!==page || $("page-title").textContent!==titles[page]){
-      return;
-    }
-
-    area.replaceChildren();
-
-    if(page==="dashboard")dashboard(area);
-    if(page==="pedidos")orders(area);
-    if(page==="manual")manual(area);
-    if(page==="produtos")products(area);
-     if(page==="estoque")stock(area);
-     if(page==="envios")shipments(area);
-     if(page==="clubes")clubsCatalog(area);
-    if(page==="acompanhamento")clubTracking(area);
-
-    if(page==="clientes")customers(area);
-
-  }catch(error){
-    area.replaceChildren();
-
-    const c=card("Não foi possível carregar");
-    c.append(element("p",error.message));
-    c.append(action(
-      "Tentar novamente",
-      ()=>openPage(page)
-    ));
-    area.append(c);
-
-    notify(error.message,true);
-  }
-}
-
-
-function isPaid(p) {
-  return ["pago","paid","aprovado","approved"].includes(
-    String(p.status_pagamento || "").toLowerCase()
-  );
-}
-function needsAction(p) {
-  return isPaid(p) &&
-    !["enviado","entregue","cancelado"].includes(
-      String(p.status_entrega || "").toLowerCase()
-    );
-}
-function customerOf(p) {
-  return Array.isArray(p.clientes) ? p.clientes[0] : p.clientes;
-}
-function notesWithoutClub(p) {
-  return cleanClubNotes(p.observacoes || "");
-}
-function customerNotes(area, p, refreshPage) {
-  const section = element("details");
-  section.append(element("summary","📝 Histórico e observações"));
-  section.append(line("Registros", notesWithoutClub(p) || "Nenhuma observação."));
-  const note = field("Adicionar registro à jornada do cliente","","textarea");
-  note.input.maxLength = 650;
-  section.append(note.wrap);
-  section.append(action("Salvar observação", async () => {
-    if (!note.input.value.trim()) throw Error("Escreva uma observação.");
-    const result = await operations("observacao_salvar", {
-      id:p.id, texto:note.input.value.trim()
-    });
-    if (!result.ok) throw Error("Não foi possível salvar.");
-    await openPage(refreshPage);
-    notify("Observação registrada no histórico do pedido.");
-  }));
-  area.append(section);
-}
-function orderActions(area, p, page) {
-  if (!needsAction(p)) return;
-  if (clubInfo(p.observacoes)) {
-    area.append(element("p",
-      "Assinatura Mimbox Clube: acompanhe as caixas na aba Acompanhamento Clube.","muted"));
-    return;
-  }
-  const method = p.forma_entrega === "retirada" ? "retirar" : "enviar";
-  const label = method === "retirar" ? "✓ Confirmar retirada" : "✓ Confirmar envio";
-  area.append(action(label, async () => {
-    if (!confirm("Confirmar " + (method === "retirar" ? "a retirada" : "o envio") +
-      " do pedido " + (p.numero_pedido || p.id) + "?")) return;
-    const result = await operations("pedido_atendimento",{id:p.id,tipo:method});
-    if (!result.ok) throw Error("Não foi possível atualizar o pedido.");
-    await openPage(page);
-    notify("Pedido atualizado com sucesso.");
-  }));
-  area.append(action("✕ Cancelar pedido", async () => {
-    if (!confirm("Cancelar o pedido " + (p.numero_pedido || p.id) +
-      "? Isso NÃO estorna o pagamento na InfinitePay.")) return;
-    const result = await operations("pedido_atendimento",{id:p.id,tipo:"cancelar"});
-    if (!result.ok) throw Error("Não foi possível cancelar o pedido.");
-    await openPage(page);
-    notify("Pedido cancelado no CRM. Confira separadamente eventual estorno.");
-  }));
-}
-
-// DADOS DO CLUBE: gravados nas observações do pedido já existente.
-// Não exige tabela nova nem altera o checkout.
-const CLUB_TAG = "[MIMBOX_CLUBE:";
-function clubInfo(notes){
-  const str=String(notes||"");
-  const start=str.indexOf(CLUB_TAG);
-  if(start<0)return null;
-  const end=str.indexOf("]",start);
-  if(end<0)return null;
-  try{
-    const v=JSON.parse(str.slice(start+CLUB_TAG.length,end));
-    if(![3,6,9].includes(Number(v.meses)))return null;
-    return {
-      nome:String(v.nome||""),
-      meses:Number(v.meses),
-      enviados:Math.min(Number(v.meses),Math.max(0,Math.floor(Number(v.enviados)||0))),
-      inicio:/^\d{4}-\d{2}-\d{2}$/.test(v.inicio||"")?v.inicio:""
-    };
-  }catch{return null;}
-}
-function cleanClubNotes(notes){
-  return String(notes||"").replace(/\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/g,"").trim();
-}
-function clubNotes(notes,club){
-  const normal=cleanClubNotes(notes);
-  return (normal?normal+"\n":"")+CLUB_TAG+JSON.stringify(club)+"]";
-}
-function clubDue(club){
-  if(!club?.inicio)return null;
-  const [year,month,day]=club.inicio.split("-").map(Number);
-  if(!year||!month||!day)return null;
-  if(club.enviados===0)return new Date(year,month-1,day);
-  // Cada nova caixa vence no dia 1 do mês seguinte ao mês da anterior.
-  return new Date(year,month-1+club.enviados,1);
-}
-function clubDateLabel(date){
-  return date?date.toLocaleDateString("pt-BR"):"Definir primeira data";
-}
-function clubState(club){
-  if(club.enviados>=club.meses)return "Concluído";
-  const due=clubDue(club);
-  if(!due)return "Sem data";
-  const today=new Date();today.setHours(0,0,0,0);
-  if(due<today)return "⚠️ Atrasado";
-  const days=Math.round((due-today)/86400000);
-  return days<=7?"Próximo envio":"Em dia";
-}
-async function saveClubOrder(p,club,visibleNotes){
-  const result=await operations("envio_editar",{
-    id:p.id,
-    envio:{
-      status_entrega:p.status_entrega||"aguardando",
-      transportadora:p.transportadora||"",
-      rastreio:p.rastreio||"",
-      observacoes:clubNotes(visibleNotes??p.observacoes,club)
-    }
-  });
-  if(result.ok!==true)throw Error("Não foi possível salvar a assinatura");
-  p.observacoes=clubNotes(visibleNotes??p.observacoes,club);
-  // Status geral do pedido permanece inalterado; progresso do Clube fica no histórico.
-}
-
-// HISTÓRICO DAS ENTREGAS MENSAIS DO CLUBE (dentro das observações do pedido).
-const CLUB_SHIP_TAG="[MIMBOX_CLUBE_ENVIOS:";
-function clubShipments(notes){
-  const txt=String(notes||""), start=txt.indexOf(CLUB_SHIP_TAG);
-  if(start<0)return {};
-  const end=txt.indexOf("]",start);if(end<0)return {};
-  try{const value=JSON.parse(txt.slice(start+CLUB_SHIP_TAG.length,end));return value&&typeof value==="object"&&!Array.isArray(value)?value:{};}catch{return {};}
-}
-function withoutClubShipments(notes){return String(notes||"").replace(/\[MIMBOX_CLUBE_ENVIOS:\{[^\]\r\n]*\}\]/g,"").trim();}
-function clubShipmentNotes(notes,history){
-  return withoutClubShipments(notes)+(Object.keys(history).length?"\n"+CLUB_SHIP_TAG+JSON.stringify(history)+"]":"");
-}
-// Classificação explícita para pedidos manuais; inferência para pedidos do site.
-const ORDER_KIND_TAG="[MIMBOX_TIPO:";
-function orderKind(p){
-  const notes=String(p.observacoes||"");
-  const match=notes.match(/\[MIMBOX_TIPO:(clube|avulso)\]/i);
-  if(match)return {tipo:match[1].toLowerCase(),origem:"Classificação manual"};
-  if(clubInfo(notes))return {tipo:"clube",origem:"Assinatura registrada"};
-  const items=Array.isArray(p.itens)?p.itens:[];
-  const descriptions=items.map(i=>[i.nome,i.descricao,i.description,i.colecao,i.tipo,i.categoria].filter(Boolean).join(" ")).join(" ");
-  const looksLikeClub=/\b(mimbox\s*clube|clube\s*mimbox|plano\s*(?:de\s*)?(?:3|6|9)\s*meses|assinatura\s*(?:de\s*)?(?:3|6|9)\s*meses)\b/i.test(descriptions);
-  return {tipo:looksLikeClub?"clube":"avulso",origem:looksLikeClub?"Identificado pelos itens do site":"Sem identificação de Clube"};
-}
-function planMonths(p){
- const items=Array.isArray(p.itens)?p.itens:[];
- const txt=items.map(i=>[i.nome,i.descricao,i.description].join(" ")).join(" ");
- const match=txt.match(/\b(3|6|9)\s*meses\b/i);
- return match?Number(match[1]):3;
-}
-function withoutKind(notes){return String(notes||"").replace(/\[MIMBOX_TIPO:(?:clube|avulso)\]/gi,"").trim();}
-async function saveOrderKind(p,tipo){
- const existing=withoutKind(p.observacoes);
- const clean=tipo==="avulso"?cleanClubNotes(existing):existing;
- const next=clean+"\n[MIMBOX_TIPO:"+tipo+"]";
- const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:p.status_entrega||"aguardando",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:next.trim()}});
- if(!result.ok)throw Error("Não foi possível salvar o tipo de pedido");
- p.observacoes=next.trim();
-}
-function clubTracking(area){
-  const all=state.envios.filter(p=>orderKind(p).tipo==="clube");
-  const registered=all.filter(p=>clubInfo(p.observacoes));
-  const active=registered.filter(p=>{const c=clubInfo(p.observacoes);return c.enviados<c.meses;});
-  const today=new Date();today.setHours(0,0,0,0);
-  const pending=active.filter(p=>{const d=clubDue(clubInfo(p.observacoes));return d&&d<=today;});
-  const late=pending.filter(p=>{const d=clubDue(clubInfo(p.observacoes));return d<today;});
-  const intro=card("🎁 Acompanhamento do Clube");
-  intro.append(element("p","Somente clientes do Clube. Confirme cada caixa enviada; a próxima vence no dia 1º do mês seguinte. Não gera cobrança."));
-  intro.append(action("Atualizar",()=>openPage("acompanhamento")));
-  area.append(intro);
-  const metrics=element("div",undefined,"grid");
-  for(const [title,value] of [["Assinantes do Clube",all.length],["Assinaturas ativas",active.length],["Envios pendentes",pending.length],["Atrasados",late.length]]){
-    const tile=card(title);tile.append(element("div",String(value),"metric"));metrics.append(tile);
-  }
-  area.append(metrics);
-  const search=field("Buscar assinante");area.append(search.wrap);
-  const list=element("div");area.append(list);
-  function render(){
-    list.replaceChildren();
-    const q=search.input.value.toLocaleLowerCase("pt-BR").trim();
-    const matches=all.filter(p=>{
-      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-      const c=clubInfo(p.observacoes);
-      return [customer?.nome,c?.nome,p.numero_pedido].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(q));
-    }).sort((a,b)=>{
-      const ca=clubInfo(a.observacoes),cb=clubInfo(b.observacoes);
-      const da=ca&&ca.enviados<ca.meses?clubDue(ca):null;
-      const db=cb&&cb.enviados<cb.meses?clubDue(cb):null;
-      return (da?.getTime()||Infinity)-(db?.getTime()||Infinity);
-    });
-    if(!matches.length){const empty=card("Nenhum assinante encontrado");empty.append(element("p",all.length?"Tente outro nome.":"Ainda não há pedidos classificados como Clube."));list.append(empty);return;}
-    for(const p of matches){
-      const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-      const c=clubInfo(p.observacoes);
-      const name=c?.nome||customer?.nome||"Assinante";
-      const box=card(name);
-      if(!c){
-        box.append(element("p","Pedido identificado como Clube. Ative o acompanhamento mensal para controlar as caixas."));
-        const plan=selectField("Plano contratado",[["3","3 meses"],["6","6 meses"],["9","9 meses (legado)"]],String(planMonths(p)));
-        const first=field("Data do primeiro envio",new Date().toLocaleDateString("en-CA"),"date");
-        box.append(plan.wrap,first.wrap);
-        box.append(action("Ativar acompanhamento",async()=>{
-          if(!first.input.value)throw Error("Informe a data do primeiro envio.");
-          await saveClubOrder(p,{nome:name,meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
-          notify("Acompanhamento ativado.");await openPage("acompanhamento");
-        }));
-        list.append(box);continue;
-      }
-      const done=c.enviados>=c.meses;
-      const due=done?null:clubDue(c);
-      const isDue=due&&due<=today;
-      const history=clubShipments(p.observacoes);
-      const status=done?"Concluído":isDue?(due<today?"Atrasado":"Pendente hoje"):"Programado";
-      box.append(line("Plano",c.meses+" meses"));
-      box.append(line("Caixas enviadas",c.enviados+" de "+c.meses));
-      box.append(line("Situação",status));
-      box.append(line("Próximo envio",done?"Todas as caixas enviadas":clubDateLabel(due)));
-      const bar=element("div");bar.style.cssText="display:flex;gap:6px;margin:12px 0";
-      for(let i=1;i<=c.meses;i++){
-        const seg=element("div");seg.title="Caixa "+i+(i<=c.enviados?" enviada":" pendente");
-        seg.style.cssText="height:13px;flex:1;border-radius:6px;border:1px solid #222;background:"+(i<=c.enviados?"#37b879":"#eee");bar.append(seg);
-      }
-      box.append(bar);
-      if(!done){
-        const next=c.enviados+1;
-        const panel=element("details");
-        panel.open=!!isDue;
-        panel.append(element("summary","Caixa "+String(next).padStart(2,"0")+" — "+(isDue?"Envio pendente":"Próximo envio programado")));
-        const sent=field("Data da postagem",new Date().toLocaleDateString("en-CA"),"date");
-        const carrier=field("Transportadora","");
-        const track=field("Código de rastreamento","");
-        const notes=field("Observações", "", "textarea");
-        panel.append(sent.wrap,carrier.wrap,track.wrap,notes.wrap);
-        panel.append(action("Confirmar envio da caixa "+next,async()=>{
-          if(!sent.input.value)throw Error("Informe a data da postagem.");
-          if(!confirm("Confirmar o envio da caixa "+next+" de "+c.meses+" para "+name+"?"))return;
-          const updated={...c,enviados:next};
-          const newHistory={...history,[String(next)]:{status:"enviado",data:sent.input.value,transportadora:carrier.input.value.trim(),rastreio:track.input.value.trim(),notas:notes.input.value.trim()}};
-          const newNotes=clubShipmentNotes(clubNotes(withoutClubShipments(p.observacoes),updated),newHistory);
-          const result=await operations("envio_editar",{id:p.id,envio:{status_entrega:p.status_entrega||"aguardando",transportadora:p.transportadora||"",rastreio:p.rastreio||"",observacoes:newNotes}});
-          if(result.ok!==true)throw Error("Não foi possível confirmar o envio.");
-          notify("Caixa "+next+" confirmada. Próximo vencimento atualizado.");await openPage("acompanhamento");
-        }));
-        box.append(panel);
-      }
-      if(c.enviados){
-        const past=element("details");past.append(element("summary","Histórico de envios ("+c.enviados+")"));
-        for(let i=1;i<=c.enviados;i++){
-          const h=history[String(i)]||{};
-          const item=element("div",undefined,"item");
-          item.append(line("Caixa",i+" de "+c.meses));
-          item.append(line("Postagem",h.data?clubDateLabel(new Date(h.data+"T12:00:00")):"Data não informada"));
-          if(h.transportadora)item.append(line("Transportadora",h.transportadora));
-          if(h.rastreio)item.append(line("Rastreamento",h.rastreio));
-          if(h.notas)item.append(line("Observações",h.notas));
-          past.append(item);
-        }
-        box.append(past);
-      }
-      list.append(box);
-    }
-  }
-  search.input.addEventListener("input",render);render();
-}
-
-// DASHBOARD
-
-function dashboard(area){
-  const pago = p => ["pago", "paid", "aprovado", "approved"].includes(
-    String(p.status_pagamento || "").trim().toLowerCase()
-  );
-  const pendentesDeEnvio = state.pedidos.filter(needsAction);
-  const grid = element("div", undefined, "grid");
-
-  const metrics = [
-    ["Pedidos registrados", state.pedidos.length],
-    ["Pagos aguardando envio / retirada", pendentesDeEnvio.length],
-    ["Pagamentos pendentes", state.pedidos.filter(p =>
-      ["pendente", "pending", "aguardando", "aguardando_pagamento"].includes(
-        String(p.status_pagamento || "").trim().toLowerCase()
+  const token = cookie
+    ? decodeURIComponent(
+        cookie.slice("mimbox_admin_session=".length)
       )
-    ).length]
-  ];
+    : "";
 
-  for (const [name, value] of metrics) {
-    const c = card(name);
-    c.append(element("div", value, "metric"));
-    grid.append(c);
-  }
-  area.append(grid);
+  if (!token) return false;
 
-  const attention = card("📦 Pedidos pagos aguardando envio ou retirada");
-  attention.append(element("p", "Pedidos com pagamento confirmado que ainda não foram entregues ou cancelados."));
-  attention.append(action("Ver todos os pedidos", () => openPage("pedidos")));
-  if (!pendentesDeEnvio.length) {
-    attention.append(element("p", "Nenhum pedido pago aguardando envio ou retirada no momento."));
-  } else {
-    const ordered = [...pendentesDeEnvio].sort((a,b) =>
-      (new Date(a.criado_em || a.created_at || 0).getTime() || 0) -
-      (new Date(b.criado_em || b.created_at || 0).getTime() || 0)
-    );
-    for (const p of ordered) {
-      const item = element("div", undefined, "item");
-      const customer = Array.isArray(p.clientes) ? p.clientes[0] : p.clientes;
-      item.append(element("h3", "Pedido " + (p.numero_pedido || p.id)));
-      item.append(
-        line("Cliente", customer?.nome || "Consultar pedido"),
-        line("Valor", money(p.valor_total)),
-        line("Entrega", p.forma_entrega === "retirada" ? "Retirada" : "Transportadora / entrega"),
-        line("Andamento", p.status_entrega || "Aguardando preparação")
-      );
-      orderActions(item, p, "dashboard");
-      customerNotes(item, p, "dashboard");
-      attention.append(item);
-    }
-  }
-  area.append(attention);
-
-  const c = card("Operações da Mimbox");
-  c.append(element("p", "Cadastre pedidos manuais, gerencie produtos, atualize o estoque e acompanhe envios."));
-  for (const [page,label] of [
-    ["manual","Novo pedido"],
-    ["produtos","Produtos"],
-    ["estoque","Estoque"],
-    ["envios","Envios"]
-  ]) c.append(action(label, () => openPage(page)));
-  area.append(c);
-}
-
-// PEDIDOS DO SITE
-
-function orders(area){
-  const intro=card("📦 Pedidos da Mimbox");
-  intro.append(element("p","Os pedidos pagos aparecem primeiro. A lista é verificada automaticamente a cada 8 segundos enquanto esta página estiver aberta.","muted"));
-  intro.append(action("↻ Atualizar agora",()=>openPage("pedidos")));
-
-  const tabs=element("div",undefined,"row");
-  tabs.setAttribute("role","group");
-  tabs.setAttribute("aria-label","Filtrar pedidos por pagamento");
-  const grupos=[
-    ["pagos","✓ Pagos",p=>isPaid(p) && String(p.status_entrega||"").toLowerCase()!=="cancelado"],
-    ["pendentes","◷ Pagamentos pendentes",p=>["pendente","pending","aguardando","aguardando_pagamento"].includes(String(p.status_pagamento||"").toLowerCase())],
-    ["cancelados","✕ Cancelados / falhas",p=>["cancelado","cancelled","canceled","falha_checkout","falhou","failed","recusado"].includes(String(p.status_pagamento||"").toLowerCase()) || String(p.status_entrega||"").toLowerCase()==="cancelado"],
-    ["todos","☰ Todos",p=>true]
-  ];
-  for(const [id,label,predicate] of grupos){
-    const button=element("button",label+" ("+state.pedidos.filter(predicate).length+")","btn "+(state.filtroPedidos===id?"blue":"white"));
-    button.type="button";
-    button.setAttribute("aria-pressed",String(state.filtroPedidos===id));
-    button.onclick=()=>{state.filtroPedidos=id;$("content").replaceChildren();orders($("content"));};
-    tabs.append(button);
-  }
-  intro.append(tabs);
-  area.append(intro);
-
-  const selecionado=grupos.find(g=>g[0]===state.filtroPedidos)||grupos[0];
-  const pedidosOrdenados=state.pedidos.filter(selecionado[2]).sort((a,b)=>{
-    const dataA=new Date(a.criado_em||a.created_at||0).getTime()||0;
-    const dataB=new Date(b.criado_em||b.created_at||0).getTime()||0;
-    return dataB-dataA;
-  });
-  if(!pedidosOrdenados.length){
-    const vazio=card("Nenhum pedido nesta categoria");
-    vazio.append(element("p",state.filtroPedidos==="pagos"?
-      "Assim que o pagamento for confirmado e registrado no CRM, o pedido aparecerá aqui.":
-      "Não há registros com este status no momento."));
-    area.append(vazio);
-    return;
-  }
-
-  for(const p of pedidosOrdenados){
-    const c=card(
-      "Pedido "+(p.numero_pedido||p.id)
-    );
-
-    const customer=Array.isArray(p.clientes)
-      ?p.clientes[0]:p.clientes;
-
-    c.append(
-      line("Cliente",customer?.nome),
-      line("WhatsApp",customer?.telefone),
-      line("E-mail",customer?.email),
-      line("Total",money(p.valor_total)),
-      line("Pagamento",p.status_pagamento),
-      line("Entrega",p.forma_entrega),
-      line("Andamento",p.status_entrega)
-    );
-
-    if(Array.isArray(p.itens)){
-      for(const item of p.itens){
-        c.append(line(
-          "Produto",
-          (item.descricao||
-           item.nome||
-           item.description||
-           "Item")+
-          " — "+(
-            item.quantidade||
-            item.quantity||
-            1
-          )
-        ));
+  const response = await fetch(
+    `${base}/auth/v1/user`,
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${token}`
       }
     }
-
-    if(p.endereco_entrega){
-      c.append(line(
-        "Endereço",
-        typeof p.endereco_entrega==="string"
-          ?p.endereco_entrega
-          :JSON.stringify(p.endereco_entrega)
-      ));
-    }
-
-    if(String(p.numero_pedido || "").startsWith("MANUAL-")){
-      const edit=element("details");
-      edit.append(element("summary","✏️ Atualizar pedido manual"));
-      const payment=selectField("Pagamento",[
-        ["pendente","Pendente"],["pago","Pago (confirmado fora do sistema)"],
-        ["cancelado","Cancelado"]
-      ],p.status_pagamento||"pendente");
-      const progress=selectField("Andamento da entrega",statuses,p.status_entrega||"aguardando");
-      edit.append(payment.wrap,progress.wrap);
-      edit.append(element("p","Marque como pago somente após conferir o recebimento na InfinitePay.","muted"));
-      edit.append(action("Salvar status do pedido",async()=>{
-        const result=await operations("pedido_status",{
-          id:p.id,status_pagamento:payment.input.value,
-          status_entrega:progress.input.value
-        });
-        if(!result.ok)throw Error("Não foi possível atualizar o pedido");
-        await openPage("pedidos");notify("Status do pedido atualizado.");
-      }));
-      c.append(edit);
-    }
-    orderActions(c, p, "pedidos");
-    customerNotes(c, p, "pedidos");
-    area.append(c);
-  }
-}
-
-// CADASTRO MANUAL
-
-function manual(area){
-  const c=card("➕ Cadastrar pedido manual");
-
-  c.append(element("p",
-    "O pedido será registrado com pagamento "+
-    "pendente. Depois, em Pedidos do site, altere o status "+
-    "somente após conferir o recebimento na InfinitePay."
-  ));
-
-  const form=element("form");
-
-  const fields={
-    nome:field("Nome do cliente"),
-    email:field("E-mail","","email"),
-    telefone:field("WhatsApp"),
-    descricao:field("Produto / coleção"),
-    quantidade:field("Quantidade",1,"number"),
-    valor:field("Valor total (R$)",0,"number"),
-    observacoes:field(
-      "Observações internas","","textarea"
-    )
-  };
-
-  for(const [name,f] of Object.entries(fields)){
-    if([
-      "nome","email","descricao",
-      "quantidade","valor"
-    ].includes(name)){
-      f.input.required=true;
-    }
-    form.append(f.wrap);
-  }
-
-  const tipoPedido=selectField("Tipo de pedido",[["avulso","Avulso"],["clube","Clube"]],"avulso");
-  form.append(tipoPedido.wrap);
-
-  const entrega=selectField(
-    "Forma de entrega",
-    [
-      ["retirada","Retirada"],
-      ["transportadora","Transportadora"]
-    ],
-    "retirada"
   );
 
-  form.append(entrega.wrap);
+  if (!response.ok) return false;
 
-  const save=element(
-    "button","Cadastrar pedido","btn"
+  const user = await response.json();
+
+  if (!user?.id) return false;
+
+  const rows = await db(
+    "administradores",
+    "GET",
+    `?usuario_id=eq.${enc(user.id)}&select=usuario_id&limit=1`
   );
-  save.type="submit";
-  form.append(save);
 
-  form.onsubmit=async event=>{
-    event.preventDefault();
-    save.disabled=true;
-
-    try{
-      await operations("pedido_manual",{
-        cliente:{
-          nome:fields.nome.input.value,
-          email:fields.email.input.value,
-          telefone:fields.telefone.input.value
-        },
-        pedido:{
-          descricao:fields.descricao.input.value,
-          quantidade:Number(
-            fields.quantidade.input.value
-          ),
-          valor_total:Number(
-            fields.valor.input.value
-          ),
-          forma_entrega:entrega.input.value,
-          observacoes:fields.observacoes.input.value,
-          tipo_pedido:tipoPedido.input.value
-        }
-      });
-
-      form.reset();
-      notify("Pedido manual cadastrado com sucesso.");
-
-    }catch(error){
-      notify(error.message,true);
-    }finally{
-      save.disabled=false;
-    }
-  };
-
-  c.append(form);
-  area.append(c);
+  return rows.length > 0;
 }
 
-// PRODUTOS
+const statuses = [
+  "aguardando",
+  "em_preparacao",
+  "pronto_retirada",
+  "enviado",
+  "entregue",
+  "cancelado"
+];
 
-function productPhoto(label, currentUrl = "") {
-  const wrap = element("div");
-  wrap.append(element("label", label));
-  const preview = document.createElement("img");
-  preview.alt = "Prévia da foto do produto";
-  preview.style.cssText = "display:none;width:160px;height:160px;object-fit:contain;background:white;border:2px solid #181818;border-radius:12px;margin:10px 0";
-  const file = document.createElement("input");
-  file.type = "file";
-  file.accept = "image/jpeg,image/png,image/webp";
-  const status = element("p", "JPG, PNG ou WebP de até 2,5 MB.", "muted");
-  const url = field("Endereço atual da imagem (opcional)", currentUrl);
-  url.input.placeholder = "Preenchido automaticamente após o upload";
-  const show = source => {
-    if (source) { preview.src = source; preview.style.display = "block"; }
-    else { preview.removeAttribute("src"); preview.style.display = "none"; }
-  };
-  show(currentUrl);
-  file.onchange = () => {
-    const f = file.files?.[0];
-    if (!f) { show(url.input.value.trim()); return; }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type) || f.size > 2500000 || !f.size) {
-      file.value = "";
-      notify("Escolha uma foto JPG, PNG ou WebP de até 2,5 MB.", true);
-      show(url.input.value.trim());
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => show(reader.result);
-    reader.readAsDataURL(f);
-  };
-  url.input.oninput = () => { if (!file.files?.length) show(url.input.value.trim()); };
-  wrap.append(preview, file, status, url.wrap);
-  return {wrap, file, url: url.input};
-}
+const goodId = id =>
+  /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(
+    String(id || "")
+  );
 
-async function uploadProductPhoto(photo) {
-  const file = photo.file.files?.[0];
-  if (!file) return photo.url.value.trim();
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 2500000 || !file.size) {
-    throw Error("Selecione JPG, PNG ou WebP de até 2,5 MB.");
-  }
-  const encoded = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-    reader.onerror = () => reject(Error("Não foi possível ler a foto."));
-    reader.readAsDataURL(file);
-  });
-  const result = await operations("produto_imagem_upload", {
-    tipo: file.type,
-    imagem_base64: encoded
-  });
-  if (!result.ok || !result.imagem_url) throw Error("Falha ao enviar a foto.");
-  photo.url.value = result.imagem_url;
-  photo.file.value = "";
-  return result.imagem_url;
-}
+export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
 
-
-// Galeria visual: a primeira imagem é a capa da vitrine.
-function productGallery(produto = {}) {
-  const wrap = element("section", undefined, "gallery-editor");
-  wrap.append(element("h3", "📸 Galeria de fotos (até 8)"));
-  wrap.append(element("p", "Arraste pela ordem usando as setas. A primeira foto é a principal. JPG, PNG ou WebP, até 2,5 MB por foto.", "muted"));
-  let imagens = Array.isArray(produto.imagens)
-    ? produto.imagens.filter(x => typeof x === "string" && x.trim())
-    : [];
-  if (produto.imagem_url && !imagens.includes(produto.imagem_url)) {
-    imagens.unshift(produto.imagem_url);
-  }
-  imagens = [...new Set(imagens)].slice(0, 8);
-  const items = element("div", undefined, "gallery-items");
-  const files = document.createElement("input");
-  files.type = "file";
-  files.accept = "image/jpeg,image/png,image/webp";
-  files.multiple = true;
-  const url = field("Ou adicionar imagem por URL HTTPS");
-  url.input.placeholder = "https://...";
-  const addUrl = action("Adicionar URL", () => {
-    const value = url.input.value.trim();
-    if (!/^https:\/\/[^\s]+$/i.test(value)) throw Error("Informe uma URL HTTPS válida.");
-    if (imagens.includes(value)) throw Error("Esta imagem já está na galeria.");
-    if (imagens.length >= 8) throw Error("Limite de 8 fotos atingido.");
-    imagens.push(value);
-    url.input.value = "";
-    render();
-  });
-  function render() {
-    items.replaceChildren();
-    if (!imagens.length) items.append(element("p", "Nenhuma foto adicionada.", "muted"));
-    imagens.forEach((src, index) => {
-      const row = element("div", undefined, "gallery-entry");
-      const img = document.createElement("img");
-      img.src = src;
-      img.alt = "Foto " + (index + 1);
-      img.loading = "lazy";
-      const info = element("div");
-      info.append(element("strong", index === 0 ? "⭐ Principal" : "Foto " + (index + 1)));
-      const controls = element("div", undefined, "row");
-      if (index > 0) controls.append(action("↑ Subir", () => {
-        [imagens[index-1], imagens[index]] = [imagens[index], imagens[index-1]];
-        render();
-      }));
-      if (index < imagens.length - 1) controls.append(action("↓ Descer", () => {
-        [imagens[index+1], imagens[index]] = [imagens[index], imagens[index+1]];
-        render();
-      }));
-      controls.append(action("Remover", () => {
-        imagens.splice(index, 1);
-        render();
-      }));
-      info.append(controls);
-      row.append(img, info);
-      items.append(row);
+  if (!["GET", "POST"].includes(req.method)) {
+    return res.status(405).json({
+      erro: "Método não permitido"
     });
   }
-  async function uploadPending() {
-    const pending = Array.from(files.files || []);
-    if (imagens.length + pending.length > 8) throw Error("A galeria aceita até 8 fotos.");
-    for (const file of pending) {
-      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || !file.size || file.size > 2500000) {
-        throw Error("Cada foto precisa ser JPG, PNG ou WebP com até 2,5 MB.");
-      }
-    }
-    for (const file of pending) {
-      const encoded = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-        reader.onerror = () => reject(Error("Não foi possível ler " + file.name));
-        reader.readAsDataURL(file);
+
+  if (!base || !key) {
+    return res.status(503).json({
+      erro: "Supabase não configurado"
+    });
+  }
+
+  try {
+    if (!(await admin(req))) {
+      return res.status(401).json({
+        erro: "Sessão administrativa inválida"
       });
-      const result = await operations("produto_imagem_upload", {tipo:file.type, imagem_base64:encoded});
-      if (!result.ok || !result.imagem_url) throw Error("Falha no upload de " + file.name);
-      if (!imagens.includes(result.imagem_url)) imagens.push(result.imagem_url);
     }
-    files.value = "";
-    render();
-  }
-  wrap.append(items, files, url.wrap, addUrl);
-  render();
-  return {wrap, uploadPending, getImages: () => [...imagens]};
-}
-function isClubCatalogProduct(p){
-  const text = String((p.nome||"")+" "+(p.colecao||"")).toLowerCase();
-  return /mimbox\s*clube|clube\s*mimbox|clube\s*[369]\s*mes|plano\s*[369]\s*mes/.test(text);
-}
 
-function clubsCatalog(area){
-  const intro=card("🎁 Planos do Mimbox Clube");
-  intro.append(element("p","Planos comerciais cadastrados no catálogo. A gestão de envios dos assinantes fica na aba Acompanhamento Clube."));
-  intro.append(element("p","Planos atuais: 3 meses — R$ 299,90; 6 meses — R$ 549,90. Confira os valores no checkout antes de liberar pagamentos.","muted"));
-  area.append(intro);
-  const clubProducts=state.produtos.filter(isClubCatalogProduct);
-  const active=clubProducts.filter(p=>/\b(3|6)\s*mes/.test(String(p.nome||"").toLowerCase()));
-  if(!clubProducts.length){
-    const empty=card("Nenhum plano encontrado no cadastro");
-    empty.append(element("p","Se o SQL de importação já foi executado, confira se os planos aparecem na tabela produtos do Supabase. Não cadastre novamente sem verificar, para evitar duplicatas."));
-    area.append(empty);
-  }else{
-    const list=card("Planos encontrados no CRM");
-    for(const p of clubProducts){
-      const item=element("div",undefined,"item");
-      item.append(line("Plano",p.nome),line("Preço",money(p.preco)),line("Visibilidade",p.disponivel?"Disponível":"Oculto"));
-      if(/9\s*mes/.test(String(p.nome||"").toLowerCase())){
-        item.append(element("p","Plano antigo: oculte-o se não quiser que apareça na loja. Não exclua pedidos de assinantes existentes.","muted"));
+    const acao = req.method === "GET"
+      ? req.query.acao
+      : req.body?.acao;
+
+    // CONSULTAS ADMINISTRATIVAS
+
+    if (req.method === "GET") {
+      if (acao === "produtos") {
+        return res.json({
+          produtos: await db(
+            "produtos",
+            "GET",
+            "?select=*&order=ordem.asc,nome.asc&limit=300"
+          )
+        });
       }
-      item.append(action("Editar no catálogo",()=>openPage("produtos")));
-      list.append(item);
-    }
-    area.append(list);
-  }
-  const note=card("Gerenciamento e segurança");
-  note.append(element("p","Os preços e as descrições destes registros podem ser editados na aba Produtos. A contratação e o preço efetivamente cobrado dependem também da API de checkout, que não é alterada por esta página."));
-  note.append(element("p","A galeria é gerenciada na aba Produtos. A exibição de várias fotos no site ainda depende da atualização da vitrine.","muted"));
-  area.append(note);
-}
 
-function products(area){
-  const info=card("Catálogo administrável");
-  info.append(element("p","Aqui você edita as boxes e os planos do Clube registrados no Supabase. Você pode adicionar até 8 fotos por produto, escolher a principal e reorganizar a galeria."));
-  info.append(element("p","Antes de cadastrar um produto que já existe no site, procure-o na lista abaixo para evitar duplicatas.","muted"));
-  area.append(info);
-  const create = card("➕ Cadastrar produto");
-  const form = element("form");
-  const f = {
-    nome: field("Nome do produto"),
-    colecao: field("Coleção"),
-    preco: field("Preço (R$)", 0, "number"),
-    descricao: field("Descrição", "", "textarea"),
-    ordem: field("Ordem na vitrine (1 = primeiro)", 0, "number")
-  };
-  f.ordem.input.step = "1";
-  for (const x of Object.values(f)) form.append(x.wrap);
-  const gallery = productGallery();
-  form.append(gallery.wrap);
-  f.nome.input.required = true;
-  f.preco.input.required = true;
-  const available = checkbox("Produto disponível", true);
-  const featured = checkbox("Produto em destaque", false);
-  form.append(available.wrap, featured.wrap);
-  const save = element("button", "Cadastrar produto", "btn");
-  save.type = "submit";
-  form.append(save);
-  form.onsubmit = async event => {
-    event.preventDefault();
-    save.disabled = true;
-    try {
-      await gallery.uploadPending();
-      const imagens = gallery.getImages();
-      const imagem_url = imagens[0] || "";
-      const result = await request("/api/admin-salvar-produto", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          nome: f.nome.input.value,
-          colecao: f.colecao.input.value,
-          preco: Number(f.preco.input.value),
-          descricao: f.descricao.input.value,
-          imagem_url,
-          disponivel: available.input.checked,
-          destaque: featured.input.checked
-        })
-      });
-      if (result.produto?.id && imagens.length) {
-        const saved = await operations("produto_galeria_salvar", {id:result.produto.id, imagens});
-        if (!saved.ok) throw Error("Produto criado, mas não foi possível salvar a galeria. Abra o produto e tente novamente.");
-      }
-      const ordem = Number(f.ordem.input.value);
-      if (result.produto?.id && Number.isSafeInteger(ordem) && ordem >= 0 && ordem <= 10000 && ordem !== 0) {
-        await operations("produto_ordem", {id: result.produto.id, ordem});
-      }
-      await openPage("produtos");
-      notify("Produto cadastrado com sucesso.");
-    } catch (error) { notify(error.message, true); }
-    finally { save.disabled = false; }
-  };
-  create.append(form);
-  area.append(create);
+      if (acao === "clientes") {
+        // Consulta pedidos sem relacionamento embutido.
+        // Falhas na busca dos clientes não impedem
+        // o carregamento do histórico de pedidos.
 
-  const list = card("✏️ Gerenciar produtos cadastrados");
-  list.append(element("p", "Edite, troque a foto, ordene, oculte ou exclua anúncios. Produtos ocultos continuam no CRM.", "muted"));
-  area.append(list);
-  if (!state.produtos.length) {
-    list.append(element("p", "Nenhum produto cadastrado."));
-    return;
-  }
-  for (const p of state.produtos) {
-    const item = element("details", undefined, "item");
-    item.append(element("summary", `${p.nome} — ${money(p.preco)} ${p.disponivel ? "• Disponível" : "• Oculto"}`));
-    const inputs = {
-      nome: field("Nome", p.nome),
-      colecao: field("Coleção", p.colecao),
-      preco: field("Preço", p.preco, "number"),
-      descricao: field("Descrição", p.descricao, "textarea"),
-      ordem: field("Ordem na vitrine", p.ordem ?? 0, "number")
-    };
-    inputs.ordem.input.step = "1";
-    for (const x of Object.values(inputs)) item.append(x.wrap);
-    const gallery = productGallery(p);
-    item.append(gallery.wrap);
-    const av = checkbox("Disponível", p.disponivel);
-    const ft = checkbox("Destaque", p.destaque);
-    item.append(av.wrap, ft.wrap);
-    const buttons = element("div", undefined, "row");
-    buttons.append(action("Salvar alterações", async () => {
-      await gallery.uploadPending();
-      const imagens = gallery.getImages();
-      const imagem_url = imagens[0] || "";
-      const ordem = Number(inputs.ordem.input.value);
-      if (!Number.isSafeInteger(ordem) || ordem < 0 || ordem > 10000) throw Error("Ordem deve ser um número inteiro de 0 a 10000.");
-      const result = await operations("produto_editar", {
-        id: p.id,
-        produto: {
-          nome: inputs.nome.input.value,
-          colecao: inputs.colecao.input.value,
-          preco: Number(inputs.preco.input.value),
-          descricao: inputs.descricao.input.value,
-          imagem_url,
-          disponivel: av.input.checked,
-          destaque: ft.input.checked,
-          ordem
-        }
-      });
-      if (!result.ok) throw Error("Produto não foi atualizado.");
-      const saved = await operations("produto_galeria_salvar", {id:p.id, imagens});
-      if (!saved.ok) throw Error("Dados salvos, mas houve falha ao salvar a galeria.");
-      await openPage("produtos");
-      notify("Produto atualizado com sucesso.");
-    }));
-    buttons.append(action("Ocultar anúncio", async () => {
-      if (!confirm(`Ocultar "${p.nome}" da loja? O cadastro continuará no CRM.`)) return;
-      const result = await operations("produto_ocultar", {id: p.id});
-      if (!result.ok) throw Error("Não foi possível ocultar o anúncio.");
-      await openPage("produtos");
-      notify("Produto ocultado.");
-    }));
-    buttons.append(action("Excluir anúncio", async () => {
-      if (!confirm(`Excluir DEFINITIVAMENTE o cadastro de "${p.nome}"? Essa ação não pode ser desfeita.`)) return;
-      const result = await operations("produto_excluir", {id: p.id});
-      if (!result.ok) throw Error("Não foi possível excluir o anúncio.");
-      await openPage("produtos");
-      notify("Anúncio excluído do cadastro.");
-    }));
-    item.append(buttons);
-    list.append(item);
-  }
-}
-
-// ESTOQUE
-
-function stock(area){
-  const create=card("📋 Cadastrar item no estoque");
-  const form=element("form");
-
-  const f={
-    nome:field("Nome do item"),
-    quantidade:field(
-      "Quantidade atual",0,"number"
-    ),
-    minimo:field(
-      "Estoque mínimo",5,"number"
-    ),
-    unidade:field("Unidade","un")
-  };
-
-  for(const x of Object.values(f)){
-    form.append(x.wrap);
-  }
-
-  f.nome.input.required=true;
-  f.quantidade.input.required=true;
-
-  f.quantidade.input.step="1";
-  f.minimo.input.step="1";
-
-  const save=element(
-    "button","Cadastrar item","btn"
-  );
-  save.type="submit";
-  form.append(save);
-
-  form.onsubmit=async event=>{
-    event.preventDefault();
-    save.disabled=true;
-
-    try{
-      await operations("estoque_criar",{
-        item:{
-          nome:f.nome.input.value,
-          quantidade:Number(
-            f.quantidade.input.value
-          ),
-          minimo:Number(f.minimo.input.value),
-          unidade:f.unidade.input.value
-        }
-      });
-
-      await openPage("estoque");
-      notify("Item cadastrado no estoque.");
-
-    }catch(error){
-      notify(error.message,true);
-    }finally{
-      save.disabled=false;
-    }
-  };
-
-  create.append(form);
-  area.append(create);
-
-  const list=card("Itens em estoque");
-  area.append(list);
-
-  if(!state.estoque.length){
-    list.append(element(
-      "p","Nenhum item cadastrado."
-    ));
-    return;
-  }
-
-  for(const item of state.estoque){
-    const row=element("div",undefined,"item");
-
-    row.append(element(
-      "h3",
-      item.nome+" — "+
-      item.quantidade+" "+item.unidade
-    ));
-
-    if(item.quantidade<=item.minimo){
-      row.append(element(
-        "span","⚠️ Estoque baixo","status"
-      ));
-    }
-
-    const quantidade=field(
-      "Quantidade",item.quantidade,"number"
-    );
-    const minimo=field(
-      "Estoque mínimo",item.minimo,"number"
-    );
-
-    quantidade.input.step="1";
-    minimo.input.step="1";
-
-    row.append(
-      quantidade.wrap,
-      minimo.wrap
-    );
-
-    row.append(action(
-      "Salvar estoque",
-      async()=>{
-        const result=await operations(
-          "estoque_editar",
-          {
-            id:item.id,
-            quantidade:Number(
-              quantidade.input.value
-            ),
-            minimo:Number(minimo.input.value)
-          }
+        const pedidos = await db(
+          "pedidos",
+          "GET",
+          "?select=*&order=criado_em.desc&limit=500"
         );
 
-        if(result.ok!==true){
-          throw Error("Estoque não foi atualizado");
+        const ids = [
+          ...new Set(
+            pedidos
+              .map(p => p.cliente_id)
+              .filter(Boolean)
+          )
+        ];
+
+        if (ids.length) {
+          try {
+            const clientes = await db(
+              "clientes",
+              "GET",
+              `?select=*&id=in.(${ids.map(enc).join(",")})&limit=500`
+            );
+
+            const porId = new Map(
+              clientes.map(c => [String(c.id), c])
+            );
+
+            for (const pedido of pedidos) {
+              pedido.clientes =
+                porId.get(String(pedido.cliente_id)) || null;
+            }
+          } catch (erroClientes) {
+            console.error(
+              "Clientes associados indisponíveis:",
+              erroClientes
+            );
+
+            for (const pedido of pedidos) {
+              pedido.clientes = null;
+            }
+          }
         }
 
-        await openPage("estoque");
-        notify("Estoque atualizado.");
+        return res.json({ pedidos });
       }
-    ));
 
-    list.append(row);
-  }
-
-  area.append(element(
-    "p",
-    "Controle manual: as vendas ainda não "+
-    "descontam automaticamente do estoque.",
-    "muted"
-  ));
-}
-
-// ENVIOS E RETIRADAS
-
-function shipments(area){
-  const intro=card("🚚 Entregas pendentes e Mimbox Clube");
-  intro.append(element("p","Os assinantes permanecem nesta aba até a última caixa. Os atrasos são calculados automaticamente pela data de envio."));
-  intro.append(action("Atualizar entregas",()=>openPage("envios")));
-  area.append(intro);
-
-  const clubs=state.envios.filter(p=>clubInfo(p.observacoes));
-  const pending=clubs.filter(p=>{
-    const c=clubInfo(p.observacoes);return c.enviados<c.meses;
-  });
-  const late=pending.filter(p=>clubState(clubInfo(p.observacoes)).includes("Atrasado"));
-  const summary=card("Resumo do clube");
-  summary.append(line("Assinaturas em andamento",pending.length));
-  summary.append(line("Entregas atrasadas",late.length));
-  area.append(summary);
-
-  if(!state.envios.length){
-    const empty=card("Nenhum pedido encontrado");
-    empty.append(element("p","Cadastre primeiro o pedido do assinante. Depois ele aparecerá aqui para ativar o controle mensal."));
-    area.append(empty);return;
-  }
-
-  const active=state.envios.filter(p=>{
-    const club=clubInfo(p.observacoes);
-    if(club)return club.enviados<club.meses;
-    return !["entregue","cancelado"].includes(p.status_entrega);
-  });
-  if(!active.length){
-    const done=card("Nenhuma entrega pendente");
-    done.append(element("p","Todos os pedidos estão concluídos ou cancelados."));
-    area.append(done);return;
-  }
-  const ordered=[...active].sort((a,b)=>{
-    const ca=clubInfo(a.observacoes),cb=clubInfo(b.observacoes);
-    const score=c=>!c?3:c.enviados>=c.meses?4:clubState(c).includes("Atrasado")?0:1;
-    return score(ca)-score(cb);
-  });
-  for(const p of ordered){
-    const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
-    const club=clubInfo(p.observacoes);
-    const item=card(club?(club.nome||customer?.nome||"Assinante")+" — Clube "+club.meses+" meses":"Pedido "+(p.numero_pedido||p.id));
-    if(club){
-      item.append(line("Caixas enviadas",club.enviados+"/"+String(club.meses).padStart(2,"0")));
-      item.append(line("Próximo envio",club.enviados>=club.meses?"Assinatura concluída":clubDateLabel(clubDue(club))));
-      item.append(line("Situação",clubState(club)));
-      if(club.enviados<club.meses){
-        item.append(action("✓ Confirmar envio da caixa "+(club.enviados+1),async()=>{
-          if(!confirm("Confirmar que a caixa "+(club.enviados+1)+" de "+club.meses+" foi enviada para "+(club.nome||customer?.nome||"o cliente")+"?"))return;
-          await saveClubOrder(p,{...club,enviados:club.enviados+1});
-          await openPage("envios");
-          notify("Envio registrado. Próxima data atualizada.");
-        }));
+      if (acao === "estoque") {
+        return res.json({
+          itens: await db(
+            "estoque_mimbox",
+            "GET",
+            "?select=*&order=ordem.asc,nome.asc&limit=300"
+          )
+        });
       }
-      const edit=element("details");
-      edit.append(element("summary","Editar dados da assinatura"));
-      const name=field("Nome para exibição",club.nome||customer?.nome||"");
-      const first=field("Data do primeiro envio",club.inicio,"date");
-      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"],...(club.meses===9?[["9","9 meses (plano antigo)"]]:[])],String(club.meses));
-      const sent=field("Caixas já enviadas",club.enviados,"number");sent.input.step="1";
-      edit.append(name.wrap,first.wrap,plan.wrap,sent.wrap);
-      edit.append(action("Salvar assinatura",async()=>{
-        const meses=Number(plan.input.value),enviados=Number(sent.input.value);
-        if(!first.input.value)throw Error("Informe a data do primeiro envio.");
-        if(!Number.isInteger(enviados)||enviados<0||enviados>meses)throw Error("Quantidade enviada inválida.");
-        await saveClubOrder(p,{nome:name.input.value.trim(),inicio:first.input.value,meses,enviados});
-        await openPage("envios");notify("Assinatura atualizada.");
-      }));
-      item.append(edit);
-    }else{
-      item.append(line("Cliente",customer?.nome));
-      item.append(line("Andamento",p.status_entrega));
-      const setup=element("details");
-      setup.append(element("summary","Cadastrar este pedido no Mimbox Clube"));
-      const name=field("Nome do assinante",customer?.nome||"");
-      const plan=selectField("Plano",[["3","3 meses"],["6","6 meses"]],"3");
-      const first=field("Data do primeiro envio","","date");
-      setup.append(name.wrap,plan.wrap,first.wrap);
-      setup.append(action("Ativar acompanhamento mensal",async()=>{
-        if(!name.input.value.trim())throw Error("Informe o nome do assinante.");
-        if(!first.input.value)throw Error("Informe a data do primeiro envio.");
-        await saveClubOrder(p,{nome:name.input.value.trim(),meses:Number(plan.input.value),enviados:0,inicio:first.input.value});
-        await openPage("envios");notify("Assinatura cadastrada no controle de entregas.");
-      }));
-      item.append(setup);
-    }
-    const details=element("details");
-    details.append(element("summary","Dados do envio e observações"));
-    const status=selectField("Andamento",statuses,p.status_entrega||"aguardando");
-    const carrier=field("Transportadora",p.transportadora);
-    const tracking=field("Código de rastreio",p.rastreio);
-    const notes=field("Observações",cleanClubNotes(p.observacoes),"textarea");
-    details.append(status.wrap,carrier.wrap,tracking.wrap,notes.wrap);
-    details.append(action("Salvar dados do envio",async()=>{
-      const data=await operations("envio_editar",{
-        id:p.id,
-        envio:{
-          status_entrega:status.input.value,
-          transportadora:carrier.input.value,
-          rastreio:tracking.input.value,
-          observacoes:club?clubNotes(notes.input.value,club):notes.input.value
-        }
+
+      if (acao === "envios") {
+        const pedidos = await db(
+          "pedidos",
+          "GET",
+          "?select=id,numero_pedido,forma_entrega,status_entrega,transportadora,observacoes,clientes(nome)&order=criado_em.desc&limit=200"
+        );
+
+        const meta = await db(
+          "envios_mimbox",
+          "GET",
+          "?select=pedido_id,rastreio&limit=300"
+        );
+
+        const mapa = new Map(
+          meta.map(x => [x.pedido_id, x])
+        );
+
+        return res.json({
+          envios: pedidos.map(p => ({
+            ...p,
+            rastreio: mapa.get(p.id)?.rastreio || ""
+          }))
+        });
+      }
+
+      return res.status(400).json({
+        erro: "Consulta desconhecida"
       });
-      if(data.ok!==true)throw Error("Envio não foi atualizado");
-      await openPage("envios");notify("Dados do envio atualizados.");
-    }));
-    item.append(details);
-    area.append(item);
-  }
-}
-
-// CLIENTES DOS PEDIDOS
-
-function customers(area){
-  const intro = card("👥 Buscar cliente e acompanhar jornada");
-  const search = field("Buscar por nome, e-mail ou WhatsApp");
-  search.input.placeholder = "Digite o nome, e-mail ou telefone";
-  intro.append(search.wrap);
-  const results = element("div");
-  area.append(intro, results);
-
-  const groups = new Map();
-  for (const p of state.pedidos) {
-    const c = customerOf(p);
-    if (!c) continue;
-    const key = String(c.email || c.telefone || c.nome || "").toLowerCase();
-    if (!key) continue;
-    if (!groups.has(key)) groups.set(key,{customer:c,orders:[]});
-    groups.get(key).orders.push(p);
-  }
-
-  function render(){
-    results.replaceChildren();
-    const term = search.input.value.trim().toLowerCase();
-    let count = 0;
-    for (const {customer,orders} of groups.values()) {
-      const haystack = [customer.nome,customer.email,customer.telefone]
-        .join(" ").toLowerCase();
-      if (term && !haystack.includes(term)) continue;
-      count++;
-      const c = card(customer.nome || "Cliente");
-      c.append(line("E-mail",customer.email),line("WhatsApp",customer.telefone));
-      c.append(line("Pedidos registrados",orders.length));
-      const ordered = [...orders].sort((a,b) =>
-        new Date(b.criado_em || 0) - new Date(a.criado_em || 0));
-      for (const p of ordered) {
-        const item = element("div",undefined,"item");
-        item.append(element("h3","Pedido " + (p.numero_pedido || p.id)));
-        item.append(line("Data",p.criado_em ?
-          new Date(p.criado_em).toLocaleDateString("pt-BR") : "Não informada"));
-        item.append(line("Valor",money(p.valor_total)));
-        item.append(line("Pagamento",p.status_pagamento));
-        item.append(line("Andamento",p.status_entrega));
-        if (clubInfo(p.observacoes)) {
-          const club = clubInfo(p.observacoes);
-          item.append(line("Clube",club.enviados + "/" + club.meses + " caixas"));
-        }
-        customerNotes(item,p,"clientes");
-        c.append(item);
-      }
-      results.append(c);
     }
-    if (!count) results.append(card("Nenhum cliente encontrado"));
-  }
-  search.input.addEventListener("input",render);
-  render();
-}
 
-checkSession();
-</script>
-</body>
-</html>
+    // UPLOAD DE IMAGEM DOS PRODUTOS
+
+    if (acao === "produto_imagem_upload") {
+      const tipo = clean(req.body?.tipo, 50);
+      const dados = req.body?.imagem_base64;
+      const config = IMAGE_TYPES[tipo];
+
+      if (
+        !config ||
+        typeof dados !== "string" ||
+        !dados ||
+        dados.length > 3400000 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(dados)
+      ) {
+        return res.status(400).json({
+          erro: "Envie JPG, PNG ou WebP com até 2,5 MB."
+        });
+      }
+
+      const bytes = Buffer.from(dados, "base64");
+
+      if (
+        !bytes.length ||
+        bytes.length > MAX_IMAGE_BYTES ||
+        !config.magic(bytes)
+      ) {
+        return res.status(400).json({
+          erro: "Imagem inválida ou maior que 2,5 MB."
+        });
+      }
+
+      const { randomUUID } = await import("node:crypto");
+
+      const caminho = `catalogo/${randomUUID()}.${config.ext}`;
+      const bucket = "produtos-mimbox";
+
+      const uploaded = await fetch(
+        `${base}/storage/v1/object/${bucket}/${caminho}`,
+        {
+          method: "POST",
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": tipo,
+            "Cache-Control": "public, max-age=3600",
+            "x-upsert": "false"
+          },
+          body: bytes
+        }
+      );
+
+      if (!uploaded.ok) {
+        const erro = await uploaded.text();
+
+        console.error(
+          "Storage upload:",
+          uploaded.status,
+          erro
+        );
+
+        return res.status(502).json({
+          erro: "Não foi possível enviar a foto ao Storage."
+        });
+      }
+
+      return res.json({
+        ok: true,
+        imagem_url:
+          `${base}/storage/v1/object/public/${bucket}/${caminho}`
+      });
+    }
+
+    // GALERIA DE PRODUTOS
+
+    if (acao === "produto_galeria_salvar") {
+      const id = req.body?.id;
+      const imagens = req.body?.imagens;
+
+      if (
+        !goodId(id) ||
+        !Array.isArray(imagens) ||
+        imagens.length > 8 ||
+        imagens.some(url =>
+          typeof url !== "string" ||
+          url.length > 2048 ||
+          !/^https:\/\/[^\s]+$/i.test(url)
+        ) ||
+        new Set(imagens).size !== imagens.length
+      ) {
+        return res.status(400).json({
+          erro: "Galeria inválida. Use até 8 URLs HTTPS diferentes."
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        {
+          imagens,
+          imagem_url: imagens[0] || ""
+        }
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          erro: "Produto não encontrado"
+        });
+      }
+
+      return res.json({
+        ok: true,
+        produto: rows[0]
+      });
+    }
+
+    // OCULTAR PRODUTO
+
+    if (acao === "produto_ocultar") {
+      const id = req.body?.id;
+
+      if (!goodId(id)) {
+        return res.status(400).json({
+          erro: "Produto inválido"
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { disponivel: false }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // EXCLUIR PRODUTO
+
+    if (acao === "produto_excluir") {
+      const id = req.body?.id;
+
+      if (!goodId(id)) {
+        return res.status(400).json({
+          erro: "Produto inválido"
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "DELETE",
+        `?id=eq.${enc(id)}`
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // ORDEM DOS PRODUTOS
+
+    if (acao === "produto_ordem") {
+      const id = req.body?.id;
+      const ordem = Number(req.body?.ordem);
+
+      if (
+        !goodId(id) ||
+        !Number.isSafeInteger(ordem) ||
+        ordem < 0 ||
+        ordem > 10000
+      ) {
+        return res.status(400).json({
+          erro: "Ordem inválida"
+        });
+      }
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { ordem }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // EDITAR PRODUTO
+
+    if (acao === "produto_editar") {
+      const id = req.body?.id;
+      const p = req.body?.produto || {};
+
+      if (
+        !goodId(id) ||
+        !clean(p.nome, 150) ||
+        !Number.isFinite(Number(p.preco)) ||
+        Number(p.preco) < 0
+      ) {
+        return res.status(400).json({
+          erro: "Produto inválido"
+        });
+      }
+
+      const produto = {
+        nome: clean(p.nome, 150),
+        colecao: clean(p.colecao, 100),
+        preco: Number(p.preco),
+        descricao: clean(p.descricao, 2000),
+        imagem_url: clean(p.imagem_url, 2048),
+        disponivel: !!p.disponivel,
+        destaque: !!p.destaque,
+        ...(p.ordem !== undefined &&
+          Number.isSafeInteger(Number(p.ordem)) &&
+          Number(p.ordem) >= 0 &&
+          Number(p.ordem) <= 10000
+          ? { ordem: Number(p.ordem) }
+          : {})
+      };
+
+      const rows = await db(
+        "produtos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        produto
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // CRIAR ITEM DE ESTOQUE
+
+    if (acao === "estoque_criar") {
+      const x = req.body?.item || {};
+      const quantidade = Number(x.quantidade);
+      const minimo = Number(x.minimo);
+
+      if (
+        !clean(x.nome, 150) ||
+        !Number.isSafeInteger(quantidade) ||
+        quantidade < 0 ||
+        !Number.isSafeInteger(minimo) ||
+        minimo < 0
+      ) {
+        return res.status(400).json({
+          erro: "Estoque inválido"
+        });
+      }
+
+      const rows = await db(
+        "estoque_mimbox",
+        "POST",
+        "",
+        {
+          nome: clean(x.nome, 150),
+          quantidade,
+          minimo,
+          unidade: clean(x.unidade, 20) || "un"
+        }
+      );
+
+      return res.status(201).json({
+        item: rows[0]
+      });
+    }
+
+    // EDITAR ESTOQUE
+
+    if (acao === "estoque_editar") {
+      const { id } = req.body || {};
+      const quantidade = Number(req.body?.quantidade);
+      const minimo = Number(req.body?.minimo);
+
+      if (
+        !goodId(id) ||
+        !Number.isSafeInteger(quantidade) ||
+        quantidade < 0 ||
+        !Number.isSafeInteger(minimo) ||
+        minimo < 0
+      ) {
+        return res.status(400).json({
+          erro: "Estoque inválido"
+        });
+      }
+
+      const rows = await db(
+        "estoque_mimbox",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { quantidade, minimo }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // EDITAR ENVIO
+
+    if (acao === "envio_editar") {
+      const { id } = req.body || {};
+      const x = req.body?.envio || {};
+
+      if (
+        !goodId(id) ||
+        !statuses.includes(x.status_entrega)
+      ) {
+        return res.status(400).json({
+          erro: "Envio inválido"
+        });
+      }
+
+      const current = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,observacoes&limit=1`
+      );
+
+      if (!current.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      const previousTag = String(
+        current[0].observacoes || ""
+      ).match(
+        /\[MIMBOX_CLUBE:\{[^\]\r\n]*\}\]/
+      )?.[0] || "";
+
+      let notes = clean(x.observacoes, 3000);
+
+      if (
+        previousTag &&
+        !notes.includes("[MIMBOX_CLUBE:") &&
+        !notes.includes("[MIMBOX_TIPO:avulso]")
+      ) {
+        notes = (notes ? notes + "\n" : "") + previousTag;
+      }
+
+      if (notes.length > 1000) {
+        return res.status(400).json({
+          erro: "Observações muito longas"
+        });
+      }
+
+      const pedidos = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        {
+          status_entrega: x.status_entrega,
+          transportadora: clean(x.transportadora, 150),
+          observacoes: notes
+        }
+      );
+
+      if (!pedidos.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      const existing = await db(
+        "envios_mimbox",
+        "GET",
+        `?pedido_id=eq.${enc(id)}&select=pedido_id&limit=1`
+      );
+
+      if (existing.length) {
+        await db(
+          "envios_mimbox",
+          "PATCH",
+          `?pedido_id=eq.${enc(id)}`,
+          { rastreio: clean(x.rastreio, 150) }
+        );
+      } else {
+        await db(
+          "envios_mimbox",
+          "POST",
+          "",
+          {
+            pedido_id: id,
+            rastreio: clean(x.rastreio, 150)
+          }
+        );
+      }
+
+      return res.json({ ok: true });
+    }
+
+    // AÇÕES DE ATENDIMENTO DOS PEDIDOS
+
+    if (acao === "pedido_atendimento") {
+      const id = req.body?.id;
+      const tipo = clean(req.body?.tipo, 30);
+
+      if (
+        !goodId(id) ||
+        !["enviar", "retirar", "cancelar"].includes(tipo)
+      ) {
+        return res.status(400).json({
+          erro: "Operação inválida"
+        });
+      }
+
+      const pedidos = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,status_pagamento,status_entrega,forma_entrega,observacoes&limit=1`
+      );
+
+      const pedido = pedidos[0];
+
+      if (!pedido) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      if (
+        !["pago", "paid", "aprovado", "approved"].includes(
+          String(pedido.status_pagamento || "").toLowerCase()
+        )
+      ) {
+        return res.status(409).json({
+          erro: "Pedido sem pagamento confirmado"
+        });
+      }
+
+      if (
+        ["cancelado", "entregue"].includes(
+          pedido.status_entrega
+        )
+      ) {
+        return res.status(409).json({
+          erro: "Pedido já encerrado"
+        });
+      }
+
+      if (
+        String(pedido.observacoes || "")
+          .includes("[MIMBOX_CLUBE:")
+      ) {
+        return res.status(409).json({
+          erro: "Pedidos do Clube devem ser gerenciados em Entregas pendentes, caixa por caixa"
+        });
+      }
+
+      if (
+        tipo === "enviar" &&
+        pedido.forma_entrega === "retirada"
+      ) {
+        return res.status(400).json({
+          erro: "Este pedido é para retirada"
+        });
+      }
+
+      if (
+        tipo === "retirar" &&
+        pedido.forma_entrega !== "retirada"
+      ) {
+        return res.status(400).json({
+          erro: "Este pedido é para entrega"
+        });
+      }
+
+      const status_entrega =
+        tipo === "cancelar"
+          ? "cancelado"
+          : tipo === "enviar"
+          ? "enviado"
+          : "entregue";
+
+      const rows = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { status_entrega }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // SALVAR OBSERVAÇÃO
+
+    if (acao === "observacao_salvar") {
+      const id = req.body?.id;
+      const nova = clean(req.body?.texto, 650);
+
+      if (!goodId(id) || !nova) {
+        return res.status(400).json({
+          erro: "Informe uma observação válida"
+        });
+      }
+
+      const pedidos = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,observacoes&limit=1`
+      );
+
+      if (!pedidos.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      const atual = String(
+        pedidos[0].observacoes || ""
+      );
+
+      const registro =
+        `[${new Date().toISOString()
+          .slice(0, 16)
+          .replace("T", " ")} UTC] ${nova}`;
+
+      const completo =
+        (atual ? atual + "\n" : "") + registro;
+
+      if (completo.length > 1000) {
+        return res.status(409).json({
+          erro: "Limite de observações deste pedido atingido. Resuma as anotações antigas antes de continuar."
+        });
+      }
+
+      const rows = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        { observacoes: completo }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // STATUS DO PEDIDO MANUAL
+
+    if (acao === "pedido_status") {
+      const id = req.body?.id;
+
+      const status_entrega =
+        clean(req.body?.status_entrega, 40);
+
+      const status_pagamento =
+        clean(req.body?.status_pagamento, 40);
+
+      if (
+        !goodId(id) ||
+        !statuses.includes(status_entrega) ||
+        !["pendente", "pago", "cancelado"].includes(
+          status_pagamento
+        )
+      ) {
+        return res.status(400).json({
+          erro: "Status de pedido inválido"
+        });
+      }
+
+      const existing = await db(
+        "pedidos",
+        "GET",
+        `?id=eq.${enc(id)}&select=id,numero_pedido,status_pagamento&limit=1`
+      );
+
+      if (!existing.length) {
+        return res.status(404).json({
+          erro: "Pedido não encontrado"
+        });
+      }
+
+      if (
+        !String(existing[0].numero_pedido || "")
+          .startsWith("MANUAL-")
+      ) {
+        return res.status(403).json({
+          erro: "Edite apenas pedidos manuais nesta tela"
+        });
+      }
+
+      const rows = await db(
+        "pedidos",
+        "PATCH",
+        `?id=eq.${enc(id)}`,
+        {
+          status_entrega,
+          status_pagamento
+        }
+      );
+
+      return res.json({
+        ok: rows.length > 0
+      });
+    }
+
+    // CADASTRAR PEDIDO MANUAL
+
+    if (acao === "pedido_manual") {
+      const c = req.body?.cliente || {};
+      const p = req.body?.pedido || {};
+
+      const total = Number(p.valor_total);
+      const quantidade = Number(p.quantidade);
+
+      if (
+        clean(c.nome, 150).length < 2 ||
+        !/^\S+@\S+\.\S+$/.test(
+          clean(c.email, 254)
+        ) ||
+        !clean(p.descricao, 250) ||
+        !Number.isFinite(total) ||
+        total < 0 ||
+        !Number.isSafeInteger(quantidade) ||
+        quantidade < 1 ||
+        !["retirada", "transportadora"].includes(
+          p.forma_entrega
+        )
+      ) {
+        return res.status(400).json({
+          erro: "Dados do pedido inválidos"
+        });
+      }
+
+      const clientes = await db(
+        "clientes",
+        "POST",
+        "",
+        {
+          nome: clean(c.nome, 150),
+          email: clean(c.email, 254).toLowerCase(),
+          telefone: clean(c.telefone, 30)
+        }
+      );
+
+      const cliente_id = clientes[0]?.id;
+
+      if (!cliente_id) {
+        throw new Error(
+          "Não foi possível cadastrar cliente"
+        );
+      }
+
+      const codigo =
+        `MANUAL-${Date.now()}-${Math.floor(
+          Math.random() * 10000
+        )}`;
+
+      const pedidos = await db(
+        "pedidos",
+        "POST",
+        "",
+        {
+          numero_pedido: codigo,
+          cliente_id,
+          valor_total: total,
+          forma_entrega: p.forma_entrega,
+          status_pagamento: "pendente",
+          status_entrega: "aguardando",
+          itens: [{
+            descricao: clean(
+              p.descricao, 250
+            ),
+            quantidade
+          }],
+          observacoes: (
+            clean(p.observacoes, 900) +
+            "\n[MIMBOX_TIPO:" +
+            (p.tipo_pedido === "clube" ? "clube" : "avulso") +
+            "]"
+          ).trim()
+        }
+      );
+
+      return res.status(201).json({
+        ok: true,
+        pedido: pedidos[0]
+      });
+    }
+
+    return res.status(400).json({
+      erro: "Ação desconhecida"
+    });
+
+  } catch (err) {
+    console.error("admin-operacoes", err);
+
+    return res.status(500).json({
+      erro: "Falha na operação: " + err.message
+    });
+  }
+}
