@@ -217,13 +217,6 @@ button:disabled {
 
 const $ = id => document.getElementById(id);
 
-/*
-  Tipos de campos:
-  text  = texto curto
-  long  = texto longo
-  image = endereço de imagem HTTPS
-*/
-
 const PAGES = [
   {
     id: "inicio",
@@ -442,6 +435,7 @@ function makeTextField(key, label, type) {
 
   const fieldLabel = document.createElement("label");
   fieldLabel.textContent = label;
+  fieldLabel.htmlFor = "field-" + key;
 
   const input = type === "long"
     ? document.createElement("textarea")
@@ -451,6 +445,7 @@ function makeTextField(key, label, type) {
     input.type = "text";
   }
 
+  input.id = "field-" + key;
   input.dataset.field = key;
   input.value = content[key] || "";
 
@@ -480,9 +475,11 @@ function makeImageField(key, label) {
 
   const heading = document.createElement("label");
   heading.textContent = label;
+  heading.htmlFor = "field-" + key;
 
   const urlInput = document.createElement("input");
   urlInput.type = "url";
+  urlInput.id = "field-" + key;
   urlInput.placeholder = "https://...";
   urlInput.dataset.field = key;
   urlInput.value = content[key] || "";
@@ -534,6 +531,7 @@ function renderTabs() {
     button.className =
       "tab" + (page.id === activePage ? " active" : "");
     button.textContent = page.name;
+    button.setAttribute("aria-pressed", String(page.id === activePage));
 
     button.addEventListener("click", () => {
       rememberInputs();
@@ -611,7 +609,7 @@ async function load() {
     render();
     $("editor").hidden = false;
 
-    message("Dados carregados. Você já pode editar.");
+    message("Dados carregados. Você já pode editar. Imagens devem ter uma URL HTTPS pública.");
   } catch (error) {
     message(
       "Erro ao carregar: " + error.message,
@@ -689,6 +687,10 @@ $("site-form").addEventListener("submit", async event => {
       throw Error(
         "O servidor não confirmou o salvamento."
       );
+    }
+
+    if (!result.conteudo || typeof result.conteudo !== "object") {
+      throw Error("O servidor não devolveu o conteúdo salvo.");
     }
 
     content = { ...result.conteudo };
