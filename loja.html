@@ -920,74 +920,40 @@ function updateCheckoutFormVisibility() {
   sync();
 })();
 </script>
-<!-- Mimbox: integração pública com o editor do site (somente leitura). -->
-<script id="mimbox-site-editor-publico">
+<!-- Mimbox: editor público da página Loja; catálogo e checkout permanecem independentes. -->
+<script id="mimbox-loja-editor-publico">
 (() => {
-  const endpoint = "/api/admin-gerenciar?action=site_publico";
-  const hero = document.querySelector("#mimbox-new-home .mb-hero");
+  const hero = document.querySelector('main .m-hero');
   if (!hero) return;
-
-  const titulo = hero.querySelector("#mb-editor-title");
-  const subtitulo = hero.querySelector("#mb-editor-description");
-  const botao = hero.querySelector("#mb-editor-button");
-  const imagem = hero.querySelector("#mb-editor-image");
-
-  function linkSeguro(valor) {
-    if (typeof valor !== "string") return null;
-    const url = valor.trim();
-    if (url.startsWith("/") && !url.startsWith("//")) return url;
-    if (url.startsWith("#")) return url;
-    try {
-      const parsed = new URL(url);
-      return parsed.protocol === "https:" ? parsed.href : null;
-    } catch { return null; }
-  }
-
-  async function carregar() {
-    try {
-      const response = await fetch(endpoint, {
-        method: "GET",
-        credentials: "omit",
-        headers: { Accept: "application/json" }
-      });
-      if (!response.ok) return;
-      const payload = await response.json();
-      if (!payload?.ok || !payload.conteudo || typeof payload.conteudo !== "object") return;
-      const c = payload.conteudo;
-
-      if (titulo && typeof c.hero_titulo === "string" && c.hero_titulo.trim()) {
-        titulo.textContent = c.hero_titulo.trim();
-      }
-      if (subtitulo && typeof c.hero_subtitulo === "string" && c.hero_subtitulo.trim()) {
-        subtitulo.textContent = c.hero_subtitulo.trim();
-      }
-      if (botao) {
-        if (typeof c.hero_botao_texto === "string" && c.hero_botao_texto.trim()) {
-          botao.textContent = c.hero_botao_texto.trim() + " ↗";
-        }
-        const destino = linkSeguro(c.hero_botao_link);
-        if (destino) botao.href = destino;
-      }
-      // A imagem oficial é preservada quando o editor não define uma imagem.
-      const novaImagem = linkSeguro(c.hero_imagem);
-      if (imagem && novaImagem && novaImagem.startsWith("https://")) {
-        imagem.src = novaImagem;
-      }
-      if (typeof c.seo_titulo === "string" && c.seo_titulo.trim()) {
-        document.title = c.seo_titulo.trim();
-      }
-      if (typeof c.seo_descricao === "string" && c.seo_descricao.trim()) {
-        const meta = document.querySelector('meta[name="description"]');
-        if (meta) meta.setAttribute("content", c.seo_descricao.trim());
-      }
-      // Os campos whatsapp, instagram e aviso ficam disponíveis no editor,
-      // mas não alteramos links comerciais ou áreas sem destino definido.
-    } catch (erro) {
-      console.warn("Mimbox: conteúdo do editor indisponível; mantendo a Home original.");
-    }
-  }
-
-  carregar();
+  const title = hero.querySelector('.m-hero-left h1');
+  const subtitle = hero.querySelector('.m-hero-left p');
+  const button = hero.querySelector('.m-hero-left a');
+  const image = hero.querySelector('.m-hero-photo img');
+  const collections = document.querySelector('#boxes .m-section-heading h2');
+  const secureLink = value => {
+    if (typeof value !== 'string') return null;
+    const v = value.trim();
+    if (v.startsWith('/') && !v.startsWith('//')) return v;
+    if (v.startsWith('#')) return v;
+    try { const u = new URL(v); return u.protocol === 'https:' ? u.href : null; }
+    catch { return null; }
+  };
+  fetch('/api/admin-gerenciar?action=site_publico', {credentials:'omit'})
+    .then(r => { if (!r.ok) throw Error('API indisponível'); return r.json(); })
+    .then(data => {
+      if (!data.ok || !data.conteudo) return;
+      const c = data.conteudo;
+      if (title && c.loja_titulo?.trim()) title.textContent = c.loja_titulo.trim();
+      if (subtitle && c.loja_subtitulo?.trim()) subtitle.textContent = c.loja_subtitulo.trim();
+      if (button && c.loja_botao_texto?.trim()) button.textContent = c.loja_botao_texto.trim();
+      const href = secureLink(c.loja_botao_link);
+      if (button && href) button.href = href;
+      const img = secureLink(c.loja_banner_imagem);
+      if (image && img?.startsWith('https://')) image.src = img;
+      // Imagens de produtos e catálogo são gerenciadas pelo cadastro de produtos,
+      // não pelo editor de banners, para não trocar estampas ou preços.
+    })
+    .catch(e => console.warn('Editor da Loja indisponível; mantendo conteúdo original.', e));
 })();
 </script>
 <script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('m-cart-btn'),old=document.getElementById('open-cart'),count=document.getElementById('cart-count'),out=document.getElementById('m-cart-count');if(b&&old)b.addEventListener('click',()=>old.click());if(count&&out){const update=()=>out.textContent=count.textContent;update();new MutationObserver(update).observe(count,{childList:true,characterData:true,subtree:true});}});</script></body>
