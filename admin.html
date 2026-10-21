@@ -217,6 +217,9 @@ main{
       <button data-page="pedidos">📦 Pedidos do site</button>
       <button data-page="manual">➕ Pedido manual</button>
       <button data-page="produtos">🛍️ Produtos</button>
+       <button data-page="colecoes">🗂️ Coleções</button>
+       <button data-page="estoque">📋 Estoque</button>
+       <button data-page="envios">🚚 Envios</button>
       <button data-page="acompanhamento">🎁 Acompanhamento Clube</button>
 
       <button data-page="clientes">👥 Clientes</button>
@@ -259,6 +262,7 @@ const titles = {
   pedidos:"Pedidos do site",
   manual:"Cadastrar pedido manual",
   produtos:"Produtos",
+  colecoes:"Coleções",
   clubes:"Planos do Mimbox Clube",
   estoque:"Estoque",
   acompanhamento:"Acompanhamento do Clube",
@@ -552,7 +556,12 @@ async function openPage(page){
       }));
     }
 
-    if(page==="produtos"||page==="clubes"){
+    if(page==="estoque"){
+       const data=await operations("estoque");
+       state.estoque=data.itens||[];
+     }
+
+     if(page==="produtos"||page==="clubes"||page==="colecoes"){
       const data=await operations("produtos");
       state.produtos=data.produtos||[];
     }
@@ -582,6 +591,9 @@ async function openPage(page){
     if(page==="pedidos")orders(area);
     if(page==="manual")manual(area);
     if(page==="produtos")products(area);
+    if(page==="colecoes")await collectionsPage(area);
+     if(page==="estoque")stock(area);
+     if(page==="envios")shipments(area);
      if(page==="clubes")clubsCatalog(area);
     if(page==="acompanhamento")clubTracking(area);
 
@@ -1319,7 +1331,82 @@ function clubsCatalog(area){
   area.append(note);
 }
 
+function collectionChoices(input){
+  const list = document.createElement("datalist");
+  list.id = "colecoes-opcoes-" + Math.random().toString(36).slice(2);
+  input.setAttribute("list",list.id);
+  for(const c of window.mimboxColecoes || []){
+    const o=document.createElement("option");o.value=c.nome;list.append(o);
+  }
+  input.parentElement.append(list);
+}
+async function fetchCollections(){
+  const data=await request("/api/admin-gerenciar?action=site_conteudo");
+  const all=JSON.parse(data.conteudo?.colecoes_json || "[]");
+  window.mimboxColecoes=Array.isArray(all)?all:[];
+  return data.conteudo;
+}
+async function collectionsPage(area){
+  const original=await fetchCollections();
+  let colecoes=window.mimboxColecoes.map(c=>({...c}));
+  const intro=card("🗂️ Gerenciar coleções");
+  intro.append(element("p","Crie coleções independentes, defina capa, descrição, ordem e visibilidade. Depois, em Produtos, informe o mesmo nome no campo Coleção. As coleções são exibidas na loja."));
+  area.append(intro);
+  const editor=card("➕ Nova coleção");area.append(editor);
+  const lista=card("Coleções cadastradas");area.append(lista);
+  const status=element("p","","muted");intro.append(status);
+  async function save(){
+    status.textContent="Salvando coleções...";
+    const data=await request("/api/admin-gerenciar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"site_conteudo",conteudo:{colecoes_json:JSON.stringify(colecoes)}})});
+    if(!data.ok)throw Error("Não foi possível salvar coleções.");
+    window.mimboxColecoes=colecoes.map(c=>({...c}));
+    status.textContent="Coleções salvas no Supabase.";
+  }
+  function form(container,c,index){
+    const nome=field("Nome da coleção",c.nome);nome.input.maxLength=100;
+    const desc=field("Descrição",c.descricao,"textarea");desc.input.maxLength=600;
+    const ordem=field("Ordem na loja",c.ordem,"number");ordem.input.step="1";
+    const foto=productPhoto("Capa da coleção",c.imagem);
+    const ativa=checkbox("Exibir na loja",c.ativa);
+    const f=element("form");f.append(nome.wrap,desc.wrap,ordem.wrap,foto.wrap,ativa.wrap);
+    const btn=element("button",index===null?"Criar coleção":"Salvar coleção","btn blue");btn.type="submit";f.append(btn);
+    f.onsubmit=async e=>{
+      e.preventDefault();btn.disabled=true;
+      try{
+        const n=nome.input.value.trim();const o=Number(ordem.input.value);
+        if(!n||!Number.isSafeInteger(o)||o<0||o>10000)throw Error("Informe nome e ordem válida (0 a 10000).");
+        if(colecoes.some((x,i)=>i!==index&&x.nome.trim().toLocaleLowerCase("pt-BR")===n.toLocaleLowerCase("pt-BR")))throw Error("Já existe uma coleção com esse nome.");
+        const imagem=await uploadProductPhoto(foto);
+        const novo={nome:n,descricao:desc.input.value.trim(),imagem,ordem:o,ativa:ativa.input.checked};
+        const anterior=colecoes.map(x=>({...x}));
+        if(index===null)colecoes.push(novo);else colecoes[index]=novo;
+        try{await save()}catch(err){colecoes=anterior;throw err}
+        await openPage("colecoes");notify("Coleção salva com sucesso.");
+      }catch(err){notify(err.message,true)}finally{btn.disabled=false}
+    };
+    container.append(f);
+  }
+  form(editor,{nome:"",descricao:"",imagem:"",ordem:colecoes.length+1,ativa:true},null);
+  if(!colecoes.length)lista.append(element("p","Nenhuma coleção cadastrada. Cadastre a primeira acima."));
+  colecoes.sort((a,b)=>a.ordem-b.ordem||a.nome.localeCompare(b.nome,"pt-BR"));
+  for(const c of colecoes){
+    const i=colecoes.indexOf(c);const details=element("details",undefined,"item");
+    details.append(element("summary",c.nome+(c.ativa?" • Visível":" • Oculta")));
+    form(details,c,i);
+    details.append(action("Excluir coleção",async()=>{
+      if(!confirm('Excluir a coleção "'+c.nome+'"? Os produtos vinculados não serão excluídos.'))return;
+      const old=colecoes.map(x=>({...x}));colecoes.splice(i,1);
+      try{await save()}catch(err){colecoes=old;throw err}
+      await openPage("colecoes");notify("Coleção excluída.");
+    }));lista.append(details);
+  }
+}
 function products(area){
+  fetchCollections().then(()=>{
+    document.querySelectorAll('[data-collection-field="1"]').forEach(input=>{
+      if(input.isConnected && !input.hasAttribute('list'))collectionChoices(input);
+    });
+  }).catch(err=>console.warn("Coleções não carregadas",err));
   const info=card("Catálogo administrável");
   info.append(element("p","Aqui você edita as boxes e os planos do Clube registrados no Supabase. Você pode adicionar até 8 fotos por produto, escolher a principal e reorganizar a galeria."));
   info.append(element("p","Antes de cadastrar um produto que já existe no site, procure-o na lista abaixo para evitar duplicatas.","muted"));
@@ -1335,6 +1422,7 @@ function products(area){
   };
   f.ordem.input.step = "1";
   for (const x of Object.values(f)) form.append(x.wrap);
+  f.colecao.input.dataset.collectionField="1";
   const gallery = productGallery();
   form.append(gallery.wrap);
   f.nome.input.required = true;
@@ -1400,6 +1488,7 @@ function products(area){
     };
     inputs.ordem.input.step = "1";
     for (const x of Object.values(inputs)) item.append(x.wrap);
+    inputs.colecao.input.dataset.collectionField="1";
     const gallery = productGallery(p);
     item.append(gallery.wrap);
     const av = checkbox("Disponível", p.disponivel);
