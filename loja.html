@@ -920,6 +920,7 @@ function updateCheckoutFormVisibility() {
       const data=await res.json();
       const raw=Array.isArray(data)?data:(Array.isArray(data?.produtos)?data.produtos:(Array.isArray(data?.data)?data.data:null));
       if(!raw)throw Error('Formato inesperado na API de produtos');
+      window.mimboxPublicProducts=raw;
       const all=raw.filter(p=>p&&typeof p.nome==='string'&&p.nome.trim());
       const ativos=all.filter(p=>!isClub(p)&&p.disponivel!==false);
       ativos.sort((a,b)=>(Number(a.ordem)||0)-(Number(b.ordem)||0)||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
@@ -939,6 +940,7 @@ function updateCheckoutFormVisibility() {
         const aviso=document.createElement('p');aviso.className='catalog-empty';
         aviso.textContent='Nenhuma coleção disponível no momento.';grid.append(aviso);
       }
+      if(window.mimboxCollectionsApply)window.mimboxCollectionsApply();
       catalogLoaded=true;
       loadingNotice.remove();
     }catch(err){
@@ -994,5 +996,41 @@ function updateCheckoutFormVisibility() {
     .catch(e => console.warn('Editor da Loja indisponível; mantendo conteúdo original.', e));
 })();
 </script>
-<script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('m-cart-btn'),old=document.getElementById('open-cart'),count=document.getElementById('cart-count'),out=document.getElementById('m-cart-count');if(b&&old)b.addEventListener('click',()=>old.click());if(count&&out){const update=()=>out.textContent=count.textContent;update();new MutationObserver(update).observe(count,{childList:true,characterData:true,subtree:true});}});</script></body>
+<script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('m-cart-btn'),old=document.getElementById('open-cart'),count=document.getElementById('cart-count'),out=document.getElementById('m-cart-count');if(b&&old)b.addEventListener('click',()=>old.click());if(count&&out){const update=()=>out.textContent=count.textContent;update();new MutationObserver(update).observe(count,{childList:true,characterData:true,subtree:true});}});</script><style id="mimbox-collections-ui">
+.collection-grid .product-card[hidden]{display:none!important}.mimbox-collections-wrap{max-width:1260px;margin:24px auto 12px;padding:0 18px}.mimbox-collections-wrap h2{font-size:clamp(23px,3vw,34px);font-weight:900;margin:0 0 15px}.mimbox-collections-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.mimbox-collection-tile{border:2px solid #211b1b;border-radius:14px;background:#fffaf0;overflow:hidden;cursor:pointer;text-align:left;padding:0;color:#211b1b;transition:transform .15s}.mimbox-collection-tile:hover{transform:translateY(-3px)}.mimbox-collection-tile[aria-pressed="true"]{outline:4px solid #e74732;outline-offset:2px}.mimbox-collection-tile img{display:block;width:100%;height:155px;object-fit:cover;background:#f8d43a}.mimbox-collection-tile .mimbox-tile-text{display:block;padding:12px}.mimbox-collection-tile strong{display:block;font-size:17px}.mimbox-collection-tile small{display:block;font-size:12px;margin-top:5px;line-height:1.4}.mimbox-collections-clear{border:2px solid #211b1b;background:#f8d43a;border-radius:8px;padding:9px 14px;font-weight:800;margin-bottom:15px;cursor:pointer}
+</style>
+<script>
+(()=>{
+ const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ const grid=document.querySelector('.collection-grid');if(!grid)return;
+ const container=document.createElement('section');container.className='mimbox-collections-wrap';container.id='colecoes-mimbox';
+ const title=document.createElement('h2');title.textContent='ESCOLHA SUA COLEÇÃO';
+ const reset=document.createElement('button');reset.className='mimbox-collections-clear';reset.type='button';reset.textContent='Ver todos os produtos';
+ const list=document.createElement('div');list.className='mimbox-collections-list';
+ container.append(title,reset,list);grid.parentElement.insertBefore(container,grid);
+ let current='';let collections=[];
+ function apply(){
+   const cards=[...grid.querySelectorAll('.product-card')];
+   for(const card of cards){
+     const id=card.dataset.crmProdutoId;
+     const item=(window.mimboxPublicProducts||[]).find(p=>String(p.id)===id);
+     card.hidden=!!current && (!item || normalize(item.colecao)!==normalize(current));
+   }
+   for(const tile of list.querySelectorAll('button'))tile.setAttribute('aria-pressed',String(normalize(tile.dataset.colecao)===normalize(current)));
+ }
+ reset.addEventListener('click',()=>{current='';apply()});
+ function render(){list.replaceChildren();for(const c of collections.filter(x=>x.ativa!==false).sort((a,b)=>a.ordem-b.ordem)){
+   const tile=document.createElement('button');tile.type='button';tile.className='mimbox-collection-tile';tile.dataset.colecao=c.nome;
+   if(/^https:\/\//i.test(c.imagem||'')){const img=document.createElement('img');img.src=c.imagem;img.alt='Capa da coleção '+c.nome;img.loading='lazy';tile.append(img)}
+   const txt=document.createElement('span');txt.className='mimbox-tile-text';const strong=document.createElement('strong');strong.textContent=c.nome;txt.append(strong);
+   if(c.descricao){const small=document.createElement('small');small.textContent=c.descricao;txt.append(small)}tile.append(txt);
+   tile.addEventListener('click',()=>{current=c.nome;apply();grid.scrollIntoView({behavior:'smooth',block:'start'})});list.append(tile);
+ }container.hidden=!collections.some(c=>c.ativa!==false);apply()}
+ container.hidden=true;
+ fetch('/api/admin-gerenciar?action=site_publico',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('coleções indisponíveis');return r.json()}).then(d=>{const v=JSON.parse(d.conteudo?.colecoes_json||'[]');collections=Array.isArray(v)?v:[];render()}).catch(e=>console.warn('Coleções:',e));
+ new MutationObserver(()=>{if(current)apply()}).observe(grid,{childList:true});
+ window.mimboxCollectionsApply=apply;
+})();
+</script>
+</body>
 </html>
