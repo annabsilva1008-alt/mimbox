@@ -410,7 +410,7 @@ async function request(url,options={}){
   try{
     data=await response.json();
   }catch{
-    throw Error("Resposta inválida do servidor");
+    throw Error("A API retornou uma resposta inesperada (HTTP " + response.status + "). Verifique a publicação da rota " + url + " no Vercel.");
   }
 
   if(!response.ok){
@@ -504,7 +504,7 @@ async function atualizarPedidosAutomaticamente(){
   if (document.hidden || !["dashboard","pedidos"].includes(paginaAtual) || carregamentoPedidos) return;
   carregamentoPedidos = true;
   try {
-    const data = await request("/api/admin-pedidos");
+    const data = await operations("clientes");
     const novos = Array.isArray(data.pedidos) ? data.pedidos : [];
     const assinatura = lista => JSON.stringify(lista.map(p => [p.id,p.status_pagamento,p.status_entrega,p.valor_total,p.observacoes,p.criado_em]));
     if (assinatura(novos) !== assinatura(state.pedidos)) {
@@ -546,14 +546,8 @@ async function openPage(page){
 
   try{
     if(page==="dashboard"||page==="pedidos"){
-      const data=await request("/api/admin-pedidos");
+      const data=await operations("clientes");
       state.pedidos=data.pedidos||[];
-      const joined = await operations("clientes");
-      const byId = new Map((joined.pedidos || []).map(p => [p.id,p]));
-      state.pedidos = state.pedidos.map(p => ({
-        ...p, clientes:byId.get(p.id)?.clientes || p.clientes,
-        observacoes:byId.get(p.id)?.observacoes ?? p.observacoes
-      }));
     }
 
     if(page==="estoque"){
