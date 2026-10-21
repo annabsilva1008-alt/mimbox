@@ -1484,6 +1484,35 @@ async function collectionsPage(area){
     }));lista.append(details);
   }
 }
+
+// Mimbox: classificação preservada na descrição, sem migração do banco de dados.
+const MIMBOX_META_RE = /\s*\[\[MIMBOX_CATEGORIA:([^\]\r\n]*)\]\]\s*$/i;
+function mimboxReadMeta(description){
+  const raw=String(description||"");
+  const match=raw.match(MIMBOX_META_RE);
+  const parts=match?match[1].split(";TAGS:"):[];
+  return {description:raw.replace(MIMBOX_META_RE,"").trim(), category:(parts[0]||"").trim().toLowerCase(), tags:(parts[1]||"").split(",").map(x=>x.trim()).filter(Boolean)};
+}
+function mimboxWriteMeta(description,category,tags){
+  const clean=mimboxReadMeta(description).description;
+  const cat=String(category||"").trim().toLowerCase().replace(/[\[\];]/g,"").slice(0,55);
+  const words=String(tags||"").split(",").map(x=>x.trim().replace(/[\[\];]/g,"")).filter(Boolean).slice(0,12);
+  return cat||words.length?clean+"\n[[MIMBOX_CATEGORIA:"+cat+";TAGS:"+words.join(",")+"]]":clean;
+}
+function mimboxCategoryField(category="",tags=[]){
+  const box=element("div");
+  const cat=field("Categoria principal (Copos, Pratos, Boxes, Brindes ou outra)",category);
+  cat.input.placeholder="Ex.: Copos";
+  const datalist=document.createElement("datalist");
+  datalist.id="mim-cats-"+Math.random().toString(36).slice(2);
+  for(const value of ["Copos","Pratos","Boxes","Brindes","Personalizados","Decoração","Kits"]){const o=document.createElement("option");o.value=value;datalist.append(o)}
+  cat.input.setAttribute("list",datalist.id);
+  const tagsField=field("Tags adicionais (separadas por vírgula)",tags.join(", "));
+  tagsField.input.placeholder="Ex.: Personalizados, Presentes criativos, Humor";
+  box.append(cat.wrap,datalist,tagsField.wrap);
+  return {wrap:box,category:cat.input,tags:tagsField.input};
+}
+
 function products(area){
   fetchCollections().then(()=>{
     document.querySelectorAll('[data-collection-field="1"]').forEach(input=>{
@@ -1506,6 +1535,8 @@ function products(area){
   f.ordem.input.step = "1";
   for (const x of Object.values(f)) form.append(x.wrap);
   f.colecao.input.dataset.collectionField="1";
+  const taxonomy=mimboxCategoryField();
+  form.append(taxonomy.wrap);
   const gallery = productGallery();
   form.append(gallery.wrap);
   f.nome.input.required = true;
@@ -1530,7 +1561,7 @@ function products(area){
           nome: f.nome.input.value,
           colecao: f.colecao.input.value,
           preco: Number(f.preco.input.value),
-          descricao: f.descricao.input.value,
+          descricao: mimboxWriteMeta(f.descricao.input.value,taxonomy.category.value,taxonomy.tags.value),
           imagem_url,
           disponivel: available.input.checked,
           destaque: featured.input.checked
@@ -1566,12 +1597,15 @@ function products(area){
       nome: field("Nome", p.nome),
       colecao: field("Coleção", p.colecao),
       preco: field("Preço", p.preco, "number"),
-      descricao: field("Descrição", p.descricao, "textarea"),
+      descricao: field("Descrição", mimboxReadMeta(p.descricao).description, "textarea"),
       ordem: field("Ordem na vitrine", p.ordem ?? 0, "number")
     };
     inputs.ordem.input.step = "1";
     for (const x of Object.values(inputs)) item.append(x.wrap);
     inputs.colecao.input.dataset.collectionField="1";
+    const existingMeta=mimboxReadMeta(p.descricao);
+    const taxonomy=mimboxCategoryField(existingMeta.category,existingMeta.tags);
+    item.append(taxonomy.wrap);
     const gallery = productGallery(p);
     item.append(gallery.wrap);
     const av = checkbox("Disponível", p.disponivel);
@@ -1590,7 +1624,7 @@ function products(area){
           nome: inputs.nome.input.value,
           colecao: inputs.colecao.input.value,
           preco: Number(inputs.preco.input.value),
-          descricao: inputs.descricao.input.value,
+          descricao: mimboxWriteMeta(inputs.descricao.input.value,taxonomy.category.value,taxonomy.tags.value),
           imagem_url,
           disponivel: av.input.checked,
           destaque: ft.input.checked,
