@@ -381,6 +381,19 @@ body{background:var(--mpaper)!important;font-family:Montserrat,Arial,sans-serif!
 </header>
 <main><section class="m-hero"><div class="m-hero-left"><div class="m-tag">SE É PRA</div><h1><span>PRESENTEAR,</span><br/>QUE SEJA<br/><em>INESQUECÍVEL.</em></h1><p>Coleções criativas para presentear,<br/> colecionar ou chamar de suas.</p><a class="m-yellow" href="#boxes">CONHECER AS COLEÇÕES →</a></div><div class="m-hero-photo"><img alt="Cenário ilustrativo com produtos criativos da Mimbox" data-shop-photo="hero" decoding="async" fetchpriority="high"/></div></section><section class="m-categories" id="colecoes"><div class="m-section-heading"><h2>NOSSAS COLEÇÕES <span>✱</span></h2><a href="#boxes">VER TODAS AS COLEÇÕES →</a></div><div class="m-category-grid"><a class="m-category-tile" data-category-index="0" href="#boxes"><img alt="Coleção BRASILIDADES — imagem ilustrativa" data-shop-category="0" decoding="async" loading="lazy"/><span>BRASILIDADES →</span></a><a class="m-category-tile" data-category-index="1" href="#boxes"><img alt="Coleção HORÓSCOPO DE BOTECO — imagem ilustrativa" data-shop-category="1" decoding="async" loading="lazy"/><span>HORÓSCOPO DE BOTECO →</span></a><a class="m-category-tile" data-category-index="2" href="#boxes"><img alt="Coleção FORRÓ — imagem ilustrativa" data-shop-category="2" decoding="async" loading="lazy"/><span>FORRÓ →</span></a><a class="m-category-tile" data-category-index="3" href="#boxes"><img alt="Coleção NATAL DEBOCHADO — imagem ilustrativa" data-shop-category="3" decoding="async" loading="lazy"/><span>NATAL DEBOCHADO →</span></a></div></section><div class="mim-shop"><section class="collections" id="boxes">
 <div class="section-inner"><div class="m-section-heading"><h2>PRODUTOS EM DESTAQUE <span>✳</span></h2><a href="#boxes">VER TODOS OS PRODUTOS →</a></div>
+<div class="mim-finder" id="mim-finder" role="search" aria-label="Buscar produtos Mimbox">
+  <label class="mim-finder-label" for="mim-product-search">ENCONTRE SUA PRÓXIMA OBSESSÃO ✳</label>
+  <div class="mim-finder-search"><span aria-hidden="true">⌕</span><input id="mim-product-search" type="search" placeholder="O que você tá procurando? Copos, pratos, forró..." autocomplete="off"/><button type="button" id="mim-search-clear" aria-label="Limpar busca" hidden>×</button></div>
+  <div class="mim-finder-filters" id="mim-product-filters" aria-label="Filtrar por categoria">
+    <button type="button" class="mim-filter active" data-filter="todos" aria-pressed="true">Todos</button>
+    <button type="button" class="mim-filter" data-filter="copos" aria-pressed="false">Copos</button>
+    <button type="button" class="mim-filter" data-filter="pratos" aria-pressed="false">Pratos</button>
+    <button type="button" class="mim-filter" data-filter="boxes" aria-pressed="false">Boxes</button>
+    <button type="button" class="mim-filter" data-filter="brindes" aria-pressed="false">Brindes</button>
+    <button type="button" class="mim-filter" data-filter="personalizados" aria-pressed="false">Personalizados</button>
+  </div>
+  <p class="mim-finder-count" id="mim-finder-count" aria-live="polite"></p>
+</div>
 <div class="collection-grid">
 <article class="product-card"><div class="product-art pink"><img alt="Arte da coleção VSF — Vá Ser Feliz" decoding="async" loading="lazy"/></div><div class="product-info"><h3>VSF — Vá Ser Feliz</h3><div class="sample-price">R$ 59,90</div><p>Para quem escolhe a própria paz, ri da vida e não pede licença para ser feliz.</p><button class="small-btn add-to-cart" data-product-id="vsf" data-product-name="VSF — Vá Ser Feliz" data-product-price="59.90" type="button">Adicionar ao carrinho ↗</button></div></article>
 <article class="product-card"><div class="product-art blue"><img alt="Arte tropical da coleção Pé na Areia" decoding="async" loading="lazy"/></div><div class="product-info"><h3>Pé na Areia</h3><div class="sample-price">R$ 59,90</div><p>Sol, mar, cores vivas e aquele clima de férias que cabe no cotidiano.</p><button class="small-btn add-to-cart" data-product-id="pe-na-areia" data-product-name="Pé na Areia" data-product-price="59.90" type="button">Adicionar ao carrinho ↗</button></div></article>
@@ -1055,6 +1068,71 @@ function updateCheckoutFormVisibility() {
  function fallback(name){const d=document.createElement('div');d.className='m-category-no-photo';d.textContent=name;return d;}
  new MutationObserver(()=>{if(selected)filter()}).observe(products,{childList:true});
  window.mimboxCollectionsApply=filter;
+})();
+</script>
+<style id="mim-finder-style">
+.mim-finder{margin:22px 0 26px;max-width:100%}.mim-finder-label{display:block;font-weight:900;letter-spacing:.035em;margin:0 0 10px;font-size:14px}.mim-finder-search{display:flex;align-items:center;gap:10px;background:#fffdf7;border:3px solid #211b1b;border-radius:13px;padding:0 14px;box-shadow:4px 4px 0 #211b1b}.mim-finder-search>span{font-size:32px;line-height:1}.mim-finder-search input{border:0;outline:0;box-shadow:none;background:transparent;min-width:0;flex:1;padding:16px 0;font:inherit;font-size:16px;color:#211b1b}.mim-finder-search input::placeholder{color:#666}.mim-finder-search button{border:0;background:transparent;font-size:26px;cursor:pointer;color:#211b1b}.mim-finder-filters{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}.mim-filter{font:inherit;font-size:13px;font-weight:850;border:2px solid #211b1b;background:#fffdf7;border-radius:30px;padding:9px 15px;cursor:pointer;color:#211b1b;transition:background .15s,transform .15s}.mim-filter:hover{transform:translateY(-2px)}.mim-filter.active{background:#f8d43a;box-shadow:2px 3px 0 #211b1b}.mim-finder-count{font-size:13px;font-weight:700;margin:14px 0 0}.mim-finder-more{display:block;margin:24px auto 8px;border:2px solid #211b1b;background:#f8d43a;border-radius:12px;padding:14px 25px;font:inherit;font-weight:900;cursor:pointer;box-shadow:4px 4px 0 #211b1b}.mim-finder-empty{grid-column:1/-1;text-align:center;font-weight:800;padding:32px 16px;background:#fffdf7;border:2px dashed #211b1b;border-radius:14px}.collection-grid .product-card[hidden]{display:none!important}@media(max-width:600px){.mim-finder-search input{font-size:14px}.mim-filter{font-size:12px;padding:8px 11px}}
+</style>
+<script id="mim-finder-script">
+(() => {
+  const root=document.getElementById('mim-finder');
+  const grid=document.querySelector('#boxes .collection-grid');
+  if(!root||!grid)return;
+  const search=document.getElementById('mim-product-search');
+  const clear=document.getElementById('mim-search-clear');
+  const count=document.getElementById('mim-finder-count');
+  const filters=[...root.querySelectorAll('[data-filter]')];
+  let category='todos',expanded=false,queued=false;
+  const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const more=document.createElement('button');more.type='button';more.className='mim-finder-more';more.textContent='VER TODOS OS PRODUTOS ↓';more.hidden=true;
+  grid.insertAdjacentElement('afterend',more);
+  const empty=document.createElement('p');empty.className='mim-finder-empty';empty.textContent='Nem o Mimzinho encontrou essa preciosidade. Tenta outra coisa?';empty.hidden=true;grid.append(empty);
+  function group(card){
+    const name=normalize(card.querySelector('.product-info h3')?.textContent);
+    const desc=normalize(card.querySelector('.product-info p')?.textContent);
+    const id=card.dataset.crmProdutoId;
+    const product=(window.mimboxPublicProducts||[]).find(p=>String(p.id)===id);
+    const col=normalize(product?.colecao);
+    const txt=[name,desc,col].join(' ');
+    const categories=new Set();
+    if(/copo|caneca|tulipa|long drink|cerveja|americano/.test(txt))categories.add('copos');
+    if(/prato|ceramica|decorativo/.test(txt))categories.add('pratos');
+    if(/box|colecao|kit|horoscopo|brasilidades|forro|natal|vsf|pe na areia/.test(txt))categories.add('boxes');
+    if(/brinde|chaveiro|abridor|ima|adesivo|corporativ|empresa/.test(txt))categories.add('brindes');
+    if(/personaliz|sua arte|sob encomenda/.test(txt))categories.add('personalizados');
+    return {categories,text:txt};
+  }
+  function render(){
+    const query=normalize(search.value.trim());
+    clear.hidden=!search.value;
+    const cards=[...grid.querySelectorAll(':scope > .product-card')];
+    let found=0,shown=0;
+    for(const card of cards){
+      const {categories,text}=group(card);
+      const match=(!query||text.includes(query))&&(category==='todos'||categories.has(category));
+      if(match)found++;
+      const visible=match&&(expanded||query||category!=='todos'||shown<8);
+      card.hidden=!visible;
+      if(visible)shown++;
+    }
+    const limited=!expanded&&!query&&category==='todos'&&found>8;
+    more.hidden=!limited;
+    empty.hidden=found!==0||!cards.length;
+    count.textContent=cards.length?(found===0?'Nenhum produto encontrado':limited?'Mostrando 8 de '+found+' produtos':found+' produto'+(found===1?' encontrado':'s encontrados')):'';
+  }
+  function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})}
+  search.addEventListener('input',()=>{expanded=false;schedule()});
+  clear.addEventListener('click',()=>{search.value='';expanded=false;search.focus();schedule()});
+  filters.forEach(btn=>btn.addEventListener('click',()=>{
+    category=btn.dataset.filter;expanded=false;
+    filters.forEach(b=>{const active=b===btn;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+    schedule();
+  }));
+  more.addEventListener('click',()=>{expanded=true;render()});
+  const heading=document.querySelector('#boxes .m-section-heading a[href="#boxes"]');
+  if(heading)heading.addEventListener('click',e=>{e.preventDefault();category='todos';expanded=true;search.value='';filters.forEach(b=>{const a=b.dataset.filter==='todos';b.classList.toggle('active',a);b.setAttribute('aria-pressed',String(a))});render();root.scrollIntoView({behavior:'smooth',block:'start'})});
+  new MutationObserver(schedule).observe(grid,{childList:true,subtree:true,characterData:true});
+  render();
 })();
 </script>
 </body>
