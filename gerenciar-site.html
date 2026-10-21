@@ -2,939 +2,758 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <title>Gerenciar Site | Mimbox ADM</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Gerenciar Site | Mimbox ADM</title>
 
-  <style>
-    :root {
-      --yellow: #F8D43A;
-      --red: #E74732;
-      --blue: #2355AC;
-      --cream: #F5EBD5;
-      --ink: #211B1B;
-      --white: #FFFDF8;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      background: var(--cream);
-      color: var(--ink);
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    button, input, textarea, select {
-      font: inherit;
-    }
-
-    button { cursor: pointer; }
-
-    header {
-      background: var(--ink);
-      color: white;
-      padding: 18px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      color: var(--yellow);
-      font-size: 30px;
-      font-weight: 900;
-      letter-spacing: -1.5px;
-    }
-
-    header a {
-      color: white;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 32px auto;
-      padding: 0 20px 70px;
-    }
-
-    h1 {
-      font-size: clamp(28px, 4vw, 42px);
-      margin: 0 0 10px;
-    }
-
-    h2, h3 { margin-top: 0; }
-
-    p { line-height: 1.5; }
-
-    .intro {
-      color: #514940;
-      margin-bottom: 24px;
-    }
-
-    .notice {
-      padding: 14px;
-      border-left: 5px solid var(--blue);
-      background: white;
-      border-radius: 5px;
-      margin: 18px 0;
-      white-space: pre-wrap;
-    }
-
-    .notice.error {
-      border-left-color: var(--red);
-    }
-
-    .notice.success {
-      border-left-color: #237447;
-    }
-
-    [hidden] { display: none !important; }
-
-    .page-tabs {
-      display: flex;
-      gap: 9px;
-      flex-wrap: wrap;
-      margin: 22px 0;
-    }
-
-    .page-tab {
-      background: white;
-      border: 2px solid var(--ink);
-      border-radius: 9px;
-      padding: 12px 16px;
-      font-weight: 800;
-    }
-
-    .page-tab.active {
-      background: var(--blue);
-      color: white;
-    }
-
-    .panel {
-      background: var(--white);
-      border: 2px solid var(--ink);
-      border-radius: 14px;
-      padding: 22px;
-      margin-bottom: 20px;
-      box-shadow: 4px 4px 0 var(--ink);
-    }
-
-    .section-description {
-      color: #61594F;
-      font-size: 14px;
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 700;
-      margin: 16px 0 7px;
-    }
-
-    input, textarea {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #BDB5A8;
-      border-radius: 8px;
-      background: white;
-      color: var(--ink);
-    }
-
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    input:focus, textarea:focus {
-      outline: 3px solid #F8D43A88;
-      border-color: var(--ink);
-    }
-
-    .image-editor {
-      display: grid;
-      grid-template-columns: 180px minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-      padding: 18px;
-      border: 2px dashed #C6BFB1;
-      border-radius: 12px;
-      background: #FAF7EE;
-      margin: 18px 0;
-    }
-
-    .image-preview {
-      width: 100%;
-      height: 160px;
-      border: 1px solid #CFC7B8;
-      border-radius: 9px;
-      background: #ECE8DF;
-      object-fit: contain;
-    }
-
-    .image-placeholder {
-      height: 160px;
-      display: grid;
-      place-items: center;
-      border-radius: 9px;
-      background: #EAE4D8;
-      color: #6B6258;
-      text-align: center;
-      font-size: 13px;
-      padding: 12px;
-    }
-
-    .image-editor h3 {
-      font-size: 17px;
-      margin: 0 0 6px;
-    }
-
-    .muted {
-      font-size: 13px;
-      color: #665E54;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin: 22px 0;
-    }
-
-    .btn {
-      border: 2px solid var(--ink);
-      border-radius: 9px;
-      padding: 13px 18px;
-      background: var(--yellow);
-      color: var(--ink);
-      font-weight: 800;
-    }
-
-    .btn.secondary {
-      background: white;
-    }
-
-    .btn:disabled {
-      opacity: .55;
-      cursor: wait;
-    }
-
-    .field-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0 18px;
-    }
-
-    .page-heading {
-      background: var(--yellow);
-      border: 2px solid var(--ink);
-      border-radius: 12px;
-      padding: 22px;
-      margin-bottom: 22px;
-    }
-
-    .page-heading h2 { margin-bottom: 6px; }
-
-    @media (max-width: 720px) {
-      .field-grid,
-      .image-editor {
-        grid-template-columns: 1fr;
-      }
-
-      .image-preview,
-      .image-placeholder {
-        max-width: 260px;
-      }
-
-      .panel { padding: 17px; }
-
-      .page-tab {
-        flex: 1 1 140px;
-      }
-    }
-  </style>
+<style>
+:root {
+  --yellow: #F8D43A;
+  --red: #E74732;
+  --blue: #2355AC;
+  --cream: #F5EBD5;
+  --ink: #211B1B;
+  --white: #FFFDF8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Arial, sans-serif;
+}
+header {
+  background: var(--ink);
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.brand {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--yellow);
+}
+header a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+main {
+  max-width: 1150px;
+  margin: 30px auto;
+  padding: 0 18px 60px;
+}
+h1 { margin-bottom: 8px; }
+.intro {
+  color: #595148;
+  line-height: 1.5;
+}
+#status {
+  padding: 14px;
+  background: white;
+  border-left: 5px solid var(--blue);
+  border-radius: 5px;
+  margin: 20px 0;
+  white-space: pre-wrap;
+}
+#status.error { border-color: var(--red); }
+#status.success { border-color: #27824C; }
+[hidden] { display: none !important; }
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.tab {
+  background: white;
+  border: 2px solid var(--ink);
+  padding: 12px 16px;
+  border-radius: 9px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.tab.active {
+  background: var(--blue);
+  color: white;
+}
+.page-title {
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.page-title h2 { margin: 0 0 6px; }
+.page-title p { margin: 0; }
+.panel {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.panel h3 { margin-top: 0; }
+.field { margin-bottom: 20px; }
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #C3BAAD;
+  border-radius: 8px;
+  background: white;
+  font: inherit;
+}
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+.image-field {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 18px;
+  padding: 15px;
+  border: 2px dashed #C8C0B5;
+  border-radius: 10px;
+  background: #FAF7EF;
+}
+.image-preview {
+  width: 180px;
+  height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #EAE5DB;
+}
+.image-placeholder {
+  width: 180px;
+  height: 160px;
+  background: #EAE5DB;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #746A60;
+  text-align: center;
+  padding: 12px;
+}
+.help {
+  font-size: 13px;
+  color: #655B51;
+  line-height: 1.5;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+button.action {
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  padding: 14px 20px;
+  border-radius: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+button.secondary { background: white; }
+button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+@media(max-width:650px) {
+  .image-field { grid-template-columns: 1fr; }
+  .tab { flex: 1 1 140px; }
+}
+</style>
 </head>
 
 <body>
+<header>
+  <div class="brand">mimbox.</div>
+  <a href="/admin.html">← Voltar ao ADM</a>
+</header>
 
-  <header>
-    <div class="brand">mimbox.</div>
-    <a href="/admin.html">← Voltar ao ADM</a>
-  </header>
+<main>
+  <h1>Gerenciar Site</h1>
+  <p class="intro">
+    Escolha a página e edite suas imagens, textos e botões.
+    As alterações são salvas no Supabase.
+  </p>
 
-  <main>
-    <h1>Gerenciar Site</h1>
+  <div id="status" role="status" aria-live="polite">
+    Verificando acesso...
+  </div>
 
-    <p class="intro">
-      Escolha a página da Mimbox e edite cada seção.
-      Todas as imagens ficam identificadas pelo local
-      em que aparecem no site.
-    </p>
+  <div id="editor" hidden>
+    <nav class="tabs" id="tabs"></nav>
 
-    <div id="status" class="notice" role="status">
-      Verificando acesso administrativo...
-    </div>
+    <div class="page-title" id="page-title"></div>
 
-    <div id="editor" hidden>
+    <form id="site-form">
+      <div id="fields"></div>
 
-      <nav class="page-tabs" id="page-tabs"
-           aria-label="Páginas do site"></nav>
+      <div class="actions">
+        <button class="action" id="save" type="submit">
+          Salvar alterações
+        </button>
+        <button class="action secondary" id="reload" type="button">
+          Recarregar
+        </button>
+      </div>
+    </form>
+  </div>
+</main>
 
-      <div id="page-heading" class="page-heading"></div>
+<script>
+"use strict";
 
-      <form id="site-form">
-        <div id="page-fields"></div>
+const $ = id => document.getElementById(id);
 
-        <div class="actions">
-          <button class="btn" id="save" type="submit">
-            Salvar alterações
-          </button>
+/*
+  Tipos de campos:
+  text  = texto curto
+  long  = texto longo
+  image = endereço de imagem HTTPS
+*/
 
-          <button class="btn secondary" id="reload" type="button">
-            Recarregar dados
-          </button>
-        </div>
-      </form>
-
-    </div>
-  </main>
-
-  <script>
-    "use strict";
-
-    const $ = id => document.getElementById(id);
-
-    /*
-      Catálogo dos campos editáveis.
-
-      Cada imagem tem:
-      - página
-      - seção
-      - nome do elemento
-
-      Os campos antigos da página inicial são
-      preservados para compatibilidade.
-    */
-
-    const PAGES = [
+const PAGES = [
+  {
+    id: "inicio",
+    name: "Início",
+    description: "Banner e imagens da página inicial.",
+    sections: [
       {
-        id: "inicio",
-        title: "Página Inicial",
-        description: "Banner, coleções e imagens da Home.",
-        sections: [
-          {
-            title: "01 · Banner principal",
-            description: "Primeira seção da página inicial.",
-            fields: [
-              ["hero_titulo", "Título principal", "text"],
-              ["hero_subtitulo", "Subtítulo", "textarea"],
-              ["hero_imagem", "Imagem do banner principal", "image"],
-              ["hero_botao_texto", "Texto do botão", "text"],
-              ["hero_botao_link", "Link do botão", "text"]
-            ]
-          },
-          {
-            title: "02 · Destaques da Home",
-            description: "Imagens dos três principais caminhos da loja.",
-            fields: [
-              ["inicio_personalizados_imagem", "Imagem do card Personalizados", "image"],
-              ["inicio_loja_imagem", "Imagem do card Loja Mimbox", "image"],
-              ["inicio_negocios_imagem", "Imagem do card Para Negócios", "image"]
-            ]
-          }
+        name: "Banner principal",
+        fields: [
+          ["hero_titulo", "Título principal", "text"],
+          ["hero_subtitulo", "Subtítulo", "long"],
+          ["hero_imagem", "Imagem principal", "image"],
+          ["hero_botao_texto", "Texto do botão", "text"],
+          ["hero_botao_link", "Link do botão", "text"]
         ]
       },
-
       {
-        id: "personalizados",
-        title: "Personalizados",
-        description: "Fotos, textos e chamadas dos produtos personalizados.",
-        sections: [
-          {
-            title: "01 · Banner de Personalizados",
-            fields: [
-              ["personalizados_titulo", "Título principal", "text"],
-              ["personalizados_subtitulo", "Descrição", "textarea"],
-              ["personalizados_banner_imagem", "Imagem do banner", "image"]
-            ]
-          },
-          {
-            title: "02 · Categorias",
-            fields: [
-              ["personalizados_copos_imagem", "Imagem da categoria Copos", "image"],
-              ["personalizados_pratos_imagem", "Imagem da categoria Pratos", "image"],
-              ["personalizados_brindes_imagem", "Imagem da categoria Brindes", "image"]
-            ]
-          }
+        name: "Cards da página inicial",
+        fields: [
+          ["inicio_personalizados_imagem", "Card Personalizados", "image"],
+          ["inicio_loja_imagem", "Card Loja Mimbox", "image"],
+          ["inicio_negocios_imagem", "Card Para Negócios", "image"]
         ]
       },
-
       {
-        id: "loja",
-        title: "Loja Mimbox",
-        description: "Banner e imagens editoriais da vitrine.",
-        sections: [
-          {
-            title: "01 · Banner da Loja",
-            fields: [
-              ["loja_titulo", "Título principal", "text"],
-              ["loja_subtitulo", "Descrição", "textarea"],
-              ["loja_banner_imagem", "Imagem do banner da Loja", "image"],
-              ["loja_botao_texto", "Texto do botão", "text"],
-              ["loja_botao_link", "Link do botão", "text"]
-            ]
-          },
-          {
-            title: "02 · Imagens das Coleções",
-            description: "As fotos individuais dos produtos continuam no catálogo do ADM.",
-            fields: [
-              ["loja_colecoes_imagem", "Imagem da seção Coleções", "image"],
-              ["loja_destaque_imagem", "Imagem do destaque editorial", "image"]
-            ]
-          }
+        name: "Contato e SEO",
+        fields: [
+          ["seo_titulo", "Título SEO", "text"],
+          ["seo_descricao", "Descrição SEO", "long"],
+          ["whatsapp", "WhatsApp com DDI e DDD", "text"],
+          ["instagram", "Link do Instagram", "text"],
+          ["aviso", "Aviso da loja", "long"]
+        ]
+      }
+    ]
+  },
+  {
+    id: "personalizados",
+    name: "Personalizados",
+    description: "Imagens e textos da página de personalizados.",
+    sections: [
+      {
+        name: "Banner de Personalizados",
+        fields: [
+          ["personalizados_titulo", "Título", "text"],
+          ["personalizados_subtitulo", "Descrição", "long"],
+          ["personalizados_banner_imagem", "Imagem principal", "image"]
         ]
       },
-
       {
-        id: "negocios",
-        title: "Mimbox para Negócios",
-        description: "Página de brindes e personalizados para empresas.",
-        sections: [
-          {
-            title: "01 · Banner Corporativo",
-            fields: [
-              ["negocios_titulo", "Título principal", "text"],
-              ["negocios_subtitulo", "Descrição", "textarea"],
-              ["negocios_banner_imagem", "Imagem do banner", "image"]
-            ]
-          },
-          {
-            title: "02 · Apresentação dos Serviços",
-            fields: [
-              ["negocios_brindes_imagem", "Imagem dos brindes corporativos", "image"],
-              ["negocios_personalizados_imagem", "Imagem dos produtos personalizados", "image"],
-              ["negocios_botao_texto", "Texto do botão de orçamento", "text"],
-              ["negocios_botao_link", "Link do botão de orçamento", "text"]
-            ]
-          }
+        name: "Categorias",
+        fields: [
+          ["personalizados_copos_imagem", "Foto dos copos", "image"],
+          ["personalizados_pratos_imagem", "Foto dos pratos", "image"],
+          ["personalizados_brindes_imagem", "Foto dos brindes", "image"]
+        ]
+      }
+    ]
+  },
+  {
+    id: "loja",
+    name: "Loja Mimbox",
+    description: "Banner e imagens editoriais da loja.",
+    sections: [
+      {
+        name: "Banner da Loja",
+        fields: [
+          ["loja_titulo", "Título", "text"],
+          ["loja_subtitulo", "Descrição", "long"],
+          ["loja_banner_imagem", "Imagem principal", "image"],
+          ["loja_botao_texto", "Texto do botão", "text"],
+          ["loja_botao_link", "Link do botão", "text"]
         ]
       },
-
       {
-        id: "sobre",
-        title: "Sobre a Mimbox",
-        description: "História da marca e fotos das fundadoras.",
-        sections: [
-          {
-            title: "01 · Nossa História",
-            fields: [
-              ["sobre_titulo", "Título principal", "text"],
-              ["sobre_texto", "Texto sobre a Mimbox", "textarea"],
-              ["sobre_banner_imagem", "Imagem principal", "image"]
-            ]
-          },
-          {
-            title: "02 · Fundadoras",
-            fields: [
-              ["sobre_ana_imagem", "Foto da Ana", "image"],
-              ["sobre_rafa_imagem", "Foto da Rafa", "image"]
-            ]
-          }
+        name: "Destaques",
+        fields: [
+          ["loja_colecoes_imagem", "Imagem das coleções", "image"],
+          ["loja_destaque_imagem", "Imagem de destaque", "image"]
+        ]
+      }
+    ]
+  },
+  {
+    id: "negocios",
+    name: "Para Negócios",
+    description: "Conteúdo da página corporativa.",
+    sections: [
+      {
+        name: "Banner Corporativo",
+        fields: [
+          ["negocios_titulo", "Título", "text"],
+          ["negocios_subtitulo", "Descrição", "long"],
+          ["negocios_banner_imagem", "Imagem principal", "image"]
         ]
       },
-
       {
-        id: "blog",
-        title: "Blog",
-        description: "Imagens e apresentação do Blog. Os artigos terão editor próprio.",
-        sections: [
-          {
-            title: "01 · Apresentação do Blog",
-            fields: [
-              ["blog_titulo", "Título do Blog", "text"],
-              ["blog_subtitulo", "Descrição do Blog", "textarea"],
-              ["blog_banner_imagem", "Imagem principal do Blog", "image"]
-            ]
-          }
+        name: "Serviços",
+        fields: [
+          ["negocios_brindes_imagem", "Foto dos brindes", "image"],
+          ["negocios_personalizados_imagem", "Foto dos personalizados", "image"],
+          ["negocios_botao_texto", "Texto do botão", "text"],
+          ["negocios_botao_link", "Link do botão", "text"]
         ]
       }
-    ];
-
-    const GENERAL_FIELDS = [
-      ["seo_titulo", "Título SEO", "text"],
-      ["seo_descricao", "Descrição SEO", "textarea"],
-      ["whatsapp", "WhatsApp", "text"],
-      ["instagram", "Instagram", "text"],
-      ["aviso", "Aviso da loja", "textarea"]
-    ];
-
-    const LEGACY_FIELDS = [
-      "hero_titulo",
-      "hero_subtitulo",
-      "hero_imagem",
-      "hero_botao_texto",
-      "hero_botao_link",
-      "seo_titulo",
-      "seo_descricao",
-      "whatsapp",
-      "instagram",
-      "aviso"
-    ];
-
-    let content = {};
-    let lastSaved = "";
-    let activePage = "inicio";
-    let busy = false;
-
-    function message(text, type = "") {
-      $("status").textContent = text;
-      $("status").className = "notice " + type;
-    }
-
-    async function api(url, options = {}) {
-      const response = await fetch(url, {
-        credentials: "same-origin",
-        cache: "no-store",
-        ...options
-      });
-
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw Error("Resposta inválida do servidor.");
+    ]
+  },
+  {
+    id: "sobre",
+    name: "Sobre",
+    description: "História e fotografias da Mimbox.",
+    sections: [
+      {
+        name: "Nossa História",
+        fields: [
+          ["sobre_titulo", "Título", "text"],
+          ["sobre_texto", "História da Mimbox", "long"],
+          ["sobre_banner_imagem", "Imagem principal", "image"]
+        ]
+      },
+      {
+        name: "Fundadoras",
+        fields: [
+          ["sobre_ana_imagem", "Foto da Ana", "image"],
+          ["sobre_rafa_imagem", "Foto da Rafa", "image"]
+        ]
       }
-
-      if (!response.ok) {
-        throw Error(
-          data.erro ||
-          data.error ||
-          "Erro HTTP " + response.status
-        );
+    ]
+  },
+  {
+    id: "blog",
+    name: "Blog",
+    description: "Apresentação do Blog Mimbox.",
+    sections: [
+      {
+        name: "Banner do Blog",
+        fields: [
+          ["blog_titulo", "Título", "text"],
+          ["blog_subtitulo", "Descrição", "long"],
+          ["blog_banner_imagem", "Imagem principal", "image"]
+        ]
       }
+    ]
+  }
+];
 
-      return data;
-    }
+let content = {};
+let lastSaved = "";
+let activePage = "inicio";
+let busy = false;
 
-    function allFields() {
-      const keys = new Set(LEGACY_FIELDS);
+function message(text, type = "") {
+  $("status").textContent = text;
+  $("status").className = type;
+}
 
-      for (const page of PAGES) {
-        for (const section of page.sections) {
-          for (const [key] of section.fields) {
-            keys.add(key);
-          }
-        }
-      }
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    cache: "no-store",
+    ...options
+  });
 
-      return [...keys];
-    }
+  let data;
 
-    function snapshot() {
-      const result = {};
+  try {
+    data = await response.json();
+  } catch {
+    throw Error("Resposta inválida do servidor.");
+  }
 
-      for (const key of allFields()) {
-        result[key] = String(content[key] ?? "").trim();
-      }
+  if (!response.ok) {
+    throw Error(
+      data.erro ||
+      data.error ||
+      "Erro HTTP " + response.status
+    );
+  }
 
-      return result;
-    }
+  return data;
+}
 
-    function rememberInputs() {
-      document.querySelectorAll("[data-field]").forEach(input => {
-        content[input.dataset.field] = input.value;
-      });
-    }
+function allKeys() {
+  const keys = new Set();
 
-    function createField(key, label, type) {
-      const wrapper = document.createElement("div");
-
-      if (type === "image") {
-        wrapper.className = "image-editor";
-
-        const visual = document.createElement("div");
-        const image = document.createElement("img");
-        const placeholder = document.createElement("div");
-
-        image.className = "image-preview";
-        image.alt = "Prévia: " + label;
-
-        placeholder.className = "image-placeholder";
-        placeholder.textContent = "Nenhuma imagem cadastrada";
-
-        const controls = document.createElement("div");
-
-        const heading = document.createElement("h3");
-        heading.textContent = label;
-
-        const description = document.createElement("p");
-        description.className = "muted";
-        description.textContent =
-          "Esta imagem pertence à página selecionada.";
-
-        const urlLabel = document.createElement("label");
-        urlLabel.textContent = "Endereço HTTPS da imagem";
-
-        const urlInput = document.createElement("input");
-        urlInput.type = "url";
-        urlInput.placeholder = "https://...";
-        urlInput.dataset.field = key;
-        urlInput.value = content[key] || "";
-
-        const fileLabel = document.createElement("label");
-        fileLabel.textContent = "Selecionar imagem do computador";
-
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = "image/jpeg,image/png,image/webp";
-
-        const help = document.createElement("p");
-        help.className = "muted";
-        help.textContent =
-          "A seleção mostra uma prévia. O envio ao servidor " +
-          "será habilitado na atualização da API.";
-
-        function updatePreview(source) {
-          if (/^https:\/\/\S+$/i.test(source)) {
-            image.src = source;
-            image.hidden = false;
-            placeholder.hidden = true;
-          } else {
-            image.removeAttribute("src");
-            image.hidden = true;
-            placeholder.hidden = false;
-          }
-        }
-
-        image.onerror = () => {
-          image.hidden = true;
-          placeholder.hidden = false;
-        };
-
-        urlInput.addEventListener("input", () => {
-          content[key] = urlInput.value;
-          updatePreview(urlInput.value);
-        });
-
-        fileInput.addEventListener("change", () => {
-          const file = fileInput.files?.[0];
-          if (!file) return;
-
-          if (
-            !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
-            file.size > 2500000
-          ) {
-            message(
-              "Selecione JPG, PNG ou WebP de até 2,5 MB.",
-              "error"
-            );
-            fileInput.value = "";
-            return;
-          }
-
-          const reader = new FileReader();
-
-          reader.onload = () => {
-            image.src = String(reader.result);
-            image.hidden = false;
-            placeholder.hidden = true;
-          };
-
-          reader.readAsDataURL(file);
-
-          message(
-            "Prévia carregada. O arquivo ainda não foi enviado ao servidor."
-          );
-        });
-
-        updatePreview(urlInput.value);
-
-        visual.append(image, placeholder);
-        controls.append(
-          heading,
-          description,
-          urlLabel,
-          urlInput,
-          fileLabel,
-          fileInput,
-          help
-        );
-
-        wrapper.append(visual, controls);
-        return wrapper;
-      }
-
-      const fieldLabel = document.createElement("label");
-      fieldLabel.textContent = label;
-
-      const input = type === "textarea"
-        ? document.createElement("textarea")
-        : document.createElement("input");
-
-      if (type !== "textarea") {
-        input.type = "text";
-      }
-
-      input.dataset.field = key;
-      input.value = content[key] || "";
-
-      input.addEventListener("input", () => {
-        content[key] = input.value;
-      });
-
-      wrapper.append(fieldLabel, input);
-      return wrapper;
-    }
-
-    function renderTabs() {
-      const nav = $("page-tabs");
-      nav.replaceChildren();
-
-      for (const page of PAGES) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className =
-          "page-tab" + (page.id === activePage ? " active" : "");
-        button.textContent = page.title;
-
-        button.onclick = () => {
-          rememberInputs();
-          activePage = page.id;
-          render();
-        };
-
-        nav.append(button);
+  for (const page of PAGES) {
+    for (const section of page.sections) {
+      for (const [key] of section.fields) {
+        keys.add(key);
       }
     }
+  }
 
-    function render() {
-      renderTabs();
+  return [...keys];
+}
 
-      const page = PAGES.find(p => p.id === activePage);
-      const heading = $("page-heading");
+function snapshot() {
+  const result = {};
 
-      heading.replaceChildren();
+  for (const key of allKeys()) {
+    result[key] = String(content[key] ?? "").trim();
+  }
 
-      const title = document.createElement("h2");
-      title.textContent = page.title;
+  return result;
+}
 
-      const description = document.createElement("p");
-      description.textContent = page.description;
+function rememberInputs() {
+  document.querySelectorAll("[data-field]").forEach(input => {
+    content[input.dataset.field] = input.value;
+  });
+}
 
-      heading.append(title, description);
+function makeTextField(key, label, type) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "field";
 
-      const container = $("page-fields");
-      container.replaceChildren();
+  const fieldLabel = document.createElement("label");
+  fieldLabel.textContent = label;
 
-      for (const section of page.sections) {
-        const panel = document.createElement("section");
-        panel.className = "panel";
+  const input = type === "long"
+    ? document.createElement("textarea")
+    : document.createElement("input");
 
-        const sectionTitle = document.createElement("h2");
-        sectionTitle.textContent = section.title;
-        panel.append(sectionTitle);
+  if (type !== "long") {
+    input.type = "text";
+  }
 
-        if (section.description) {
-          const detail = document.createElement("p");
-          detail.className = "section-description";
-          detail.textContent = section.description;
-          panel.append(detail);
-        }
+  input.dataset.field = key;
+  input.value = content[key] || "";
 
-        for (const [key, label, type] of section.fields) {
-          panel.append(createField(key, label, type));
-        }
+  input.addEventListener("input", () => {
+    content[key] = input.value;
+  });
 
-        container.append(panel);
-      }
+  wrapper.append(fieldLabel, input);
+  return wrapper;
+}
 
-      if (activePage === "inicio") {
-        const general = document.createElement("section");
-        general.className = "panel";
+function makeImageField(key, label) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "field image-field";
 
-        const heading = document.createElement("h2");
-        heading.textContent = "03 · Contato e SEO geral";
-        general.append(heading);
+  const visual = document.createElement("div");
 
-        for (const [key, label, type] of GENERAL_FIELDS) {
-          general.append(createField(key, label, type));
-        }
+  const image = document.createElement("img");
+  image.className = "image-preview";
+  image.alt = "Prévia de " + label;
 
-        container.append(general);
-      }
+  const placeholder = document.createElement("div");
+  placeholder.className = "image-placeholder";
+  placeholder.textContent = "Sem imagem cadastrada";
+
+  const controls = document.createElement("div");
+
+  const heading = document.createElement("label");
+  heading.textContent = label;
+
+  const urlInput = document.createElement("input");
+  urlInput.type = "url";
+  urlInput.placeholder = "https://...";
+  urlInput.dataset.field = key;
+  urlInput.value = content[key] || "";
+
+  const help = document.createElement("p");
+  help.className = "help";
+  help.textContent =
+    "Cole o endereço HTTPS de uma imagem já hospedada. " +
+    "O upload direto do computador ainda não está disponível.";
+
+  function updatePreview(url) {
+    if (/^https:\/\/\S+$/i.test(url)) {
+      image.src = url;
+      image.hidden = false;
+      placeholder.hidden = true;
+    } else {
+      image.hidden = true;
+      image.removeAttribute("src");
+      placeholder.hidden = false;
     }
+  }
 
-    function setBusy(value) {
-      busy = value;
-      $("save").disabled = value;
-      $("reload").disabled = value;
-    }
+  image.onerror = () => {
+    image.hidden = true;
+    placeholder.hidden = false;
+  };
 
-    async function load() {
-      setBusy(true);
-      message("Carregando informações do site...");
+  urlInput.addEventListener("input", () => {
+    content[key] = urlInput.value;
+    updatePreview(urlInput.value.trim());
+  });
 
-      try {
-        const data = await api(
-          "/api/admin-gerenciar?action=site_conteudo"
-        );
+  updatePreview(urlInput.value.trim());
 
-        if (!data.ok || !data.conteudo) {
-          throw Error("O servidor não retornou os dados.");
-        }
+  visual.append(image, placeholder);
+  controls.append(heading, urlInput, help);
+  wrapper.append(visual, controls);
 
-        content = { ...data.conteudo };
-        lastSaved = JSON.stringify(snapshot());
+  return wrapper;
+}
 
-        render();
-        $("editor").hidden = false;
+function renderTabs() {
+  const tabs = $("tabs");
+  tabs.replaceChildren();
 
-        message("Dados carregados. Escolha a página para editar.");
-      } catch (error) {
-        message(
-          "Não foi possível carregar: " + error.message,
-          "error"
-        );
-      } finally {
-        setBusy(false);
-      }
-    }
+  for (const page of PAGES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className =
+      "tab" + (page.id === activePage ? " active" : "");
+    button.textContent = page.name;
 
-    $("site-form").addEventListener("submit", async event => {
-      event.preventDefault();
-
-      if (busy) return;
-
+    button.addEventListener("click", () => {
       rememberInputs();
-
-      const dataToSave = snapshot();
-
-      if (
-        dataToSave.whatsapp &&
-        !/^\d{10,15}$/.test(dataToSave.whatsapp)
-      ) {
-        message(
-          "WhatsApp: informe de 10 a 15 números.",
-          "error"
-        );
-        return;
-      }
-
-      for (const [key, value] of Object.entries(dataToSave)) {
-        if (
-          key.endsWith("_imagem") &&
-          value &&
-          !/^https:\/\/\S+$/i.test(value)
-        ) {
-          message(
-            "Imagem inválida: " + key + ". Use HTTPS.",
-            "error"
-          );
-          return;
-        }
-      }
-
-      setBusy(true);
-      message("Salvando alterações...");
-
-      try {
-        /*
-          Enquanto a API não for atualizada, salvamos
-          somente os campos que ela já reconhece.
-
-          Isso evita perder campos novos e preserva
-          o funcionamento atual.
-        */
-
-        const legacyContent = {};
-
-        for (const key of LEGACY_FIELDS) {
-          legacyContent[key] = dataToSave[key];
-        }
-
-        const result = await api("/api/admin-gerenciar", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            action: "site_conteudo",
-            conteudo: legacyContent
-          })
-        });
-
-        if (!result.ok) {
-          throw Error("O servidor não confirmou a gravação.");
-        }
-
-        lastSaved = JSON.stringify(snapshot());
-
-        message(
-          "Campos atuais salvos no Supabase. " +
-          "Os novos campos das outras páginas ainda " +
-          "dependem da atualização da API.",
-          "success"
-        );
-      } catch (error) {
-        message(
-          "Não foi possível salvar: " + error.message,
-          "error"
-        );
-      } finally {
-        setBusy(false);
-      }
+      activePage = page.id;
+      render();
     });
 
-    $("reload").addEventListener("click", () => {
-      rememberInputs();
+    tabs.append(button);
+  }
+}
 
-      if (
-        JSON.stringify(snapshot()) !== lastSaved &&
-        !confirm("Descartar alterações não salvas?")
-      ) {
-        return;
-      }
+function render() {
+  renderTabs();
 
-      load();
+  const page = PAGES.find(
+    item => item.id === activePage
+  );
+
+  const heading = $("page-title");
+  heading.replaceChildren();
+
+  const title = document.createElement("h2");
+  title.textContent = page.name;
+
+  const description = document.createElement("p");
+  description.textContent = page.description;
+
+  heading.append(title, description);
+
+  const container = $("fields");
+  container.replaceChildren();
+
+  for (const section of page.sections) {
+    const panel = document.createElement("section");
+    panel.className = "panel";
+
+    const sectionTitle = document.createElement("h3");
+    sectionTitle.textContent = section.name;
+    panel.append(sectionTitle);
+
+    for (const [key, label, type] of section.fields) {
+      panel.append(
+        type === "image"
+          ? makeImageField(key, label)
+          : makeTextField(key, label, type)
+      );
+    }
+
+    container.append(panel);
+  }
+}
+
+function setBusy(value) {
+  busy = value;
+  $("save").disabled = value;
+  $("reload").disabled = value;
+}
+
+async function load() {
+  setBusy(true);
+  message("Carregando informações do site...");
+
+  try {
+    const data = await api(
+      "/api/admin-gerenciar?action=site_conteudo"
+    );
+
+    if (!data.ok || !data.conteudo) {
+      throw Error("Conteúdo não encontrado.");
+    }
+
+    content = { ...data.conteudo };
+    lastSaved = JSON.stringify(snapshot());
+
+    render();
+    $("editor").hidden = false;
+
+    message("Dados carregados. Você já pode editar.");
+  } catch (error) {
+    message(
+      "Erro ao carregar: " + error.message,
+      "error"
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+
+function validate(data) {
+  if (
+    data.whatsapp &&
+    !/^\d{10,15}$/.test(data.whatsapp)
+  ) {
+    throw Error(
+      "WhatsApp: informe de 10 a 15 números."
+    );
+  }
+
+  if (
+    data.instagram &&
+    !/^https:\/\/\S+$/i.test(data.instagram)
+  ) {
+    throw Error(
+      "Instagram: informe um endereço HTTPS."
+    );
+  }
+
+  for (const [key, value] of Object.entries(data)) {
+    if (
+      key.endsWith("_imagem") &&
+      value &&
+      !/^https:\/\/\S+$/i.test(value)
+    ) {
+      throw Error(
+        "Imagem inválida: " + key
+      );
+    }
+  }
+}
+
+$("site-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (busy) return;
+
+  rememberInputs();
+
+  const dataToSave = snapshot();
+
+  try {
+    validate(dataToSave);
+  } catch (error) {
+    message(error.message, "error");
+    return;
+  }
+
+  setBusy(true);
+  message("Salvando alterações no Supabase...");
+
+  try {
+    const result = await api("/api/admin-gerenciar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "site_conteudo",
+        conteudo: dataToSave
+      })
     });
 
-    window.addEventListener("beforeunload", event => {
-      rememberInputs();
+    if (!result.ok) {
+      throw Error(
+        "O servidor não confirmou o salvamento."
+      );
+    }
 
-      if (
-        lastSaved !== "" &&
-        JSON.stringify(snapshot()) !== lastSaved
-      ) {
-        event.preventDefault();
-        event.returnValue = "";
-      }
-    });
+    content = { ...result.conteudo };
+    lastSaved = JSON.stringify(snapshot());
 
-    (async () => {
-      try {
-        const session = await api("/api/admin-session");
+    render();
 
-        if (session.autenticado !== true) {
-          throw Error("Sessão não autorizada.");
-        }
+    message(
+      "Alterações salvas no Supabase. " +
+      "As páginas públicas precisam estar integradas " +
+      "para exibir os novos conteúdos.",
+      "success"
+    );
+  } catch (error) {
+    message(
+      "Erro ao salvar: " + error.message,
+      "error"
+    );
+  } finally {
+    setBusy(false);
+  }
+});
 
-        await load();
-      } catch (error) {
-        message(
-          "Acesso restrito. Entre no painel ADM. " +
-          error.message,
-          "error"
-        );
-      }
-    })();
-  </script>
+$("reload").addEventListener("click", () => {
+  rememberInputs();
 
+  if (
+    JSON.stringify(snapshot()) !== lastSaved &&
+    !confirm("Descartar alterações não salvas?")
+  ) {
+    return;
+  }
+
+  load();
+});
+
+window.addEventListener("beforeunload", event => {
+  rememberInputs();
+
+  if (
+    lastSaved &&
+    JSON.stringify(snapshot()) !== lastSaved
+  ) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
+
+(async () => {
+  try {
+    const session = await api("/api/admin-session");
+
+    if (session.autenticado !== true) {
+      throw Error("Sessão não autorizada.");
+    }
+
+    await load();
+  } catch (error) {
+    message(
+      "Acesso restrito. Entre no painel administrativo. " +
+      error.message,
+      "error"
+    );
+  }
+})();
+</script>
 </body>
 </html>
