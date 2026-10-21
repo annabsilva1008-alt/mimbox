@@ -947,7 +947,7 @@ function updateCheckoutFormVisibility() {
     const title=info.querySelector('h3,h2');if(title)title.textContent=p.nome;
     const amount=price(p.preco);
     if(amount!==null){const el=info.querySelector('.sample-price');if(el)el.textContent=money(amount);btn.dataset.productPrice=amount.toFixed(2)}
-    const desc=info.querySelector('p');if(desc&&p.descricao)desc.textContent=p.descricao;
+    const desc=info.querySelector('p');if(desc&&p.descricao)desc.textContent=String(p.descricao).replace(/\s*\[\[MIMBOX_CATEGORIA:[^\]\r\n]*\]\]\s*$/i, "").trim();
     btn.dataset.productName=p.nome;
     const productImages=[...(Array.isArray(p.imagens)?p.imagens:[]),p.imagem_url].filter(safeImg);
     btn.dataset.productImage=productImages[0]||'';
@@ -1137,16 +1137,44 @@ function updateCheckoutFormVisibility() {
     const id=card.dataset.crmProdutoId;
     const product=(window.mimboxPublicProducts||[]).find(p=>String(p.id)===id);
     const col=normalize(product?.colecao);
-    const txt=[name,desc,col].join(' ');
+    const raw=String(product?.descricao||'');
+    const meta=raw.match(/\[\[MIMBOX_CATEGORIA:([^\]\r\n]*)\]\]/i);
+    const pieces=meta?meta[1].split(';TAGS:'):[];
+    const primary=normalize(pieces[0]||'').trim();
+    const tags=(pieces[1]||'').split(',').map(x=>normalize(x.trim())).filter(Boolean);
+    const txt=[name,desc,col,...tags,primary].join(' ');
     const categories=new Set();
-    if(/copo|caneca|tulipa|long drink|cerveja|americano/.test(txt))categories.add('copos');
-    if(/prato|ceramica|decorativo/.test(txt))categories.add('pratos');
-    if(/box|colecao|kit|horoscopo|brasilidades|forro|natal|vsf|pe na areia/.test(txt))categories.add('boxes');
-    if(/brinde|chaveiro|abridor|ima|adesivo|corporativ|empresa/.test(txt))categories.add('brindes');
-    if(/personaliz|sua arte|sob encomenda/.test(txt))categories.add('personalizados');
-    return {categories,text:txt};
+    if(primary){categories.add(primary);for(const tag of tags){if(['copos','pratos','boxes','brindes','personalizados'].includes(tag))categories.add(tag)}}
+    else {
+      // Compatibilidade com produtos antigos, ainda não classificados no painel.
+      if(/copo|caneca|tulipa|long drink|cerveja|americano|garrafinha/.test(txt))categories.add('copos');
+      if(/prato|ceramica|decorativo|cinzeiro|porta.treco/.test(txt))categories.add('pratos');
+      if(/box|colecao|kit|horoscopo|brasilidades|forro|natal|vsf|pe na areia/.test(txt))categories.add('boxes');
+      if(/brinde|chaveiro|abridor|ima|adesivo|corporativ|empresa/.test(txt))categories.add('brindes');
+      if(/personaliz|sua arte|sob encomenda/.test(txt))categories.add('personalizados');
+    }
+    return {categories,text:txt,primary};
+  }
+  function refreshCustomCategories(){
+    const used=new Set();
+    for(const card of grid.querySelectorAll(':scope > .product-card')){
+      const c=group(card).primary;
+      if(c&&!['copos','pratos','boxes','brindes','personalizados'].includes(c))used.add(c);
+    }
+    root.querySelectorAll('[data-custom-filter]').forEach(n=>n.remove());
+    for(const c of [...used].sort()){
+      const btn=document.createElement('button');btn.type='button';btn.className='mim-filter';btn.dataset.filter=c;btn.dataset.customFilter='1';btn.textContent=c.charAt(0).toUpperCase()+c.slice(1);
+      btn.addEventListener('click',()=>selectCategory(c));
+      root.querySelector('#mim-product-filters').append(btn);
+    }
+  }
+  function selectCategory(value){
+    category=value;expanded=false;
+    root.querySelectorAll('[data-filter]').forEach(b=>{const active=b.dataset.filter===value;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+    render();
   }
   function render(){
+    refreshCustomCategories();
     const query=normalize(search.value.trim());
     clear.hidden=!search.value;
     const cards=[...grid.querySelectorAll(':scope > .product-card')];
@@ -1167,11 +1195,7 @@ function updateCheckoutFormVisibility() {
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})}
   search.addEventListener('input',()=>{expanded=false;schedule()});
   clear.addEventListener('click',()=>{search.value='';expanded=false;search.focus();schedule()});
-  filters.forEach(btn=>btn.addEventListener('click',()=>{
-    category=btn.dataset.filter;expanded=false;
-    filters.forEach(b=>{const active=b===btn;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
-    schedule();
-  }));
+  filters.forEach(btn=>btn.addEventListener('click',()=>selectCategory(btn.dataset.filter)));
   more.addEventListener('click',()=>{expanded=true;render()});
   const heading=document.querySelector('#boxes .m-section-heading a[href="#boxes"]');
   if(heading)heading.addEventListener('click',e=>{e.preventDefault();category='todos';expanded=true;search.value='';filters.forEach(b=>{const a=b.dataset.filter==='todos';b.classList.toggle('active',a);b.setAttribute('aria-pressed',String(a))});render();root.scrollIntoView({behavior:'smooth',block:'start'})});
