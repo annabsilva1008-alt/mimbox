@@ -410,7 +410,7 @@ async function request(url,options={}){
   try{
     data=await response.json();
   }catch{
-    throw Error("A API retornou uma resposta inesperada (HTTP " + response.status + "). Verifique a publicação da rota " + url + " no Vercel.");
+    throw Error("Resposta inválida do servidor");
   }
 
   if(!response.ok){
@@ -504,7 +504,7 @@ async function atualizarPedidosAutomaticamente(){
   if (document.hidden || !["dashboard","pedidos"].includes(paginaAtual) || carregamentoPedidos) return;
   carregamentoPedidos = true;
   try {
-    const data = await operations("clientes");
+    const data = await request("/api/admin-pedidos");
     const novos = Array.isArray(data.pedidos) ? data.pedidos : [];
     const assinatura = lista => JSON.stringify(lista.map(p => [p.id,p.status_pagamento,p.status_entrega,p.valor_total,p.observacoes,p.criado_em]));
     if (assinatura(novos) !== assinatura(state.pedidos)) {
@@ -546,8 +546,14 @@ async function openPage(page){
 
   try{
     if(page==="dashboard"||page==="pedidos"){
-      const data=await operations("clientes");
+      const data=await request("/api/admin-pedidos");
       state.pedidos=data.pedidos||[];
+      const joined = await operations("clientes");
+      const byId = new Map((joined.pedidos || []).map(p => [p.id,p]));
+      state.pedidos = state.pedidos.map(p => ({
+        ...p, clientes:byId.get(p.id)?.clientes || p.clientes,
+        observacoes:byId.get(p.id)?.observacoes ?? p.observacoes
+      }));
     }
 
     if(page==="estoque"){
@@ -1207,86 +1213,169 @@ async function uploadProductPhoto(photo) {
 }
 
 
-// Galeria visual: a primeira imagem é a capa da vitrine.
+// Galeria visual: prévia imediata; upload e persistência ao salvar.
 function productGallery(produto = {}) {
   const wrap = element("section", undefined, "gallery-editor");
   wrap.append(element("h3", "📸 Galeria de fotos (até 8)"));
-  wrap.append(element("p", "Arraste pela ordem usando as setas. A primeira foto é a principal. JPG, PNG ou WebP, até 2,5 MB por foto.", "muted"));
+  wrap.append(element("p", "Selecione imagens para ver a prévia imediatamente. Ao cadastrar ou salvar o produto, as fotos são enviadas automaticamente. JPG, PNG ou WebP.", "muted"));
+
   let imagens = Array.isArray(produto.imagens)
     ? produto.imagens.filter(x => typeof x === "string" && x.trim())
     : [];
-  if (produto.imagem_url && !imagens.includes(produto.imagem_url)) {
-    imagens.unshift(produto.imagem_url);
-  }
+  if (produto.imagem_url && !imagens.includes(produto.imagem_url)) imagens.unshift(produto.imagem_url);
   imagens = [...new Set(imagens)].slice(0, 8);
+
+  // A lista pendente fica independente do input, para permitir prévia e remoção.
+  let pendentes = [];
+  let enviando = false;
   const items = element("div", undefined, "gallery-items");
   const files = document.createElement("input");
   files.type = "file";
   files.accept = "image/jpeg,image/png,image/webp";
   files.multiple = true;
+  const status = element("p", "", "muted");
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+
   const url = field("Ou adicionar imagem por URL HTTPS");
   url.input.placeholder = "https://...";
   const addUrl = action("Adicionar URL", () => {
     const value = url.input.value.trim();
     if (!/^https:\/\/[^\s]+$/i.test(value)) throw Error("Informe uma URL HTTPS válida.");
     if (imagens.includes(value)) throw Error("Esta imagem já está na galeria.");
-    if (imagens.length >= 8) throw Error("Limite de 8 fotos atingido.");
+    if (imagens.length + pendentes.length >= 8) throw Error("Limite de 8 fotos atingido.");
     imagens.push(value);
     url.input.value = "";
     render();
   });
+
+  function clearPending() {
+    for (const p of pendentes) URL.revokeObjectURL(p.preview);
+    pendentes = [];
+  }
   function render() {
     items.replaceChildren();
-    if (!imagens.length) items.append(element("p", "Nenhuma foto adicionada.", "muted"));
-    imagens.forEach((src, index) => {
+    if (!imagens.length && !pendentes.length) items.append(element("p", "Nenhuma foto adicionada.", "muted"));
+    const all = [
+      ...imagens.map(src => ({src, pending:false})),
+      ...pendentes.map(p => ({src:p.preview, pending:true, item:p}))
+    ];
+    all.forEach((entry, index) => {
       const row = element("div", undefined, "gallery-entry");
       const img = document.createElement("img");
-      img.src = src;
+      img.src = entry.src;
       img.alt = "Foto " + (index + 1);
       img.loading = "lazy";
+      img.style.objectFit = "contain";
       const info = element("div");
-      info.append(element("strong", index === 0 ? "⭐ Principal" : "Foto " + (index + 1)));
+      info.append(element("strong", (index === 0 ? "⭐ Principal" : "Foto " + (index + 1)) + (entry.pending ? " • Aguardando envio" : "")));
       const controls = element("div", undefined, "row");
-      if (index > 0) controls.append(action("↑ Subir", () => {
+      if (!entry.pending && index > 0) controls.append(action("↑ Subir", () => {
         [imagens[index-1], imagens[index]] = [imagens[index], imagens[index-1]];
         render();
       }));
-      if (index < imagens.length - 1) controls.append(action("↓ Descer", () => {
+      if (!entry.pending && index < imagens.length - 1) controls.append(action("↓ Descer", () => {
         [imagens[index+1], imagens[index]] = [imagens[index], imagens[index+1]];
         render();
       }));
       controls.append(action("Remover", () => {
-        imagens.splice(index, 1);
+        if (enviando) return;
+        if (entry.pending) {
+          URL.revokeObjectURL(entry.item.preview);
+          pendentes = pendentes.filter(p => p !== entry.item);
+        } else {
+          imagens.splice(index, 1);
+        }
         render();
       }));
       info.append(controls);
       row.append(img, info);
       items.append(row);
     });
+    if (!enviando) status.textContent = pendentes.length
+      ? `${pendentes.length} foto(s) pronta(s) para enviar. Clique em Cadastrar produto ou Salvar alterações.`
+      : imagens.length ? `${imagens.length} foto(s) na galeria.` : "";
   }
-  async function uploadPending() {
-    const pending = Array.from(files.files || []);
-    if (imagens.length + pending.length > 8) throw Error("A galeria aceita até 8 fotos.");
-    for (const file of pending) {
-      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || !file.size || file.size > 2500000) {
-        throw Error("Cada foto precisa ser JPG, PNG ou WebP com até 2,5 MB.");
-      }
-    }
-    for (const file of pending) {
-      const encoded = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-        reader.onerror = () => reject(Error("Não foi possível ler " + file.name));
-        reader.readAsDataURL(file);
-      });
-      const result = await operations("produto_imagem_upload", {tipo:file.type, imagem_base64:encoded});
-      if (!result.ok || !result.imagem_url) throw Error("Falha no upload de " + file.name);
-      if (!imagens.includes(result.imagem_url)) imagens.push(result.imagem_url);
-    }
+
+  files.addEventListener("change", () => {
+    const chosen = Array.from(files.files || []);
     files.value = "";
+    if (imagens.length + pendentes.length + chosen.length > 8) {
+      status.textContent = "Limite de 8 fotos por produto.";
+      notify("A galeria aceita no máximo 8 fotos.", true);
+      return;
+    }
+    for (const file of chosen) {
+      if (!["image/jpeg","image/png","image/webp"].includes(file.type) || !file.size) {
+        notify("Selecione somente fotos JPG, PNG ou WebP.", true);
+        continue;
+      }
+      // Fotos grandes serão reduzidas no navegador antes do envio.
+      pendentes.push({file, preview: URL.createObjectURL(file)});
+    }
     render();
+  });
+
+  async function prepareImage(file) {
+    // Reduz imagens para evitar o limite de corpo da requisição da Vercel.
+    const bitmap = await createImageBitmap(file);
+    try {
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw Error("Não foi possível preparar a imagem.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      let quality = 0.85;
+      let blob;
+      do {
+        blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+        quality -= 0.12;
+      } while (blob && blob.size > 2000000 && quality >= 0.35);
+      if (!blob || blob.size > 2500000) throw Error("Imagem muito grande para enviar. Reduza a resolução.");
+      return blob;
+    } finally {
+      bitmap.close();
+    }
   }
-  wrap.append(items, files, url.wrap, addUrl);
+
+  async function uploadPending() {
+    if (enviando) throw Error("Aguarde o envio das fotos.");
+    enviando = true;
+    try {
+      const queue = [...pendentes];
+      for (let i = 0; i < queue.length; i++) {
+        const entry = queue[i];
+        status.textContent = `Enviando foto ${i+1} de ${queue.length}...`;
+        const blob = await prepareImage(entry.file);
+        const encoded = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+          reader.onerror = () => reject(Error("Não foi possível ler " + entry.file.name));
+          reader.readAsDataURL(blob);
+        });
+        let result;
+        try {
+          result = await operations("produto_imagem_upload", {tipo:"image/jpeg", imagem_base64:encoded});
+        } catch (error) {
+          throw Error(`Falha ao enviar "${entry.file.name}": ${error.message}`);
+        }
+        if (!result.ok || !result.imagem_url) throw Error("O servidor não confirmou o envio de " + entry.file.name);
+        if (!imagens.includes(result.imagem_url)) imagens.push(result.imagem_url);
+        URL.revokeObjectURL(entry.preview);
+        pendentes = pendentes.filter(p => p !== entry);
+      }
+      status.textContent = "Fotos enviadas. Salvando o produto...";
+    } finally {
+      enviando = false;
+      render();
+    }
+  }
+
+  wrap.append(items, files, status, url.wrap, addUrl);
   render();
   return {wrap, uploadPending, getImages: () => [...imagens]};
 }
