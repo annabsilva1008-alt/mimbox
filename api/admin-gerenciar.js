@@ -282,7 +282,13 @@ async function lerConteudoSite() {
     `?chave=eq.${SITE_KEY}&select=valor&limit=1`
   );
 
-  const salvo = rows[0]?.valor || {};
+  if (!Array.isArray(rows)) {
+    throw new Error("Resposta inválida ao consultar configurações do site");
+  }
+
+  const salvo = rows[0]?.valor && typeof rows[0].valor === "object" && !Array.isArray(rows[0].valor)
+    ? rows[0].valor
+    : {};
   const conteudo = {};
 
   for (const campo of Object.keys(SITE_DEFAULTS)) {
@@ -451,6 +457,9 @@ export default async function handler(req, res) {
     // ==========================================
 
     if (action === "config") {
+      if (req.method !== "POST") {
+        return json(res, 405, { erro: "Use POST para esta ação" });
+      }
       const c = req.body?.config || {};
 
       const config = {
@@ -484,6 +493,9 @@ export default async function handler(req, res) {
     // ==========================================
 
     if (action === "pedido_status") {
+      if (req.method !== "POST") {
+        return json(res, 405, { erro: "Use POST para esta ação" });
+      }
       const id = str(req.body?.id, 100);
       const status = str(
         req.body?.status_entrega,
@@ -525,6 +537,9 @@ export default async function handler(req, res) {
     // ==========================================
 
     if (action === "pedido_nota") {
+      if (req.method !== "POST") {
+        return json(res, 405, { erro: "Use POST para esta ação" });
+      }
       const id = str(req.body?.id, 100);
       const nota = str(req.body?.nota, 1000);
 
@@ -559,6 +574,9 @@ export default async function handler(req, res) {
     // ==========================================
 
     if (action === "produto") {
+      if (req.method !== "POST") {
+        return json(res, 405, { erro: "Use POST para esta ação" });
+      }
       const p = req.body?.produto || {};
       const id = str(p.id, 100);
       const preco = Number(p.preco);
@@ -612,6 +630,9 @@ export default async function handler(req, res) {
     // ==========================================
 
     if (action === "pedido_manual") {
+      if (req.method !== "POST") {
+        return json(res, 405, { erro: "Use POST para esta ação" });
+      }
       const c = req.body?.cliente || {};
       const p = req.body?.pedido || {};
 
