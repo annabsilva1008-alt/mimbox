@@ -172,6 +172,17 @@ button:disabled {
   .image-field { grid-template-columns: 1fr; }
   .tab { flex: 1 1 140px; }
 }
+
+/* Recorte e envio de imagens */
+.crop-modal {position:fixed;inset:0;z-index:1000;background:#000b;display:grid;place-items:center;padding:16px;overflow:auto}
+.crop-box {background:var(--cream);border:3px solid var(--ink);border-radius:15px;padding:20px;width:min(760px,100%);max-height:95vh;overflow:auto}
+.crop-stage {background:#333;border-radius:9px;padding:12px;display:grid;place-items:center;margin:15px 0}
+#crop-canvas {max-width:100%;max-height:48vh;touch-action:none;cursor:grab}
+.crop-options {display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.crop-options input,.crop-options select {width:100%}
+.upload-state {font-size:13px;font-weight:700;margin-top:8px}
+body.modal-open {overflow:hidden}
+@media(max-width:650px){.crop-options{grid-template-columns:1fr}}
 </style>
 </head>
 
@@ -211,6 +222,21 @@ button:disabled {
     </form>
   </div>
 </main>
+
+
+<div id="crop-modal" class="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-title" hidden>
+ <div class="crop-box">
+  <h2 id="crop-title">Ajustar imagem</h2>
+  <p>Arraste a imagem para ajustar o enquadramento. Use o zoom para aproximar.</p>
+  <div class="crop-stage"><canvas id="crop-canvas" width="600" height="338"></canvas></div>
+  <div class="crop-options">
+   <div><label for="crop-ratio">Formato</label><select id="crop-ratio"><option value="16:9">Banner horizontal (16:9)</option><option value="4:3">Horizontal (4:3)</option><option value="1:1">Quadrado (1:1)</option><option value="4:5">Vertical (4:5)</option><option value="9:16">Story (9:16)</option></select></div>
+   <div><label for="crop-zoom">Zoom: <span id="zoom-value">100%</span></label><input id="crop-zoom" type="range" min="1" max="3" step="0.01" value="1"></div>
+  </div>
+  <div class="actions"><button type="button" class="action secondary" id="crop-reset">Centralizar foto</button><button type="button" class="action" id="crop-confirm">Confirmar recorte e enviar</button><button type="button" class="action secondary" id="crop-cancel">Cancelar</button></div>
+  <p id="crop-status" role="status" aria-live="polite"></p>
+ </div>
+</div>
 
 <script>
 "use strict";
@@ -374,6 +400,7 @@ let content = {};
 let lastSaved = "";
 let activePage = "inicio";
 let busy = false;
+let uploading = false;
 
 function message(text, type = "") {
   $("status").textContent = text;
@@ -467,37 +494,36 @@ function makeTextField(key, label, type) {
 function makeImageField(key, label) {
   const wrapper = document.createElement("div");
   wrapper.className = "field image-field";
-
   const visual = document.createElement("div");
-
   const image = document.createElement("img");
   image.className = "image-preview";
   image.alt = "Prévia de " + label;
-
   const placeholder = document.createElement("div");
   placeholder.className = "image-placeholder";
   placeholder.textContent = "Sem imagem cadastrada";
-
   const controls = document.createElement("div");
-
   const heading = document.createElement("label");
   heading.textContent = label;
   heading.htmlFor = "field-" + key;
-
   const urlInput = document.createElement("input");
   urlInput.type = "url";
   urlInput.id = "field-" + key;
   urlInput.placeholder = "https://...";
   urlInput.dataset.field = key;
   urlInput.value = content[key] || "";
-
+  const uploadLabel = document.createElement("label");
+  uploadLabel.textContent = "Escolher foto do computador";
+  const uploadInput = document.createElement("input");
+  uploadInput.type = "file";
+  uploadInput.accept = "image/jpeg,image/png,image/webp";
+  uploadInput.style.margin = "10px 0";
+  const uploadState = document.createElement("p");
+  uploadState.className = "upload-state";
+  uploadState.setAttribute("aria-live", "polite");
   const help = document.createElement("p");
   help.className = "help";
-  help.textContent =
-    "Cole o endereço HTTPS de uma imagem já hospedada. " +
-    "O upload direto do computador ainda não está disponível.";
-
-  function updatePreview(url) {
+  help.textContent = "Escolha a foto, ajuste o recorte e confirme o envio. Depois clique em Salvar alterações.";
+  function preview(url) {
     if (/^https:\/\/\S+$/i.test(url)) {
       image.src = url;
       image.hidden = false;
@@ -508,25 +534,127 @@ function makeImageField(key, label) {
       placeholder.hidden = false;
     }
   }
-
-  image.onerror = () => {
-    image.hidden = true;
-    placeholder.hidden = false;
-  };
-
-  urlInput.addEventListener("input", () => {
-    content[key] = urlInput.value;
-    updatePreview(urlInput.value.trim());
+  image.onerror = () => {image.hidden = true; placeholder.hidden = false; placeholder.textContent = "Não foi possível carregar a foto.";};
+  urlInput.addEventListener("input", () => {content[key] = urlInput.value; preview(urlInput.value.trim());});
+  uploadInput.addEventListener("change", async () => {
+    const file = uploadInput.files?.[0];
+    if (!file) return;
+    try {await openCropEditor(file, {key,label,urlInput,uploadInput,uploadState,preview});}
+    catch (error) {uploadState.textContent = "Erro: " + error.message;message(error.message,"error");uploadInput.value="";}
   });
-
-  updatePreview(urlInput.value.trim());
-
-  visual.append(image, placeholder);
-  controls.append(heading, urlInput, help);
-  wrapper.append(visual, controls);
-
+  preview(urlInput.value.trim());
+  visual.append(image,placeholder);
+  controls.append(heading,urlInput,uploadLabel,uploadInput,uploadState,help);
+  wrapper.append(visual,controls);
   return wrapper;
 }
+
+// Editor de recorte com upload pelo endpoint já existente.
+const cropCanvas = $("crop-canvas");
+const cropCtx = cropCanvas.getContext("2d");
+let cropImage = null, cropTarget = null, cropZoom = 1, cropX = 0, cropY = 0;
+let dragging = false, pointerX = 0, pointerY = 0;
+function defaultRatio(key) {
+  if (key.includes("banner") || key === "hero_imagem") return "16:9";
+  if (key === "sobre_ana_imagem" || key === "sobre_rafa_imagem") return "4:5";
+  return "1:1";
+}
+async function openCropEditor(file,target) {
+  if (!["image/jpeg","image/png","image/webp"].includes(file.type)) throw Error("Use JPG, PNG ou WebP.");
+  if (file.size > 20*1024*1024) throw Error("A imagem deve ter até 20 MB.");
+  if (!window.createImageBitmap) throw Error("Este navegador não suporta o recorte de imagens.");
+  const bitmap = await createImageBitmap(file);
+  if (cropImage) cropImage.close();
+  cropImage = bitmap;
+  cropTarget = target;
+  cropZoom = 1; cropX = 0; cropY = 0;
+  $("crop-title").textContent = "Ajustar imagem — " + target.label;
+  $("crop-ratio").value = defaultRatio(target.key);
+  $("crop-zoom").value = "1";
+  $("zoom-value").textContent = "100%";
+  $("crop-status").textContent = "";
+  updateCropRatio();
+  $("crop-modal").hidden = false;
+  document.body.classList.add("modal-open");
+}
+function updateCropRatio() {
+  const [w,h] = $("crop-ratio").value.split(":").map(Number);
+  if (w >= h) {cropCanvas.width=600;cropCanvas.height=Math.round(600*h/w);}
+  else {cropCanvas.height=600;cropCanvas.width=Math.round(600*w/h);}
+  cropX=0;cropY=0;drawCrop();
+}
+function geometry() {
+  const cw=cropCanvas.width,ch=cropCanvas.height;
+  const scale=Math.max(cw/cropImage.width,ch/cropImage.height)*cropZoom;
+  const dw=cropImage.width*scale,dh=cropImage.height*scale;
+  const mx=Math.max(0,(dw-cw)/2),my=Math.max(0,(dh-ch)/2);
+  cropX=Math.max(-mx,Math.min(mx,cropX));
+  cropY=Math.max(-my,Math.min(my,cropY));
+  return {x:(cw-dw)/2+cropX,y:(ch-dh)/2+cropY,dw,dh};
+}
+function drawCrop() {
+  if (!cropImage) return;
+  const g=geometry(),cw=cropCanvas.width,ch=cropCanvas.height;
+  cropCtx.clearRect(0,0,cw,ch);
+  cropCtx.drawImage(cropImage,g.x,g.y,g.dw,g.dh);
+  cropCtx.save();cropCtx.strokeStyle="rgba(255,255,255,.6)";cropCtx.lineWidth=1;
+  for(let i=1;i<3;i++){
+    cropCtx.beginPath();cropCtx.moveTo(cw*i/3,0);cropCtx.lineTo(cw*i/3,ch);cropCtx.stroke();
+    cropCtx.beginPath();cropCtx.moveTo(0,ch*i/3);cropCtx.lineTo(cw,ch*i/3);cropCtx.stroke();
+  }
+  cropCtx.restore();
+}
+$("crop-ratio").addEventListener("change",updateCropRatio);
+$("crop-zoom").addEventListener("input",()=>{cropZoom=Number($("crop-zoom").value);$("zoom-value").textContent=Math.round(cropZoom*100)+"%";drawCrop();});
+$("crop-reset").addEventListener("click",()=>{cropZoom=1;cropX=0;cropY=0;$("crop-zoom").value="1";$("zoom-value").textContent="100%";drawCrop();});
+cropCanvas.addEventListener("pointerdown",e=>{if(!cropImage)return;dragging=true;pointerX=e.clientX;pointerY=e.clientY;cropCanvas.setPointerCapture(e.pointerId);});
+cropCanvas.addEventListener("pointermove",e=>{if(!dragging||!cropImage)return;const rect=cropCanvas.getBoundingClientRect();cropX+=(e.clientX-pointerX)*cropCanvas.width/rect.width;cropY+=(e.clientY-pointerY)*cropCanvas.height/rect.height;pointerX=e.clientX;pointerY=e.clientY;drawCrop();});
+for(const name of ["pointerup","pointercancel","lostpointercapture"])cropCanvas.addEventListener(name,()=>{dragging=false;});
+function closeCropEditor(){if(uploading)return;if(cropImage){cropImage.close();cropImage=null;}if(cropTarget?.uploadInput)cropTarget.uploadInput.value="";cropTarget=null;$("crop-modal").hidden=true;document.body.classList.remove("modal-open");}
+$("crop-cancel").addEventListener("click",closeCropEditor);
+function cropToWebP(){
+  if(!cropImage)throw Error("Nenhuma imagem selecionada.");
+  const g=geometry(),cw=cropCanvas.width,ch=cropCanvas.height;
+  const sx=Math.max(0,-g.x*cropImage.width/g.dw),sy=Math.max(0,-g.y*cropImage.height/g.dh);
+  const sw=Math.min(cropImage.width-sx,cw*cropImage.width/g.dw),sh=Math.min(cropImage.height-sy,ch*cropImage.height/g.dh);
+  const ratio=cw/ch,canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+  for(const factor of [1,.8,.65,.5]){
+    if(ratio>=1){canvas.width=Math.round(1600*factor);canvas.height=Math.round(canvas.width/ratio);}
+    else{canvas.height=Math.round(1600*factor);canvas.width=Math.round(canvas.height*ratio);}
+    ctx.drawImage(cropImage,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+    for(const quality of [.82,.7,.55,.4]){
+      const data=canvas.toDataURL("image/webp",quality);
+      if(!data.startsWith("data:image/webp;base64,"))throw Error("Falha ao converter para WebP.");
+      if(Math.ceil(data.split(",")[1].length*.75)<=700*1024)return data;
+    }
+  }
+  throw Error("Imagem muito grande após o recorte. Tente reduzir o zoom ou escolher outra foto.");
+}
+$("crop-confirm").addEventListener("click",async()=>{
+  if(!cropTarget||uploading||busy)return;
+  const target=cropTarget;
+  uploading=true;$("crop-confirm").disabled=true;$("crop-cancel").disabled=true;
+  try{
+    $("crop-status").textContent="Preparando imagem...";
+    const imagem=cropToWebP();
+    $("crop-status").textContent="Enviando imagem ao servidor...";
+    const result=await api("/api/admin-operacoes",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({acao:"produto_imagem_upload",tipo:"image/webp",imagem_base64:imagem.split(",")[1]})
+    });
+    if(!result.ok||!/^https:\/\/\S+$/i.test(result.imagem_url||""))throw Error("O servidor não confirmou o envio.");
+    content[target.key]=result.imagem_url;
+    target.urlInput.value=result.imagem_url;
+    target.preview(result.imagem_url);
+    target.uploadState.textContent="Foto enviada! Clique em Salvar alterações.";
+    message("Foto enviada. Clique em Salvar alterações para publicar.","success");
+    uploading=false;closeCropEditor();
+  }catch(error){
+    $("crop-status").textContent="Erro no envio: "+error.message;
+    target.uploadState.textContent="Erro: "+error.message;
+    message("Erro no envio: "+error.message,"error");
+  }finally{uploading=false;$("crop-confirm").disabled=false;$("crop-cancel").disabled=false;}
+});
 
 function renderTabs() {
   const tabs = $("tabs");
@@ -541,6 +669,7 @@ function renderTabs() {
     button.setAttribute("aria-pressed", String(page.id === activePage));
 
     button.addEventListener("click", () => {
+      if (busy || uploading) return;
       rememberInputs();
       activePage = page.id;
       render();
