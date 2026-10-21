@@ -2,6 +2,119 @@
 const BASE = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
 const KEY = process.env.SUPABASE_SECRET_KEY;
 
+const SITE_KEY = "site_editor_v1";
+
+const SITE_DEFAULTS = {
+  hero_titulo: "Presentes com personalidade.",
+  hero_subtitulo: "Coleções criativas e personalizados para deixar sua marca.",
+  hero_imagem: "",
+  hero_botao_texto: "Conheça as coleções",
+  hero_botao_link: "/#colecoes",
+
+  seo_titulo: "Mimbox | Copos personalizados, brindes e coleções criativas",
+  seo_descricao: "Copos personalizados, brindes empresariais e coleções criativas. Conheça a Mimbox e peça seu orçamento.",
+  whatsapp: "",
+  instagram: "",
+  aviso: "",
+
+  inicio_personalizados_imagem: "",
+  inicio_loja_imagem: "",
+  inicio_negocios_imagem: "",
+
+  personalizados_titulo: "",
+  personalizados_subtitulo: "",
+  personalizados_banner_imagem: "",
+  personalizados_copos_imagem: "",
+  personalizados_pratos_imagem: "",
+  personalizados_brindes_imagem: "",
+
+  loja_titulo: "",
+  loja_subtitulo: "",
+  loja_banner_imagem: "",
+  loja_botao_texto: "",
+  loja_botao_link: "",
+  loja_colecoes_imagem: "",
+  loja_destaque_imagem: "",
+
+  negocios_titulo: "",
+  negocios_subtitulo: "",
+  negocios_banner_imagem: "",
+  negocios_brindes_imagem: "",
+  negocios_personalizados_imagem: "",
+  negocios_botao_texto: "",
+  negocios_botao_link: "",
+
+  sobre_titulo: "",
+  sobre_texto: "",
+  sobre_banner_imagem: "",
+  sobre_ana_imagem: "",
+  sobre_rafa_imagem: "",
+
+  blog_titulo: "",
+  blog_subtitulo: "",
+  blog_banner_imagem: ""
+};
+
+const SITE_LIMITS = {
+  hero_titulo: 100,
+  hero_subtitulo: 240,
+  hero_imagem: 2048,
+  hero_botao_texto: 55,
+  hero_botao_link: 500,
+
+  seo_titulo: 70,
+  seo_descricao: 180,
+  whatsapp: 25,
+  instagram: 200,
+  aviso: 240,
+
+  inicio_personalizados_imagem: 2048,
+  inicio_loja_imagem: 2048,
+  inicio_negocios_imagem: 2048,
+
+  personalizados_titulo: 100,
+  personalizados_subtitulo: 500,
+  personalizados_banner_imagem: 2048,
+  personalizados_copos_imagem: 2048,
+  personalizados_pratos_imagem: 2048,
+  personalizados_brindes_imagem: 2048,
+
+  loja_titulo: 100,
+  loja_subtitulo: 500,
+  loja_banner_imagem: 2048,
+  loja_botao_texto: 55,
+  loja_botao_link: 500,
+  loja_colecoes_imagem: 2048,
+  loja_destaque_imagem: 2048,
+
+  negocios_titulo: 100,
+  negocios_subtitulo: 500,
+  negocios_banner_imagem: 2048,
+  negocios_brindes_imagem: 2048,
+  negocios_personalizados_imagem: 2048,
+  negocios_botao_texto: 55,
+  negocios_botao_link: 500,
+
+  sobre_titulo: 100,
+  sobre_texto: 5000,
+  sobre_banner_imagem: 2048,
+  sobre_ana_imagem: 2048,
+  sobre_rafa_imagem: 2048,
+
+  blog_titulo: 100,
+  blog_subtitulo: 500,
+  blog_banner_imagem: 2048
+};
+
+const deliveryStatuses = [
+  "aguardando",
+  "em_preparacao",
+  "pronto_retirada",
+  "enviado",
+  "entregue",
+  "cancelado"
+];
+
 const headers = () => ({
   apikey: KEY,
   Authorization: `Bearer ${KEY}`,
@@ -14,17 +127,23 @@ const str = (value, max = 500) =>
   String(value ?? "").trim().slice(0, max);
 
 async function db(table, method = "GET", query = "", body) {
-  const response = await fetch(`${BASE}/rest/v1/${table}${query}`, {
-    method,
-    headers: {
-      ...headers(),
-      Prefer:
-        method === "POST" && table === "configuracoes_loja"
-          ? "return=representation,resolution=merge-duplicates"
-          : "return=representation"
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) })
-  });
+  const response = await fetch(
+    `${BASE}/rest/v1/${table}${query}`,
+    {
+      method,
+      headers: {
+        ...headers(),
+        Prefer:
+          method === "POST" &&
+          table === "configuracoes_loja"
+            ? "return=representation,resolution=merge-duplicates"
+            : "return=representation"
+      },
+      ...(body === undefined
+        ? {}
+        : { body: JSON.stringify(body) })
+    }
+  );
 
   const raw = await response.text();
   let data;
@@ -37,7 +156,7 @@ async function db(table, method = "GET", query = "", body) {
 
   if (!response.ok) {
     throw new Error(
-      typeof data === "object"
+      data && typeof data === "object"
         ? data.message || data.details || "Erro no banco"
         : String(data)
     );
@@ -49,25 +168,33 @@ async function db(table, method = "GET", query = "", body) {
 async function authorized(req) {
   const cookie = (req.headers.cookie || "")
     .split(";")
-    .map(x => x.trim())
-    .find(x => x.startsWith("mimbox_admin_session="));
+    .map(value => value.trim())
+    .find(value =>
+      value.startsWith("mimbox_admin_session=")
+    );
 
   const token = cookie
-    ? decodeURIComponent(cookie.slice("mimbox_admin_session=".length))
+    ? decodeURIComponent(
+        cookie.slice("mimbox_admin_session=".length)
+      )
     : "";
 
   if (!token) return false;
 
-  const response = await fetch(`${BASE}/auth/v1/user`, {
-    headers: {
-      apikey: KEY,
-      Authorization: `Bearer ${token}`
+  const response = await fetch(
+    `${BASE}/auth/v1/user`,
+    {
+      headers: {
+        apikey: KEY,
+        Authorization: `Bearer ${token}`
+      }
     }
-  });
+  );
 
   if (!response.ok) return false;
 
   const user = await response.json();
+
   if (!user?.id) return false;
 
   const admins = await db(
@@ -79,91 +206,94 @@ async function authorized(req) {
   return Array.isArray(admins) && admins.length > 0;
 }
 
-// ==================================================
-// EDITOR DO SITE
-// ==================================================
-
-const SITE_KEY = "site_editor_v1";
-
-const SITE_DEFAULTS = {
-  hero_titulo: "Presentes com personalidade.",
-  hero_subtitulo:
-    "Coleções criativas e personalizados para deixar sua marca.",
-  hero_imagem: "",
-  hero_botao_texto: "Conheça as coleções",
-  hero_botao_link: "/#colecoes",
-  seo_titulo:
-    "Mimbox | Copos personalizados, brindes e coleções criativas",
-  seo_descricao:
-    "Copos personalizados, brindes empresariais e coleções criativas. Conheça a Mimbox e peça seu orçamento.",
-  whatsapp: "",
-  instagram: "",
-  aviso: ""
-};
-
-const SITE_LIMITS = {
-  hero_titulo: 100,
-  hero_subtitulo: 240,
-  hero_imagem: 2048,
-  hero_botao_texto: 55,
-  hero_botao_link: 500,
-  seo_titulo: 70,
-  seo_descricao: 180,
-  whatsapp: 25,
-  instagram: 200,
-  aviso: 240
-};
-
 function validarConteudoSite(input) {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input)
+  ) {
     throw new Error("Conteúdo inválido");
   }
 
   const output = {};
 
   for (const [campo, limite] of Object.entries(SITE_LIMITS)) {
+    const valor = input[campo];
+
+    if (valor !== undefined && typeof valor !== "string") {
+      throw new Error("Campo inválido: " + campo);
+    }
+
     output[campo] = String(
-      input[campo] ?? SITE_DEFAULTS[campo]
+      valor ?? SITE_DEFAULTS[campo] ?? ""
     ).trim().slice(0, limite);
   }
 
-  for (const campo of ["hero_imagem", "instagram"]) {
+  for (const [campo, valor] of Object.entries(output)) {
     if (
-      output[campo] &&
-      !/^https:\/\/[^\s]+$/i.test(output[campo])
+      campo.endsWith("_imagem") &&
+      valor &&
+      !/^https:\/\/[^\s]+$/i.test(valor)
     ) {
-      throw new Error(`${campo}: use uma URL HTTPS`);
+      throw new Error(
+        "A imagem do campo " +
+        campo +
+        " precisa ter uma URL HTTPS"
+      );
     }
   }
 
   if (
-    output.hero_botao_link &&
-    !/^(https:\/\/[^\s]+|\/(?!\/)[^\s]*|#[^\s]*)$/i.test(
-      output.hero_botao_link
-    )
+    output.instagram &&
+    !/^https:\/\/[^\s]+$/i.test(output.instagram)
   ) {
-    throw new Error("Link do botão inválido");
+    throw new Error("Instagram: informe uma URL HTTPS");
+  }
+
+  if (
+    output.whatsapp &&
+    !/^\d{10,15}$/.test(output.whatsapp)
+  ) {
+    throw new Error("WhatsApp inválido");
+  }
+
+  for (const campo of [
+    "hero_botao_link",
+    "loja_botao_link",
+    "negocios_botao_link"
+  ]) {
+    const valor = output[campo];
+
+    if (
+      valor &&
+      !/^(https:\/\/[^\s]+|\/(?!\/)[^\s]*|#[^\s]*)$/i.test(valor)
+    ) {
+      throw new Error("Link inválido: " + campo);
+    }
   }
 
   return output;
 }
 
-// ==================================================
-// STATUS DE ENTREGA
-// ==================================================
+async function lerConteudoSite() {
+  const rows = await db(
+    "configuracoes_loja",
+    "GET",
+    `?chave=eq.${SITE_KEY}&select=valor&limit=1`
+  );
 
-const deliveryStatuses = [
-  "aguardando",
-  "em_preparacao",
-  "pronto_retirada",
-  "enviado",
-  "entregue",
-  "cancelado"
-];
+  const salvo = rows[0]?.valor || {};
+  const conteudo = {};
 
-// ==================================================
-// API PRINCIPAL
-// ==================================================
+  for (const campo of Object.keys(SITE_DEFAULTS)) {
+    conteudo[campo] =
+      typeof salvo[campo] === "string"
+        ? salvo[campo]
+        : SITE_DEFAULTS[campo];
+  }
+
+  return conteudo;
+}
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -181,33 +311,12 @@ export default async function handler(req, res) {
   }
 
   try {
-
-    // ==============================================
-    // CONTEÚDO PÚBLICO DO SITE
-    // Não exige login.
-    // Não disponibiliza pedidos, clientes ou chaves.
-    // ==============================================
-
+    // Conteúdo público: não exige login.
     if (
       req.method === "GET" &&
       req.query.action === "site_publico"
     ) {
-      const rows = await db(
-        "configuracoes_loja",
-        "GET",
-        `?chave=eq.${SITE_KEY}&select=valor&limit=1`
-      );
-
-      const salvo = rows[0]?.valor;
-      const conteudo = {};
-
-      // Retorna somente campos permitidos.
-      for (const campo of Object.keys(SITE_DEFAULTS)) {
-        conteudo[campo] =
-          typeof salvo?.[campo] === "string"
-            ? salvo[campo]
-            : SITE_DEFAULTS[campo];
-      }
+      const conteudo = await lerConteudoSite();
 
       res.setHeader(
         "Cache-Control",
@@ -220,11 +329,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
-    // PROTEÇÃO ADMINISTRATIVA
-    // Todas as outras ações exigem login.
-    // ==============================================
-
+    // Todas as demais ações exigem login.
     if (!(await authorized(req))) {
       return json(res, 401, {
         erro: "Acesso administrativo não autorizado"
@@ -236,33 +341,48 @@ export default async function handler(req, res) {
         ? req.query.action
         : req.body?.action;
 
-    // ==============================================
-    // GERENCIAMENTO DE CONTEÚDO DO SITE
-    // ==============================================
+    // ==========================================
+    // GERENCIAR CONTEÚDO DO SITE
+    // ==========================================
 
     if (action === "site_conteudo") {
       if (req.method === "GET") {
-        const rows = await db(
-          "configuracoes_loja",
-          "GET",
-          `?chave=eq.${SITE_KEY}&select=valor&limit=1`
-        );
-
         return json(res, 200, {
           ok: true,
-          conteudo: {
-            ...SITE_DEFAULTS,
-            ...(rows[0]?.valor || {})
-          }
+          conteudo: await lerConteudoSite()
         });
       }
+
+      if (req.method !== "POST") {
+        return json(res, 405, {
+          erro: "Método não permitido"
+        });
+      }
+
+      const input = req.body?.conteudo;
+
+      if (
+        !input ||
+        typeof input !== "object" ||
+        Array.isArray(input)
+      ) {
+        return json(res, 400, {
+          erro: "Conteúdo inválido"
+        });
+      }
+
+      // Mescla o conteúdo novo com o já salvo.
+      // Isso impede que o editor antigo apague
+      // os campos novos que não envia.
+      const anterior = await lerConteudoSite();
 
       let conteudo;
 
       try {
-        conteudo = validarConteudoSite(
-          req.body?.conteudo
-        );
+        conteudo = validarConteudoSite({
+          ...anterior,
+          ...input
+        });
       } catch (erro) {
         return json(res, 400, {
           erro: erro.message
@@ -285,9 +405,9 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // DASHBOARD
-    // ==============================================
+    // ==========================================
 
     if (action === "overview") {
       const [
@@ -326,39 +446,21 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // CONFIGURAÇÕES DA LOJA
-    // ==============================================
+    // ==========================================
 
     if (action === "config") {
       const c = req.body?.config || {};
 
       const config = {
         retirada_ativa: !!c.retirada_ativa,
-        retirada_local: str(
-          c.retirada_local,
-          250
-        ),
-        retirada_horarios: str(
-          c.retirada_horarios,
-          300
-        ),
-        retirada_instrucoes: str(
-          c.retirada_instrucoes,
-          800
-        ),
-        loja_aviso: str(
-          c.loja_aviso,
-          300
-        ),
-        whatsapp: str(
-          c.whatsapp,
-          25
-        ),
-        instagram: str(
-          c.instagram,
-          200
-        )
+        retirada_local: str(c.retirada_local, 250),
+        retirada_horarios: str(c.retirada_horarios, 300),
+        retirada_instrucoes: str(c.retirada_instrucoes, 800),
+        loja_aviso: str(c.loja_aviso, 300),
+        whatsapp: str(c.whatsapp, 25),
+        instagram: str(c.instagram, 200)
       };
 
       await db(
@@ -377,16 +479,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // ALTERAR STATUS DO PEDIDO
-    // ==============================================
+    // ==========================================
 
     if (action === "pedido_status") {
-      const id = str(
-        req.body?.id,
-        100
-      );
-
+      const id = str(req.body?.id, 100);
       const status = str(
         req.body?.status_entrega,
         50
@@ -422,20 +520,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // OBSERVAÇÕES DO PEDIDO
-    // ==============================================
+    // ==========================================
 
     if (action === "pedido_nota") {
-      const id = str(
-        req.body?.id,
-        100
-      );
-
-      const nota = str(
-        req.body?.nota,
-        1000
-      );
+      const id = str(req.body?.id, 100);
+      const nota = str(req.body?.nota, 1000);
 
       if (!id) {
         return json(res, 400, {
@@ -463,18 +554,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // ATUALIZAR PRODUTO
-    // ==============================================
+    // ==========================================
 
     if (action === "produto") {
       const p = req.body?.produto || {};
-
-      const id = str(
-        p.id,
-        100
-      );
-
+      const id = str(p.id, 100);
       const preco = Number(p.preco);
 
       if (!id) {
@@ -494,23 +580,11 @@ export default async function handler(req, res) {
       }
 
       const data = {
-        nome: str(
-          p.nome,
-          150
-        ),
-        colecao: str(
-          p.colecao,
-          100
-        ),
+        nome: str(p.nome, 150),
+        colecao: str(p.colecao, 100),
         preco,
-        descricao: str(
-          p.descricao,
-          2000
-        ),
-        imagem_url: str(
-          p.imagem_url,
-          2048
-        ),
+        descricao: str(p.descricao, 2000),
+        imagem_url: str(p.imagem_url, 2048),
         disponivel: !!p.disponivel,
         destaque: !!p.destaque
       };
@@ -533,28 +607,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // CRIAR PEDIDO MANUAL
-    // ==============================================
+    // ==========================================
 
     if (action === "pedido_manual") {
       const c = req.body?.cliente || {};
       const p = req.body?.pedido || {};
 
-      const nome = str(
-        c.nome,
-        150
-      );
-
-      const email = str(
-        c.email,
-        254
-      ).toLowerCase();
-
-      const telefone = str(
-        c.telefone,
-        30
-      );
+      const nome = str(c.nome, 150);
+      const email = str(c.email, 254).toLowerCase();
+      const telefone = str(c.telefone, 30);
 
       if (
         nome.length < 2 ||
@@ -565,9 +628,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const valor = Number(
-        p.valor_total
-      );
+      const valor = Number(p.valor_total);
 
       if (
         !Number.isFinite(valor) ||
@@ -621,10 +682,7 @@ export default async function handler(req, res) {
         status_entrega: "aguardando",
         itens: [
           {
-            descricao: str(
-              p.descricao,
-              200
-            ),
+            descricao: str(p.descricao, 200),
             quantidade: Math.max(
               1,
               Math.min(
@@ -649,19 +707,16 @@ export default async function handler(req, res) {
       });
     }
 
-    // ==============================================
+    // ==========================================
     // AÇÃO NÃO RECONHECIDA
-    // ==============================================
+    // ==========================================
 
     return json(res, 400, {
       erro: "Ação desconhecida"
     });
 
   } catch (erro) {
-    console.error(
-      "admin-gerenciar",
-      erro
-    );
+    console.error("admin-gerenciar", erro);
 
     return json(res, 500, {
       erro: erro.message || "Erro no servidor"
