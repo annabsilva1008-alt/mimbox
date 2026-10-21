@@ -16,13 +16,16 @@
   --ink: #211B1B;
   --white: #FFFDF8;
 }
+
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   background: var(--cream);
   color: var(--ink);
   font-family: Arial, sans-serif;
 }
+
 header {
   background: var(--ink);
   color: white;
@@ -32,26 +35,32 @@ header {
   justify-content: space-between;
   gap: 12px;
 }
+
 .brand {
   font-size: 30px;
   font-weight: 900;
   color: var(--yellow);
 }
+
 header a {
   color: white;
   text-decoration: none;
   font-weight: bold;
 }
+
 main {
   max-width: 1150px;
   margin: 30px auto;
   padding: 0 18px 60px;
 }
+
 h1 { margin-bottom: 8px; }
+
 .intro {
   color: #595148;
   line-height: 1.5;
 }
+
 #status {
   padding: 14px;
   background: white;
@@ -60,15 +69,19 @@ h1 { margin-bottom: 8px; }
   margin: 20px 0;
   white-space: pre-wrap;
 }
+
 #status.error { border-color: var(--red); }
 #status.success { border-color: #27824C; }
+
 [hidden] { display: none !important; }
+
 .tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 24px;
 }
+
 .tab {
   background: white;
   border: 2px solid var(--ink);
@@ -77,10 +90,12 @@ h1 { margin-bottom: 8px; }
   font-weight: bold;
   cursor: pointer;
 }
+
 .tab.active {
   background: var(--blue);
   color: white;
 }
+
 .page-title {
   background: var(--yellow);
   border: 2px solid var(--ink);
@@ -88,8 +103,10 @@ h1 { margin-bottom: 8px; }
   padding: 20px;
   margin-bottom: 20px;
 }
+
 .page-title h2 { margin: 0 0 6px; }
 .page-title p { margin: 0; }
+
 .panel {
   background: var(--white);
   border: 2px solid var(--ink);
@@ -98,13 +115,17 @@ h1 { margin-bottom: 8px; }
   margin-bottom: 20px;
   box-shadow: 4px 4px 0 var(--ink);
 }
+
 .panel h3 { margin-top: 0; }
+
 .field { margin-bottom: 20px; }
+
 label {
   display: block;
   font-weight: bold;
   margin-bottom: 8px;
 }
+
 input, textarea {
   width: 100%;
   padding: 12px;
@@ -113,10 +134,12 @@ input, textarea {
   background: white;
   font: inherit;
 }
+
 textarea {
   min-height: 110px;
   resize: vertical;
 }
+
 .image-field {
   display: grid;
   grid-template-columns: 180px 1fr;
@@ -126,6 +149,7 @@ textarea {
   border-radius: 10px;
   background: #FAF7EF;
 }
+
 .image-preview {
   width: 180px;
   height: 160px;
@@ -133,6 +157,7 @@ textarea {
   border-radius: 8px;
   background: #EAE5DB;
 }
+
 .image-placeholder {
   width: 180px;
   height: 160px;
@@ -144,17 +169,35 @@ textarea {
   text-align: center;
   padding: 12px;
 }
+
 .help {
   font-size: 13px;
   color: #655B51;
   line-height: 1.5;
 }
+
+.upload-control {
+  margin: 12px 0;
+}
+
+.upload-control input {
+  padding: 10px;
+  background: white;
+}
+
+.upload-state {
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: bold;
+}
+
 .actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 24px;
 }
+
 button.action {
   border: 2px solid var(--ink);
   background: var(--yellow);
@@ -163,14 +206,29 @@ button.action {
   font-weight: 800;
   cursor: pointer;
 }
+
 button.secondary { background: white; }
-button:disabled {
+
+button:disabled,
+input:disabled {
   opacity: .55;
   cursor: wait;
 }
+
 @media(max-width:650px) {
-  .image-field { grid-template-columns: 1fr; }
-  .tab { flex: 1 1 140px; }
+  .image-field {
+    grid-template-columns: 1fr;
+  }
+
+  .tab {
+    flex: 1 1 140px;
+  }
+
+  .image-preview,
+  .image-placeholder {
+    width: 100%;
+    max-width: 300px;
+  }
 }
 </style>
 </head>
@@ -183,9 +241,10 @@ button:disabled {
 
 <main>
   <h1>Gerenciar Site</h1>
+
   <p class="intro">
     Escolha a página e edite suas imagens, textos e botões.
-    As alterações são salvas no Supabase.
+    As imagens são otimizadas e enviadas ao Supabase.
   </p>
 
   <div id="status" role="status" aria-live="polite">
@@ -204,7 +263,12 @@ button:disabled {
         <button class="action" id="save" type="submit">
           Salvar alterações
         </button>
-        <button class="action secondary" id="reload" type="button">
+
+        <button
+          class="action secondary"
+          id="reload"
+          type="button"
+        >
           Recarregar
         </button>
       </div>
@@ -216,6 +280,9 @@ button:disabled {
 "use strict";
 
 const $ = id => document.getElementById(id);
+
+const API_URL = "/api/admin-gerenciar";
+const MAX_IMAGE_BYTES = 700 * 1024;
 
 const PAGES = [
   {
@@ -367,6 +434,7 @@ let content = {};
 let lastSaved = "";
 let activePage = "inicio";
 let busy = false;
+let uploading = false;
 
 function message(text, type = "") {
   $("status").textContent = text;
@@ -385,7 +453,9 @@ async function api(url, options = {}) {
   try {
     data = await response.json();
   } catch {
-    throw Error("Resposta inválida do servidor.");
+    throw Error(
+      "Resposta inválida do servidor. Verifique a publicação."
+    );
   }
 
   if (!response.ok) {
@@ -429,6 +499,24 @@ function rememberInputs() {
   });
 }
 
+function setBusy(value) {
+  busy = value;
+  updateControls();
+}
+
+function updateControls() {
+  $("save").disabled = busy || uploading;
+  $("reload").disabled = busy || uploading;
+
+  document.querySelectorAll(".tab").forEach(button => {
+    button.disabled = busy || uploading;
+  });
+
+  document.querySelectorAll("[data-upload]").forEach(input => {
+    input.disabled = busy || uploading;
+  });
+}
+
 function makeTextField(key, label, type) {
   const wrapper = document.createElement("div");
   wrapper.className = "field";
@@ -455,6 +543,106 @@ function makeTextField(key, label, type) {
 
   wrapper.append(fieldLabel, input);
   return wrapper;
+}
+
+async function compressImage(file) {
+  if (
+    !["image/jpeg", "image/png", "image/webp"].includes(file.type)
+  ) {
+    throw Error(
+      "Use uma imagem JPG, PNG ou WebP."
+    );
+  }
+
+  if (file.size > 20 * 1024 * 1024) {
+    throw Error(
+      "A imagem original não pode ultrapassar 20 MB."
+    );
+  }
+
+  if (!window.createImageBitmap) {
+    throw Error(
+      "Seu navegador não suporta o processamento de imagens."
+    );
+  }
+
+  const bitmap = await createImageBitmap(file);
+
+  try {
+    if (!bitmap.width || !bitmap.height) {
+      throw Error("Imagem sem dimensões válidas.");
+    }
+
+    const maxDimension = 1600;
+
+    const initialScale = Math.min(
+      1,
+      maxDimension / Math.max(bitmap.width, bitmap.height)
+    );
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw Error("Não foi possível processar a imagem.");
+    }
+
+    for (const scaleFactor of [1, 0.85, 0.7, 0.55]) {
+      const scale = initialScale * scaleFactor;
+
+      canvas.width = Math.max(
+        1,
+        Math.round(bitmap.width * scale)
+      );
+
+      canvas.height = Math.max(
+        1,
+        Math.round(bitmap.height * scale)
+      );
+
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      ctx.drawImage(
+        bitmap,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      for (const quality of [0.82, 0.7, 0.55, 0.4]) {
+        const data = canvas.toDataURL(
+          "image/webp",
+          quality
+        );
+
+        if (!data.startsWith("data:image/webp;base64,")) {
+          throw Error(
+            "Seu navegador não conseguiu gerar WebP."
+          );
+        }
+
+        const base64 = data.split(",")[1];
+        const approximateBytes =
+          Math.ceil(base64.length * 0.75);
+
+        if (approximateBytes <= MAX_IMAGE_BYTES) {
+          return data;
+        }
+      }
+    }
+
+    throw Error(
+      "Não foi possível reduzir a imagem para 700 KB."
+    );
+  } finally {
+    bitmap.close();
+  }
 }
 
 function makeImageField(key, label) {
@@ -484,11 +672,25 @@ function makeImageField(key, label) {
   urlInput.dataset.field = key;
   urlInput.value = content[key] || "";
 
+  const uploadLabel = document.createElement("label");
+  uploadLabel.textContent = "Enviar foto do computador";
+
+  const uploadInput = document.createElement("input");
+  uploadInput.type = "file";
+  uploadInput.accept = "image/jpeg,image/png,image/webp";
+  uploadInput.dataset.upload = key;
+  uploadInput.className = "upload-control";
+
+  const uploadState = document.createElement("p");
+  uploadState.className = "upload-state";
+  uploadState.setAttribute("aria-live", "polite");
+
   const help = document.createElement("p");
   help.className = "help";
   help.textContent =
-    "Cole o endereço HTTPS de uma imagem já hospedada. " +
-    "O upload direto do computador ainda não está disponível.";
+    "Escolha uma imagem JPG, PNG ou WebP. " +
+    "Ela será convertida e comprimida automaticamente. " +
+    "Após o envio, clique em Salvar alterações.";
 
   function updatePreview(url) {
     if (/^https:\/\/\S+$/i.test(url)) {
@@ -505,17 +707,100 @@ function makeImageField(key, label) {
   image.onerror = () => {
     image.hidden = true;
     placeholder.hidden = false;
+    placeholder.textContent =
+      "Não foi possível carregar esta imagem.";
   };
 
   urlInput.addEventListener("input", () => {
     content[key] = urlInput.value;
+    placeholder.textContent = "Sem imagem cadastrada";
     updatePreview(urlInput.value.trim());
+  });
+
+  uploadInput.addEventListener("change", async () => {
+    const file = uploadInput.files?.[0];
+
+    if (!file || uploading || busy) return;
+
+    uploading = true;
+    updateControls();
+
+    uploadState.textContent = "Otimizando imagem...";
+    message("Preparando imagem: " + label);
+
+    try {
+      const imagem = await compressImage(file);
+
+      uploadState.textContent =
+        "Enviando imagem ao Supabase...";
+
+      message("Enviando imagem: " + label);
+
+      const result = await api(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "upload_imagem",
+          campo: key,
+          imagem
+        })
+      });
+
+      if (
+        result.ok !== true ||
+        typeof result.url !== "string" ||
+        !/^https:\/\/\S+$/i.test(result.url)
+      ) {
+        throw Error(
+          "O servidor não confirmou o endereço da imagem."
+        );
+      }
+
+      content[key] = result.url;
+      urlInput.value = result.url;
+
+      placeholder.textContent = "Sem imagem cadastrada";
+      updatePreview(result.url);
+
+      uploadState.textContent =
+        "Imagem enviada. Falta salvar as alterações.";
+
+      message(
+        "Imagem enviada com sucesso! " +
+        "Clique em Salvar alterações para publicar.",
+        "success"
+      );
+    } catch (error) {
+      uploadState.textContent =
+        "Erro: " + error.message;
+
+      message(
+        "Não foi possível enviar a imagem: " +
+        error.message,
+        "error"
+      );
+    } finally {
+      uploading = false;
+      uploadInput.value = "";
+      updateControls();
+    }
   });
 
   updatePreview(urlInput.value.trim());
 
   visual.append(image, placeholder);
-  controls.append(heading, urlInput, help);
+
+  controls.append(
+    heading,
+    urlInput,
+    uploadLabel,
+    uploadInput,
+    uploadState,
+    help
+  );
+
   wrapper.append(visual, controls);
 
   return wrapper;
@@ -527,13 +812,21 @@ function renderTabs() {
 
   for (const page of PAGES) {
     const button = document.createElement("button");
+
     button.type = "button";
     button.className =
       "tab" + (page.id === activePage ? " active" : "");
+
     button.textContent = page.name;
-    button.setAttribute("aria-pressed", String(page.id === activePage));
+
+    button.setAttribute(
+      "aria-pressed",
+      String(page.id === activePage)
+    );
 
     button.addEventListener("click", () => {
+      if (busy || uploading) return;
+
       rememberInputs();
       activePage = page.id;
       render();
@@ -541,6 +834,8 @@ function renderTabs() {
 
     tabs.append(button);
   }
+
+  updateControls();
 }
 
 function render() {
@@ -570,6 +865,7 @@ function render() {
 
     const sectionTitle = document.createElement("h3");
     sectionTitle.textContent = section.name;
+
     panel.append(sectionTitle);
 
     for (const [key, label, type] of section.fields) {
@@ -582,21 +878,19 @@ function render() {
 
     container.append(panel);
   }
-}
 
-function setBusy(value) {
-  busy = value;
-  $("save").disabled = value;
-  $("reload").disabled = value;
+  updateControls();
 }
 
 async function load() {
+  if (uploading) return;
+
   setBusy(true);
   message("Carregando informações do site...");
 
   try {
     const data = await api(
-      "/api/admin-gerenciar?action=site_conteudo"
+      API_URL + "?action=site_conteudo"
     );
 
     if (!data.ok || !data.conteudo) {
@@ -609,7 +903,11 @@ async function load() {
     render();
     $("editor").hidden = false;
 
-    message("Dados carregados. Você já pode editar. Imagens devem ter uma URL HTTPS pública.");
+    message(
+      "Dados carregados. Você pode editar textos " +
+      "e enviar imagens diretamente do computador.",
+      "success"
+    );
   } catch (error) {
     message(
       "Erro ao carregar: " + error.message,
@@ -652,69 +950,79 @@ function validate(data) {
   }
 }
 
-$("site-form").addEventListener("submit", async event => {
-  event.preventDefault();
+$("site-form").addEventListener(
+  "submit",
+  async event => {
+    event.preventDefault();
 
-  if (busy) return;
+    if (busy || uploading) return;
 
-  rememberInputs();
+    rememberInputs();
 
-  const dataToSave = snapshot();
+    const dataToSave = snapshot();
 
-  try {
-    validate(dataToSave);
-  } catch (error) {
-    message(error.message, "error");
-    return;
-  }
+    try {
+      validate(dataToSave);
+    } catch (error) {
+      message(error.message, "error");
+      return;
+    }
 
-  setBusy(true);
-  message("Salvando alterações no Supabase...");
+    setBusy(true);
+    message("Salvando alterações no Supabase...");
 
-  try {
-    const result = await api("/api/admin-gerenciar", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        action: "site_conteudo",
-        conteudo: dataToSave
-      })
-    });
+    try {
+      const result = await api(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "site_conteudo",
+          conteudo: dataToSave
+        })
+      });
 
-    if (!result.ok) {
-      throw Error(
-        "O servidor não confirmou o salvamento."
+      if (!result.ok) {
+        throw Error(
+          "O servidor não confirmou o salvamento."
+        );
+      }
+
+      if (
+        !result.conteudo ||
+        typeof result.conteudo !== "object"
+      ) {
+        throw Error(
+          "O servidor não devolveu o conteúdo salvo."
+        );
+      }
+
+      content = { ...result.conteudo };
+      lastSaved = JSON.stringify(snapshot());
+
+      render();
+
+      message(
+        "Alterações salvas no Supabase. " +
+        "Verifique a página pública para confirmar " +
+        "que a imagem está sendo exibida.",
+        "success"
       );
+    } catch (error) {
+      message(
+        "Erro ao salvar: " + error.message,
+        "error"
+      );
+    } finally {
+      setBusy(false);
     }
-
-    if (!result.conteudo || typeof result.conteudo !== "object") {
-      throw Error("O servidor não devolveu o conteúdo salvo.");
-    }
-
-    content = { ...result.conteudo };
-    lastSaved = JSON.stringify(snapshot());
-
-    render();
-
-    message(
-      "Alterações salvas no Supabase. " +
-      "As páginas públicas precisam estar integradas " +
-      "para exibir os novos conteúdos.",
-      "success"
-    );
-  } catch (error) {
-    message(
-      "Erro ao salvar: " + error.message,
-      "error"
-    );
-  } finally {
-    setBusy(false);
   }
-});
+);
 
 $("reload").addEventListener("click", () => {
+  if (busy || uploading) return;
+
   rememberInputs();
 
   if (
@@ -731,8 +1039,11 @@ window.addEventListener("beforeunload", event => {
   rememberInputs();
 
   if (
-    lastSaved &&
-    JSON.stringify(snapshot()) !== lastSaved
+    uploading ||
+    (
+      lastSaved &&
+      JSON.stringify(snapshot()) !== lastSaved
+    )
   ) {
     event.preventDefault();
     event.returnValue = "";
