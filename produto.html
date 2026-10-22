@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f8d43a">
+<title>Produto | Mimbox</title>
+<meta name="description" content="Conheça seu próximo favorito na Mimbox. Confira fotos, preço e compre online.">
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#211b1b;background:#fffaf0}
+*{box-sizing:border-box}body{margin:0}a{color:inherit}
+header{background:#f8d43a;border-bottom:3px solid #211b1b;padding:18px max(20px,calc((100vw - 1100px)/2));display:flex;justify-content:space-between;align-items:center;gap:20px}
+.logo{font-weight:1000;font-size:28px;text-decoration:none}.back{font-weight:700}
+main{max-width:1100px;margin:32px auto;padding:0 20px}
+.layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:36px;align-items:start}
+.hero{aspect-ratio:1/1;width:100%;object-fit:contain;background:#f0ece4;border:2px solid #211b1b;border-radius:16px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.thumbs button{border:2px solid #211b1b;border-radius:8px;padding:0;cursor:pointer;background:white}
+.thumbs img{width:68px;height:68px;object-fit:cover;display:block;border-radius:6px}
+.kicker{font-size:13px;font-weight:900;letter-spacing:1px;color:#a33424;text-transform:uppercase}
+h1{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:12px 0 20px}
+.price{font-size:32px;font-weight:900;margin:20px 0}
+.description{white-space:pre-line;line-height:1.65;color:#444}
+.buy{background:#e74732;color:white;border:2px solid #211b1b;border-radius:10px;padding:18px 24px;width:100%;font-weight:900;font-size:19px;cursor:pointer;box-shadow:4px 5px 0 #211b1b}
+.buy:disabled{background:#aaa;cursor:not-allowed}
+.note{font-size:14px;line-height:1.5;color:#555}
+#message{padding:20px;border:2px solid #211b1b;border-radius:10px;background:white}
+footer{text-align:center;padding:40px 20px}
+@media(max-width:700px){.layout{grid-template-columns:1fr;gap:20px}main{margin:20px auto}}
+</style>
+</head>
+<body>
+<header><a class="logo" href="/">MIMBOX<span style="color:#e74732">.</span></a><a class="back" href="/loja.html">← Voltar à loja</a></header>
+<main>
+<div id="message" role="status">Carregando produto...</div>
+<section class="layout" id="product" hidden>
+<div><img class="hero" id="hero" alt="Foto do produto"><div class="thumbs" id="thumbs"></div></div>
+<div>
+<div class="kicker" id="collection">Mimbox · Colecionáveis</div>
+<h1 id="name"></h1>
+<div class="price" id="price"></div>
+<p class="description" id="description"></p>
+<button class="buy" id="buy" type="button">Comprar agora →</button>
+<p class="note">Você será direcionado ao carrinho para escolher entrega e pagamento com segurança.</p>
+</div>
+</section>
+</main>
+<footer>Pequenos objetos. Grandes histórias. · Mimbox.br</footer>
+<script>
+(async()=>{
+const params=new URLSearchParams(location.search);
+const id=params.get('id');
+const msg=document.getElementById('message');
+const showError=text=>{msg.textContent=text;msg.hidden=false;document.getElementById('product').hidden=true};
+if(!id||!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id)){showError('Link inválido. Volte à loja e escolha seu produto.');return}
+try{
+const response=await fetch('/api/admin-produtos?publico=1',{cache:'no-store'});
+if(!response.ok)throw Error('Não foi possível carregar o catálogo');
+const result=await response.json();
+const all=Array.isArray(result)?result:Array.isArray(result.produtos)?result.produtos:result.data;
+if(!Array.isArray(all))throw Error('Catálogo indisponível');
+const p=all.find(x=>String(x.id).toLowerCase()===id.toLowerCase());
+if(!p||p.disponivel===false){showError('Produto indisponível no momento. Veja outras opções na loja.');return}
+const amount=Number(p.preco);
+if(!Number.isFinite(amount)||amount<=0)throw Error('Preço indisponível');
+const name=String(p.nome||'').trim();
+if(!name)throw Error('Produto inválido');
+document.title=name+' | Mimbox';
+document.getElementById('name').textContent=name;
+document.getElementById('collection').textContent=p.colecao||'Mimbox · Colecionáveis';
+document.getElementById('price').textContent=amount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+document.getElementById('description').textContent=String(p.descricao||'').replace(/\s*\[\[MIMBOX_CATEGORIA:[^\]\r\n]*\]\]\s*$/i,'').trim();
+const images=[...(Array.isArray(p.imagens)?p.imagens:[]),p.imagem_url].filter(x=>typeof x==='string'&&/^https:\/\//i.test(x));
+const hero=document.getElementById('hero');
+if(images.length){hero.src=images[0];hero.alt='Foto de '+name}else{hero.style.display='none'}
+const thumbs=document.getElementById('thumbs');
+images.forEach((url,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Ver foto '+(i+1));const img=document.createElement('img');img.src=url;img.alt='Miniatura '+(i+1);b.append(img);b.onclick=()=>hero.src=url;thumbs.append(b)});
+document.getElementById('buy').addEventListener('click',()=>{
+let cart=[];
+try{const saved=JSON.parse(localStorage.getItem('mimbox-cart-v1')||'[]');if(Array.isArray(saved))cart=saved.filter(x=>x&&x.kind!=='club')}catch{}
+const found=cart.find(x=>String(x.id)===String(p.id));
+if(found){found.qty=Math.min(20,(Number(found.qty)||0)+1);found.image=images[0]||found.image||''}
+else cart.push({id:String(p.id),name,price:amount,qty:1,kind:'box',duration:'',image:images[0]||''});
+localStorage.setItem('mimbox-cart-v1',JSON.stringify(cart));
+location.href='/loja.html?abrirCarrinho=1';
+});
+msg.hidden=true;document.getElementById('product').hidden=false;
+}catch(e){showError('Não foi possível abrir este produto. Tente novamente pela loja.');console.error(e)}
+})();
+</script>
+</body>
+</html>
