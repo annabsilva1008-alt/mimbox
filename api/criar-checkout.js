@@ -653,7 +653,9 @@ export default async function handler(req, res) {
         ).trim(),
         complement: String(
           address.complement || ""
-        ).trim()
+        ).trim(),
+        // Identificador do servico validado na cotacao do Melhor Envio.
+        melhor_envio_servico_id: String(chosen.id)
       };
 
       const quotedPrice = Number(
