@@ -1203,5 +1203,33 @@ function updateCheckoutFormVisibility() {
   render();
 })();
 </script>
+
+<script id="mimbox-lp-links">
+(() => {
+  const grid=document.querySelector('#boxes .collection-grid');
+  if (!grid) return;
+  function addLinks(){
+    for(const card of grid.querySelectorAll('.product-card[data-crm-produto-id]')){
+      const id=card.dataset.crmProdutoId;
+      if(!/^[0-9a-f-]{36}$/i.test(id) || card.querySelector('.mimbox-product-link'))continue;
+      const title=card.querySelector('.product-info h3');
+      if(!title)continue;
+      const a=document.createElement('a');
+      a.className='mimbox-product-link';
+      a.href='/produto.html?id='+encodeURIComponent(id);
+      a.textContent='Ver detalhes e comprar →';
+      a.style.cssText='display:inline-block;margin:8px 0;font-weight:800;color:#2456a6;text-decoration:underline';
+      title.insertAdjacentElement('afterend',a);
+    }
+  }
+  new MutationObserver(addLinks).observe(grid,{childList:true,subtree:true});
+  addLinks();
+  if(new URLSearchParams(location.search).get('abrirCarrinho')==='1'){
+    const tryOpen=()=>document.getElementById('open-cart')?.click();
+    if(document.readyState==='complete')tryOpen();
+    else window.addEventListener('load',tryOpen,{once:true});
+  }
+})();
+</script>
 </body>
 </html>
