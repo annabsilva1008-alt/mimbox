@@ -23,11 +23,19 @@
     const state = priced(); persist();
     const list = $('cup-cart-items'); list.replaceChildren();
     state.items.forEach(item => {
-      const row = document.createElement('div'); row.className = 'mb-cup-cart-row';
+      const row = document.createElement('div'); row.className = 'mb-cup-cart-row'; row.dataset.productId = item.id;
       const title = document.createElement('strong'); title.textContent = rules.cupTitle(item.cup);
       const detail = document.createElement('span'); detail.textContent = item.qty + ' × ' + money(item.price) + ' = ' + money(item.qty * item.price);
       const qty = document.createElement('input'); qty.type = 'number'; qty.min = '1'; qty.max = String(rules.CUP_LIMIT); qty.value = item.qty; qty.setAttribute('aria-label', 'Quantidade de ' + rules.cupTitle(item.cup));
+      qty.addEventListener('input', () => {
+        const next = Number(qty.value), old = basket.find(i => i.id === item.id);
+        const valid = Number.isSafeInteger(next) && next > 0 && basket.reduce((n,i)=>n+(i.id===item.id?next:i.qty),0) <= rules.CUP_LIMIT;
+        qty.setCustomValidity(valid ? '' : 'Escolha de 1 a 500 copos no total.');
+        if (!valid) return;
+        old.qty = next; invalidateQuote(); persist(); refreshCosts();
+      });
       qty.addEventListener('change', () => {
+        qty.setCustomValidity('');
         const next = Number(qty.value), old = basket.find(i => i.id === item.id);
         if (!Number.isSafeInteger(next) || next < 1 || basket.reduce((n, i) => n + (i.id === item.id ? next : i.qty), 0) > rules.CUP_LIMIT) { qty.value = old.qty; return; }
         old.qty = next; invalidateQuote(); render();
@@ -38,6 +46,11 @@
     });
     $('cup-empty').hidden = state.items.length > 0;
     $('cup-checkout').hidden = !state.items.length;
+    refreshCosts();
+  }
+  function refreshCosts() {
+    const state = priced();
+    for (const row of $('cup-cart-items').children) { const item = state.items.find(i=>i.id===row.dataset.productId); if(item) row.querySelector('span').textContent = item.qty + ' × ' + money(item.price) + ' = ' + money(item.qty * item.price); }
     $('cup-subtotal').textContent = money(state.items.reduce((sum, i) => sum + i.price * i.qty, 0));
     $('cup-discount').textContent = state.count > 50 ? 'Faixa de 51 ou mais copos aplicada a todos os modelos do pedido.' : state.count > 10 ? 'Faixa de 11 a 50 copos aplicada a todos os modelos do pedido.' : 'Os descontos entram automaticamente a partir de 11 copos.';
     $('cup-total').textContent = $('cup-delivery').value === 'pickup' ? 'Retirada sem frete. Total: ' + $('cup-subtotal').textContent : 'Calcule o frete para ver o total com entrega.';
@@ -85,7 +98,7 @@
   });
   $('cup-checkout').addEventListener('submit', async event => {
     event.preventDefault(); const form = $('cup-checkout'), button = $('cup-pay');
-    if (!form.reportValidity() || !basket.length) return;
+    if (!form.reportValidity() || !basket.length || [...$('cup-cart-items').querySelectorAll('input')].some(input=>!input.reportValidity())) return;
     const value = name => form.elements.namedItem(name).value.trim(), digits = value('phone').replace(/\D/g, '');
     if (!/^\d{10,11}$/.test(digits)) { $('cup-checkout-status').textContent = 'Informe o telefone com DDD.'; return; }
     const shipping = value('delivery') === 'shipping', cep = value('cep').replace(/\D/g, '');
