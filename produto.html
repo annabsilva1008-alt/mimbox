@@ -38,7 +38,7 @@ footer{text-align:center;padding:40px 20px}
 <div class="price" id="price"></div>
 <p class="description" id="description"></p>
 <button class="buy" id="buy" type="button">Comprar agora →</button>
-<p class="note">Você será direcionado ao carrinho para escolher entrega e pagamento com segurança.</p><p class="note" id="custom-product-note" hidden>Após pagar na InfinitePay, clique em Continuar para voltar à Mimbox e enviar sua arte pelo WhatsApp com o número do pedido. Envie o arquivo como documento para preservar a qualidade. A produção depende do recebimento e da aprovação da arte.</p>
+<p class="note" id="purchase-note">Você será direcionado ao carrinho para escolher entrega e pagamento com segurança.</p><p class="note" id="custom-product-note" hidden>Após pagar na InfinitePay, clique em Continuar para voltar à Mimbox e enviar sua arte pelo WhatsApp com o número do pedido. Envie o arquivo como documento para preservar a qualidade. A produção depende do recebimento e da aprovação da arte.</p>
 </div>
 </section>
 </main>
@@ -63,13 +63,15 @@ const name=String(p.nome||'').trim();
 if(!name)throw Error('Produto inválido');
 document.title=name+' | Mimbox';
 document.getElementById('name').textContent=name;
-document.getElementById('collection').textContent=p.colecao||'Mimbox · Colecionáveis';
+const cupModel=window.MimboxCups?.cupSpec(p);
+document.getElementById('collection').textContent=cupModel ? 'Copos personalizados · '+window.MimboxCups.cupTitle(cupModel) : p.colecao||'Mimbox · Colecionáveis';
+if(cupModel){document.getElementById('buy').textContent='Escolher quantidade →';document.getElementById('purchase-note').textContent='Escolha a quantidade e veja o desconto na área de Personalizados. Depois, selecione a entrega e pague com segurança.';}
 document.getElementById('custom-product-note').hidden=!/^personalizados(?:\s*[|—·:-]|$)/i.test(String(p.colecao||'').trim());
 document.getElementById('price').textContent=amount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 document.getElementById('description').textContent=String(p.descricao||'').replace(/\s*\[\[MIMBOX_CATEGORIA:[^\]\r\n]*\]\]\s*$/i,'').trim();
 const images=[...(Array.isArray(p.imagens)?p.imagens:[]),p.imagem_url].filter(x=>typeof x==='string'&&/^https:\/\//i.test(x));
 // Metadata also stays connected to new products when these pages run on the original host.
-const productCanonical='https://www.mimbox.com.br/produto.html?id='+encodeURIComponent(p.id);
+const productCanonical='https://www.mimbox.com.br/produto.html?id='+encodeURIComponent(p.id)+(cupModel?'&copos=1':'');
 const productDescription=String(p.descricao||name).replace(/\\n/g,' ').replace(/\[\[MIMBOX_CATEGORIA:[^\]]*\]\]/g,'').trim().slice(0,155);
 document.querySelector('link[rel=canonical]').href=productCanonical;
 document.querySelector('meta[name=description]').content=productDescription;
