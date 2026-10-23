@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script src="/assets/images.js?v=3"></script><meta name="theme-color" content="#f8d43a">
+<script src="/assets/images.js?v=3"></script><script src="/assets/cup-pricing.js?v=1"></script><meta name="theme-color" content="#f8d43a">
 <style>
 :root{font-family:Arial,Helvetica,sans-serif;color:#211b1b;background:#fffaf0}
 *{box-sizing:border-box}body{margin:0}a{color:inherit}
@@ -50,7 +50,7 @@ const msg=document.getElementById('message');
 const showError=text=>{msg.textContent=text;msg.hidden=false;document.getElementById('product').hidden=true};
 if(!id||!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id)){showError('Link inválido. Volte à loja e escolha seu produto.');return}
 try{
-const response=await fetch('/api/admin-produtos?publico=1',{cache:'no-store'});
+const response=await fetch('/api/admin-produtos?publico=1'+(params.get('copos')==='1'?'&personalizados=copos':''),{cache:'no-store'});
 if(!response.ok)throw Error('Não foi possível carregar o catálogo');
 const result=await response.json();
 const all=Array.isArray(result)?result:Array.isArray(result.produtos)?result.produtos:result.data;
@@ -82,6 +82,8 @@ if(images.length){window.mimboxSetImage(hero,images[0],1100);hero.sizes='(max-wi
 const thumbs=document.getElementById('thumbs');
 images.forEach((url,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Ver foto '+(i+1));const img=document.createElement('img');window.mimboxSetImage(img,url,360);img.sizes='68px';img.loading='lazy';img.alt='Miniatura '+(i+1);b.append(img);b.onclick=()=>window.mimboxSetImage(hero,url,1100);thumbs.append(b)});
 document.getElementById('buy').addEventListener('click',()=>{
+const cup=window.MimboxCups?.cupSpec(p);
+if(cup){location.href='/personalizados.html?copo='+encodeURIComponent(cup.key)+'#copos';return;}
 let cart=[];
 try{const saved=JSON.parse(localStorage.getItem('mimbox-cart-v1')||'[]');if(Array.isArray(saved))cart=saved.filter(x=>x&&x.kind!=='club')}catch{}
 const found=cart.find(x=>String(x.id)===String(p.id));

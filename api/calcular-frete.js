@@ -1,3 +1,4 @@
+import {priceCupCart} from '../lib/cup-pricing.mjs';
 
 const ORIGIN_CEP = "04715005";
 
@@ -25,13 +26,29 @@ export default async function handler(req, res) {
       });
     }
 
-    const itemCount = Number(req.body?.itemCount ?? 1);
-    const subtotal = Number(req.body?.subtotal ?? 0);
+    let itemCount = Number(req.body?.itemCount ?? 1);
+    let shippingProducts = null;
+    let subtotal = Number(req.body?.subtotal ?? 0);
+    const supplied = req.body?.items;
+    if (supplied !== undefined) {
+      if (!Array.isArray(supplied) || !supplied.length || supplied.length > 30 || supplied.some(i => !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(i?.id || "")))) return res.status(400).json({error:"Itens inválidos."});
+      const base = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
+      const key = process.env.SUPABASE_SECRET_KEY;
+      if (!base || !key) return res.status(503).json({error:"Catálogo indisponível."});
+      const ids = [...new Set(supplied.map(i => String(i.id)))];
+      const catalog = await fetch(base + "/rest/v1/produtos?select=id,nome,preco,disponivel,colecao&id=in.(" + ids.join(",") + ")", {headers:{apikey:key,Authorization:"Bearer " + key}});
+      if (!catalog.ok) return res.status(503).json({error:"Catálogo indisponível."});
+      let priced;
+      try { priced = priceCupCart(supplied, await catalog.json()); } catch(error) { return res.status(400).json({error:error.message}); }
+      shippingProducts = priced.items.map(i => ({id:i.id,...PACKAGE,quantity:i.quantity,insurance_value:i.price}));
+      itemCount = priced.items.reduce((n,i)=>n+i.quantity,0);
+      subtotal = Math.round(priced.items.reduce((n,i)=>n+i.quantity*i.price,0)*100);
+    }
 
     if (
       !Number.isInteger(itemCount) ||
       itemCount < 1 ||
-      itemCount > 100 ||
+      itemCount > (shippingProducts ? 500 : 100) ||
       !Number.isFinite(subtotal) ||
       subtotal < 0
     ) {
@@ -61,12 +78,10 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           from: { postal_code: ORIGIN_CEP },
           to: { postal_code: cep },
-          package: {
+          ...(shippingProducts ? {products: shippingProducts} : {package: {
             ...PACKAGE,
-            weight: Number(
-              (PACKAGE.weight * itemCount).toFixed(2)
-            )
-          },
+            weight: Number((PACKAGE.weight * itemCount).toFixed(2))
+          }}),
           options: {
             insurance_value: Number(
               (subtotal / 100).toFixed(2)

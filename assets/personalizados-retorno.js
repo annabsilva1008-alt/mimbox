@@ -18,8 +18,10 @@
       if (!response.ok || result.success !== true) throw Error('Pagamento ainda não confirmado');
       const models = Array.isArray(result.personalizados) ? result.personalizados.filter(p => typeof p.descricao === 'string' && Number.isInteger(p.quantidade) && p.quantidade > 0) : [];
       status.textContent = 'Pagamento confirmado!';
+      if (result.copos === true) { try { localStorage.removeItem('mimbox-personalizados-copos-v1'); } catch {} }
       if (!models.length) return;
       status.textContent = 'Pagamento confirmado!';
+      if (result.copos === true) { try { localStorage.removeItem('mimbox-personalizados-copos-v1'); } catch {} }
       section.hidden = false;
       if (window.MimboxContent) await Promise.race([window.MimboxContent.load(), new Promise(resolve => setTimeout(resolve, 1500))]);
       const contact = document.querySelector('[data-cms-contact=whatsapp]')?.href || '';

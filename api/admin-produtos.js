@@ -210,9 +210,11 @@ export default async function handler(req, res) {
       };
     });
 
+    const cup = product => /^Personalizados — Copos — /.test(String(product.colecao || ''));
+    const visible = publico ? (req.query?.personalizados === 'copos' ? catalogo.filter(cup) : catalogo.filter(p => !cup(p))) : catalogo;
     return res.status(200).json({
       sucesso: true,
-      produtos: catalogo
+      produtos: visible
     });
 
   } catch (erro) {

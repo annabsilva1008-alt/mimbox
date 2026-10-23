@@ -1,3 +1,4 @@
+import {cupSpec, cupUnitPrice, CUP_LIMIT} from '../lib/cup-pricing.mjs';
 
 const PRODUCTS = {
   vsf: {
@@ -76,7 +77,7 @@ function digits(value) {
   return String(value ?? "").replace(/\D/g, "");
 }
 
-async function quoteShipping(cep, itemCount, subtotal) {
+async function quoteShipping(cep, itemCount, subtotal, products = null) {
   const token = process.env.MELHOR_ENVIO_TOKEN;
 
   if (!token) {
@@ -102,12 +103,13 @@ async function quoteShipping(cep, itemCount, subtotal) {
         to: {
           postal_code: cep
         },
-        package: {
+        ...(products ? {products: products.map(item => ({
+          id: item.id, ...PACKAGE, quantity: item.quantidade,
+          insurance_value: item.preco_unitario
+        }))} : {package: {
           ...PACKAGE,
-          weight: Number(
-            (PACKAGE.weight * itemCount).toFixed(2)
-          )
-        },
+          weight: Number((PACKAGE.weight * itemCount).toFixed(2))
+        }}),
         options: {
           insurance_value: Number(
             (subtotal / 100).toFixed(2)
@@ -196,7 +198,7 @@ function paymentConfirmation(order) {
   const personalizados = (Array.isArray(order.itens) ? order.itens : [])
     .filter(item => item.personalizado === true)
     .map(item => ({descricao: String(item.descricao || '').slice(0, 120), quantidade: item.quantidade}));
-  return {success: true, message: null, ...(personalizados.length ? {personalizados} : {})};
+  return {success: true, message: null, ...(personalizados.length ? {personalizados} : {}), ...(Array.isArray(order.itens) && order.itens.some(i => i.copo === true) ? {copos: true} : {})};
 }
 
 async function receivePaymentWebhook(req, res) {
@@ -463,6 +465,13 @@ export default async function handler(req, res) {
       crmIds
     );
 
+    const cupCount = items.reduce((sum, item) => {
+      const spec = cupSpec(crmProducts.get(String(item?.id || '').toLowerCase()));
+      const q = Number(item?.qty ?? item?.quantity ?? 1);
+      return sum + (spec && Number.isSafeInteger(q) && q > 0 ? q : 0);
+    }, 0);
+    if (cupCount > CUP_LIMIT) return res.status(400).json({error: 'Escolha até ' + CUP_LIMIT + ' copos por pedido.'});
+
     for (const item of items) {
       if (
         !item ||
@@ -481,10 +490,11 @@ export default async function handler(req, res) {
         item.qty ?? item.quantity ?? 1
       );
 
+      const cup = cupSpec(crmProducts.get(rawId.toLowerCase()));
       if (
         !Number.isInteger(quantity) ||
         quantity < 1 ||
-        quantity > 20
+        quantity > (cup ? CUP_LIMIT : 20)
       ) {
         return res.status(400).json({
           error:
@@ -522,7 +532,8 @@ export default async function handler(req, res) {
         id = crm.id;
 
         product = {
-          price: cents,
+          price: cup ? Math.round(cupUnitPrice(cup, cupCount) * 100) : cents,
+          copo: Boolean(cup),
           personalizado: /^personalizados(?:\s*[|—·:-]|$)/i.test(String(crm.colecao || '').trim()),
           description: String(
             crm.nome
@@ -564,7 +575,8 @@ export default async function handler(req, res) {
         quantidade: quantity,
         preco_unitario: product.price / 100,
         descricao: product.description,
-        ...(product.personalizado ? {personalizado: true} : {})
+        ...(product.personalizado ? {personalizado: true} : {}),
+        ...(product.copo ? {copo: true} : {})
       });
     }
 
@@ -615,7 +627,8 @@ export default async function handler(req, res) {
       const quotes = await quoteShipping(
         cep,
         itemCount,
-        subtotal
+        subtotal,
+        cupCount ? orderItems : null
       );
 
       const chosen = quotes.find(
@@ -658,7 +671,8 @@ export default async function handler(req, res) {
           address.complement || ""
         ).trim(),
         // Identificador do servico validado na cotacao do Melhor Envio.
-        melhor_envio_servico_id: String(chosen.id)
+        melhor_envio_servico_id: String(chosen.id),
+        ...(cupCount ? {melhor_envio_pacotes: Array.isArray(chosen.packages) ? chosen.packages : []} : {})
       };
 
       const quotedPrice = Number(
