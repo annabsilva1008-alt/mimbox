@@ -177,7 +177,7 @@ main{
 .gallery-entry .btn{padding:7px 10px;font-size:12px}
 .gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
 </style>
-<script src="/assets/upload-image.js?v=4"></script></head>
+<script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=2"></script></head>
 <body>
 
 <section id="loading" class="login">
@@ -211,6 +211,7 @@ main{
       <button data-page="pedidos">📦 Pedidos do site</button>
       <button data-page="manual">➕ Pedido manual</button>
       <button data-page="produtos">🛍️ Produtos</button>
+      <button data-page="personalizados">🥤 Personalizados</button>
        <button data-page="colecoes">🗂️ Coleções</button>
        <button data-page="estoque">📋 Estoque</button>
        <button data-page="envios">🚚 Envios</button>
@@ -256,6 +257,7 @@ const titles = {
   pedidos:"Pedidos do site",
   manual:"Cadastrar pedido manual",
   produtos:"Produtos",
+  personalizados:"Personalizados",
   colecoes:"Coleções",
   clubes:"Planos do Mimbox Clube",
   estoque:"Estoque",
@@ -439,7 +441,7 @@ async function checkSession(){
 
     if(data.autenticado===true){
       show("app");
-      openPage("dashboard");
+      openPage(new URLSearchParams(location.search).get("area")==="personalizados" ? "personalizados" : "dashboard");
     }else{
       show("login-screen");
     }
@@ -519,6 +521,7 @@ async function atualizarPedidosAutomaticamente(){
 setInterval(atualizarPedidosAutomaticamente, 8000);
 
 async function openPage(page){
+  if(window.MimboxCupAdmin && !window.MimboxCupAdmin.canLeave($("content")))return;
   paginaAtual = page;
   if(!titles[page])return;
 
@@ -585,6 +588,7 @@ async function openPage(page){
     if(page==="pedidos")orders(area);
     if(page==="manual")manual(area);
     if(page==="produtos")products(area);
+    if(page==="personalizados")window.MimboxCupAdmin.mount(area,{onSaved:produtos=>{state.produtos=produtos}});
     if(page==="colecoes")await collectionsPage(area);
      if(page==="estoque")stock(area);
      if(page==="envios")shipments(area);
@@ -1925,5 +1929,5 @@ function customers(area){
 
 checkSession();
 </script>
-<script src="/assets/personalizados-models.js?v=1"></script><script src="/assets/personalizados-admin.js?v=1"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=1"></script></body>
+<script src="/assets/personalizados-models.js?v=1"></script><script src="/assets/personalizados-admin.js?v=1"></script><script src="/assets/personalizados-cups-crm.js?v=1"></script></body>
 </html>

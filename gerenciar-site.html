@@ -183,7 +183,7 @@ button:disabled {
 body.modal-open {overflow:hidden}
 @media(max-width:650px){.crop-options{grid-template-columns:1fr}}
 </style>
-<script src="/assets/upload-image.js?v=4"></script></head>
+<script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=2"></script></head>
 
 <body>
 <header>
@@ -206,6 +206,8 @@ body.modal-open {overflow:hidden}
     <nav class="tabs" id="tabs"></nav>
 
     <div class="page-title" id="page-title"></div>
+
+    <div id="personalizados-prices" hidden></div>
 
     <form id="site-form">
       <div id="fields"></div>
@@ -397,7 +399,7 @@ const PAGES = [
 
 let content = {};
 let lastSaved = "";
-let activePage = "inicio";
+let activePage = PAGES.some(page => page.id === location.hash.slice(1)) ? location.hash.slice(1) : "inicio";
 let busy = false;
 let uploading = false;
 
@@ -669,6 +671,9 @@ function renderTabs() {
 
 function render() {
   renderTabs();
+  const priceArea = $("personalizados-prices");
+  priceArea.hidden = activePage !== "personalizados";
+  if (activePage === "personalizados") window.MimboxCupAdmin.mount(priceArea,{contentLink:false});
 
   const page = PAGES.find(
     item => item.id === activePage
