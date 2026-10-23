@@ -23,7 +23,7 @@
   }
   async function catalog() {
     const result = await api('/api/admin-operacoes?acao=produtos');
-    if (result.ok !== true || !Array.isArray(result.produtos)) throw Error('Não foi possível carregar os copos.');
+    if (result.ok === false || !Array.isArray(result.produtos)) throw Error('Não foi possível carregar os copos.');
     return result.produtos;
   }
   function same(a, b) { return a && b && tiers.every(([key]) => Number(a[key]) === Number(b[key])); }
