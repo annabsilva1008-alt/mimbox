@@ -1,7 +1,6 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
+<head><meta name="robots" content="noindex,nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mimbox | Administração</title>
@@ -178,7 +177,7 @@ main{
 .gallery-entry .btn{padding:7px 10px;font-size:12px}
 .gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
 </style>
-</head>
+<script src="/assets/upload-image.js?v=4"></script></head>
 <body>
 
 <section id="loading" class="login">
@@ -191,17 +190,12 @@ main{
     <h1>Painel administrativo</h1>
     <form id="login-form">
       <label>E-mail</label>
-      <input id="login-email"
-        type="email" required
-        autocomplete="username">
+      <input id="login-email" type="email" required autocomplete="username">
 
       <label>Senha</label>
-      <input id="login-password"
-        type="password" required
-        autocomplete="current-password">
+      <input id="login-password" type="password" required autocomplete="current-password">
 
-      <button class="btn" type="submit"
-        id="login-button">Entrar</button>
+      <button class="btn" type="submit" id="login-button">Entrar</button>
     </form>
     <p id="login-message"></p>
   </div>
@@ -1175,7 +1169,7 @@ function productPhoto(label, currentUrl = "") {
   file.onchange = () => {
     const f = file.files?.[0];
     if (!f) { show(url.input.value.trim()); return; }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type) || f.size > 2500000 || !f.size) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type) || f.size > MimboxUpload.MAX_FILE_BYTES || !f.size) {
       file.value = "";
       notify("Escolha uma foto JPG, PNG ou WebP de até 2,5 MB.", true);
       show(url.input.value.trim());
@@ -1191,27 +1185,15 @@ function productPhoto(label, currentUrl = "") {
 }
 
 async function uploadProductPhoto(photo) {
-  const file = photo.file.files?.[0];
-  if (!file) return photo.url.value.trim();
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 2500000 || !file.size) {
-    throw Error("Selecione JPG, PNG ou WebP de até 2,5 MB.");
-  }
-  const encoded = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-    reader.onerror = () => reject(Error("Não foi possível ler a foto."));
-    reader.readAsDataURL(file);
-  });
-  const result = await operations("produto_imagem_upload", {
-    tipo: file.type,
-    imagem_base64: encoded
-  });
-  if (!result.ok || !result.imagem_url) throw Error("Falha ao enviar a foto.");
-  photo.url.value = result.imagem_url;
-  photo.file.value = "";
-  return result.imagem_url;
+  const file=photo.file.files?.[0];if(!file)return photo.url.value.trim();
+  let note=photo.wrap.querySelector('.image-optimization-status');if(!note){note=document.createElement('p');note.className='image-optimization-status';note.setAttribute('role','status');photo.wrap.append(note)}
+  note.textContent='Preparando a foto...';
+  const prepared=await MimboxUpload.fromFile(file,{profile:'product'});
+  note.textContent='Foto preparada: '+MimboxUpload.describe(prepared)+'. Enviando...';
+  const result=await operations('produto_imagem_upload',{tipo:prepared.blob.type,imagem_base64:await MimboxUpload.toBase64(prepared.blob)});
+  if(!result.ok||!result.imagem_url)throw Error('Falha ao enviar a foto.');
+  photo.url.value=result.imagem_url;photo.file.value='';note.textContent='Foto enviada: '+MimboxUpload.describe(prepared);return result.imagem_url;
 }
-
 
 // Galeria visual: prévia imediata; upload e persistência ao salvar.
 function productGallery(produto = {}) {
@@ -1317,29 +1299,9 @@ function productGallery(produto = {}) {
   });
 
   async function prepareImage(file) {
-    // Reduz imagens para evitar o limite de corpo da requisição da Vercel.
-    const bitmap = await createImageBitmap(file);
-    try {
-      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw Error("Não foi possível preparar a imagem.");
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      let quality = 0.85;
-      let blob;
-      do {
-        blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
-        quality -= 0.12;
-      } while (blob && blob.size > 2000000 && quality >= 0.35);
-      if (!blob || blob.size > 2500000) throw Error("Imagem muito grande para enviar. Reduza a resolução.");
-      return blob;
-    } finally {
-      bitmap.close();
-    }
+    const prepared=await MimboxUpload.fromFile(file,{profile:'product'});
+    status.textContent='Foto preparada: '+MimboxUpload.describe(prepared);
+    return prepared.blob;
   }
 
   async function uploadPending() {
@@ -1359,7 +1321,7 @@ function productGallery(produto = {}) {
         });
         let result;
         try {
-          result = await operations("produto_imagem_upload", {tipo:"image/jpeg", imagem_base64:encoded});
+          result = await operations("produto_imagem_upload", {tipo:blob.type, imagem_base64:encoded});
         } catch (error) {
           throw Error(`Falha ao enviar "${entry.file.name}": ${error.message}`);
         }

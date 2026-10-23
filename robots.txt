@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin.html
+Disallow: /gerenciar-site.html
+Disallow: /pagamento-retorno.html
+Sitemap: https://www.mimbox.com.br/sitemap.xml

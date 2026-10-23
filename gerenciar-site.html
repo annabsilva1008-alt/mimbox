@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -184,7 +183,7 @@ button:disabled {
 body.modal-open {overflow:hidden}
 @media(max-width:650px){.crop-options{grid-template-columns:1fr}}
 </style>
-</head>
+<script src="/assets/upload-image.js?v=4"></script></head>
 
 <body>
 <header>
@@ -522,7 +521,7 @@ function makeImageField(key, label) {
   uploadState.setAttribute("aria-live", "polite");
   const help = document.createElement("p");
   help.className = "help";
-  help.textContent = "Escolha a foto, ajuste o recorte e confirme o envio. Depois clique em Salvar alterações.";
+  help.textContent = "Escolha a foto no computador e ajuste o recorte. O painel reduz o peso automaticamente antes do envio, preservando a nitidez. Depois clique em Salvar alterações.";
   function preview(url) {
     if (/^https:\/\/\S+$/i.test(url)) {
       image.src = url;
@@ -566,7 +565,7 @@ async function openCropEditor(file,target) {
   const bitmap = await createImageBitmap(file);
   if (cropImage) cropImage.close();
   cropImage = bitmap;
-  cropTarget = target;
+  cropTarget = target; cropTarget.originalBytes=file.size;
   cropZoom = 1; cropX = 0; cropY = 0;
   $("crop-title").textContent = "Ajustar imagem — " + target.label;
   $("crop-ratio").value = defaultRatio(target.key);
@@ -612,23 +611,12 @@ cropCanvas.addEventListener("pointermove",e=>{if(!dragging||!cropImage)return;co
 for(const name of ["pointerup","pointercancel","lostpointercapture"])cropCanvas.addEventListener(name,()=>{dragging=false;});
 function closeCropEditor(){if(uploading)return;if(cropImage){cropImage.close();cropImage=null;}if(cropTarget?.uploadInput)cropTarget.uploadInput.value="";cropTarget=null;$("crop-modal").hidden=true;document.body.classList.remove("modal-open");}
 $("crop-cancel").addEventListener("click",closeCropEditor);
-function cropToWebP(){
-  if(!cropImage)throw Error("Nenhuma imagem selecionada.");
+async function cropToWebP(){
+  if(!cropImage)throw Error('Nenhuma imagem selecionada.');
   const g=geometry(),cw=cropCanvas.width,ch=cropCanvas.height;
-  const sx=Math.max(0,-g.x*cropImage.width/g.dw),sy=Math.max(0,-g.y*cropImage.height/g.dh);
-  const sw=Math.min(cropImage.width-sx,cw*cropImage.width/g.dw),sh=Math.min(cropImage.height-sy,ch*cropImage.height/g.dh);
-  const ratio=cw/ch,canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
-  for(const factor of [1,.8,.65,.5]){
-    if(ratio>=1){canvas.width=Math.round(1600*factor);canvas.height=Math.round(canvas.width/ratio);}
-    else{canvas.height=Math.round(1600*factor);canvas.width=Math.round(canvas.height*ratio);}
-    ctx.drawImage(cropImage,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
-    for(const quality of [.82,.7,.55,.4]){
-      const data=canvas.toDataURL("image/webp",quality);
-      if(!data.startsWith("data:image/webp;base64,"))throw Error("Falha ao converter para WebP.");
-      if(Math.ceil(data.split(",")[1].length*.75)<=700*1024)return data;
-    }
-  }
-  throw Error("Imagem muito grande após o recorte. Tente reduzir o zoom ou escolher outra foto.");
+  const x=Math.max(0,-g.x*cropImage.width/g.dw),y=Math.max(0,-g.y*cropImage.height/g.dh);
+  const width=Math.min(cropImage.width-x,cw*cropImage.width/g.dw),height=Math.min(cropImage.height-y,ch*cropImage.height/g.dh);
+  return MimboxUpload.fromCrop(cropImage,{x,y,width,height},{originalBytes:cropTarget?.originalBytes||0});
 }
 $("crop-confirm").addEventListener("click",async()=>{
   if(!cropTarget||uploading||busy)return;
@@ -636,17 +624,17 @@ $("crop-confirm").addEventListener("click",async()=>{
   uploading=true;$("crop-confirm").disabled=true;$("crop-cancel").disabled=true;
   try{
     $("crop-status").textContent="Preparando imagem...";
-    const imagem=cropToWebP();
-    $("crop-status").textContent="Enviando imagem ao servidor...";
+    const prepared=await cropToWebP(); const imagem=await MimboxUpload.toBase64(prepared.blob);
+    $("crop-status").textContent="Foto preparada: "+MimboxUpload.describe(prepared)+". Enviando...";
     const result=await api("/api/admin-operacoes",{
       method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({acao:"produto_imagem_upload",tipo:"image/webp",imagem_base64:imagem.split(",")[1]})
+      body:JSON.stringify({acao:"produto_imagem_upload",tipo:prepared.blob.type,imagem_base64:imagem})
     });
     if(!result.ok||!/^https:\/\/\S+$/i.test(result.imagem_url||""))throw Error("O servidor não confirmou o envio.");
     content[target.key]=result.imagem_url;
     target.urlInput.value=result.imagem_url;
     target.preview(result.imagem_url);
-    target.uploadState.textContent="Foto enviada! Clique em Salvar alterações.";
+    target.uploadState.textContent="Foto enviada: "+MimboxUpload.describe(prepared)+". Clique em Salvar alterações.";
     message("Foto enviada. Clique em Salvar alterações para publicar.","success");
     uploading=false;closeCropEditor();
   }catch(error){
