@@ -60,7 +60,7 @@ async function findCrmProducts(ids) {
   const unique = [...new Set(ids)];
 
   const query =
-    `produtos?select=id,nome,preco,disponivel` +
+    `produtos?select=id,nome,preco,disponivel,colecao` +
     `&id=in.(${unique.join(",")})`;
 
   const rows = await supabaseRequest(query);
@@ -192,6 +192,13 @@ async function supabaseRequest(path, options = {}) {
 // o limite de funções da Vercel.
 // A transação é conferida na InfinitePay antes
 // de marcar o pedido como pago.
+function paymentConfirmation(order) {
+  const personalizados = (Array.isArray(order.itens) ? order.itens : [])
+    .filter(item => item.personalizado === true)
+    .map(item => ({descricao: String(item.descricao || '').slice(0, 120), quantidade: item.quantidade}));
+  return {success: true, message: null, ...(personalizados.length ? {personalizados} : {})};
+}
+
 async function receivePaymentWebhook(req, res) {
   const fail = (message, status = 400) =>
     res.status(status).json({
@@ -226,7 +233,7 @@ async function receivePaymentWebhook(req, res) {
   try {
     const rows = await supabaseRequest(
       `pedidos?numero_pedido=eq.${encodeURIComponent(orderNsu)}` +
-      `&select=id,numero_pedido,valor_total,status_pagamento,observacoes&limit=1`
+      `&select=id,numero_pedido,valor_total,status_pagamento,observacoes,itens&limit=1`
     );
 
     const order = rows?.[0];
@@ -291,10 +298,7 @@ async function receivePaymentWebhook(req, res) {
       String(order.status_pagamento)
         .toLowerCase() === "pago"
     ) {
-      return res.status(200).json({
-        success: true,
-        message: null
-      });
+      return res.status(200).json(paymentConfirmation(order));
     }
 
     // Guarda o NSU da transação no histórico do pedido.
@@ -339,10 +343,7 @@ async function receivePaymentWebhook(req, res) {
       );
     }
 
-    return res.status(200).json({
-      success: true,
-      message: null
-    });
+    return res.status(200).json(paymentConfirmation(order));
 
   } catch (error) {
     console.error(
@@ -522,6 +523,7 @@ export default async function handler(req, res) {
 
         product = {
           price: cents,
+          personalizado: /^personalizados(?:\s*[|—·:-]|$)/i.test(String(crm.colecao || '').trim()),
           description: String(
             crm.nome
           ).trim().slice(0, 120)
@@ -561,7 +563,8 @@ export default async function handler(req, res) {
         id,
         quantidade: quantity,
         preco_unitario: product.price / 100,
-        descricao: product.description
+        descricao: product.description,
+        ...(product.personalizado ? {personalizado: true} : {})
       });
     }
 
@@ -742,6 +745,7 @@ export default async function handler(req, res) {
                 ? "retirada"
                 : "transportadora",
             itens: orderItems,
+            ...(orderItems.some(item => item.personalizado) ? {observacoes: "Personalizado — aguardando envio da arte após pagamento."} : {}),
             endereco_entrega:
               shippingAddress,
             frete_valor:
