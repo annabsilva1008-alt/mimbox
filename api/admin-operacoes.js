@@ -227,7 +227,7 @@ export default async function handler(req, res) {
         const pedidos = await db(
           "pedidos",
           "GET",
-          "?select=id,numero_pedido,forma_entrega,status_entrega,transportadora,observacoes,clientes(nome)&order=criado_em.desc&limit=200"
+          "?select=id,numero_pedido,forma_entrega,status_entrega,transportadora,observacoes,endereco_entrega,clientes(nome)&order=criado_em.desc&limit=200"
         );
 
         const meta = await db(

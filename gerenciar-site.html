@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Gerenciar Site | Mimbox ADM</title>
+<link rel="stylesheet" href="/assets/admin-ease.css?v=1">
+<script defer src="/assets/admin-ease.js?v=1"></script>
 
 <style>
 :root {
@@ -192,10 +194,9 @@ body.modal-open {overflow:hidden}
 </header>
 
 <main>
-  <h1>Gerenciar Site</h1>
+  <h1>Textos e imagens do site</h1>
   <p class="intro">
-    Escolha a página e edite suas imagens, textos e botões.
-    As alterações são salvas no Supabase.
+    Escolha a página, abra a seção que deseja alterar e salve ao terminar.
   </p>
 
   <div id="status" role="status" aria-live="polite">
@@ -203,6 +204,11 @@ body.modal-open {overflow:hidden}
   </div>
 
   <div id="editor" hidden>
+    <div class="editor-shortcuts" aria-label="Atalhos de cadastro">
+      <a href="/admin.html#produtos">Cadastrar ou editar produtos →</a>
+      <a href="/admin.html#colecoes">Organizar coleções →</a>
+      <a href="/admin.html#personalizados">Alterar valores dos copos →</a>
+    </div>
     <nav class="tabs" id="tabs"></nav>
 
     <div class="page-title" id="page-title"></div>
@@ -212,12 +218,13 @@ body.modal-open {overflow:hidden}
     <form id="site-form">
       <div id="fields"></div>
 
-      <div class="actions">
+      <div class="actions editor-savebar">
+        <span id="save-state" role="status">Tudo salvo</span>
         <button class="action" id="save" type="submit">
           Salvar alterações
         </button>
         <button class="action secondary" id="reload" type="button">
-          Recarregar
+          Descartar alterações
         </button>
       </div>
     </form>
@@ -545,7 +552,13 @@ function makeImageField(key, label) {
   });
   preview(urlInput.value.trim());
   visual.append(image,placeholder);
-  controls.append(heading,urlInput,uploadLabel,uploadInput,uploadState,help);
+  const advanced=document.createElement("details");advanced.className="editor-options";
+  const summary=document.createElement("summary");summary.textContent="Usar link de imagem";
+  const urlLabel=document.createElement("label");urlLabel.textContent="Endereço HTTPS da imagem";urlLabel.htmlFor=urlInput.id;
+  advanced.append(summary,urlLabel,urlInput);
+  heading.removeAttribute("for");
+  uploadInput.id="upload-"+key;uploadLabel.htmlFor=uploadInput.id;
+  controls.append(heading,uploadLabel,uploadInput,uploadState,help,advanced);
   wrapper.append(visual,controls);
   return wrapper;
 }
@@ -688,16 +701,19 @@ function render() {
   const description = document.createElement("p");
   description.textContent = page.description;
 
-  heading.append(title, description);
+  const preview=document.createElement("a");const destinations={inicio:"/",loja:"/loja.html",personalizados:"/personalizados.html",negocios:"/para-negocios.html",sobre:"/sobre.html",blog:"/blog.html"};
+  preview.href=destinations[activePage];preview.target="_blank";preview.rel="noopener";preview.textContent="Ver esta página no site ↗";
+  heading.append(title, description,preview);
 
   const container = $("fields");
   container.replaceChildren();
 
   for (const section of page.sections) {
-    const panel = document.createElement("section");
-    panel.className = "panel";
+    const panel = document.createElement("details");
+    panel.className = "panel editor-section";
+    panel.open=section===page.sections[0];
 
-    const sectionTitle = document.createElement("h3");
+    const sectionTitle = document.createElement("summary");
     sectionTitle.textContent = section.name;
     panel.append(sectionTitle);
 
@@ -709,6 +725,7 @@ function render() {
       );
     }
 
+    panel.addEventListener("toggle",()=>{if(panel.open)for(const other of container.querySelectorAll(":scope > details"))if(other!==panel)other.open=false;});
     container.append(panel);
   }
 }
@@ -738,7 +755,7 @@ async function load() {
     render();
     $("editor").hidden = false;
 
-    message("Dados carregados. Você já pode editar. Imagens devem ter uma URL HTTPS pública.");
+    message("Escolha uma seção para editar. Você pode enviar fotos do computador.");
   } catch (error) {
     message(
       "Erro ao carregar: " + error.message,
@@ -798,7 +815,7 @@ $("site-form").addEventListener("submit", async event => {
   }
 
   setBusy(true);
-  message("Salvando alterações no Supabase...");
+  message("Salvando alterações...");
 
   try {
     const result = await api("/api/admin-gerenciar", {
@@ -828,9 +845,7 @@ $("site-form").addEventListener("submit", async event => {
     render();
 
     message(
-      "Alterações salvas no Supabase. " +
-      "As páginas públicas precisam estar integradas " +
-      "para exibir os novos conteúdos.",
+      "Alterações salvas. Use ‘Ver esta página no site’ para conferir.",
       "success"
     );
   } catch (error) {

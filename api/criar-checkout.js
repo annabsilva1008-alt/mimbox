@@ -1,3 +1,26 @@
+function normalizeCpf(value) {
+  return String(value ?? '').replace(/\D/g, '');
+}
+
+function isValidCpf(value) {
+  const cpf = normalizeCpf(value);
+  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
+  for (let length = 9; length <= 10; length++) {
+    let sum = 0;
+    for (let index = 0; index < length; index++) sum += Number(cpf[index]) * (length + 1 - index);
+    const remainder = sum % 11;
+    if (Number(cpf[length]) !== (remainder < 2 ? 0 : 11 - remainder)) return false;
+  }
+  return true;
+}
+
+function formatCpf(value) {
+  return normalizeCpf(value).slice(0, 11)
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3}\.\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3}\.\d{3}\.\d{3})(\d)/, '$1-$2');
+}
+
 const CUP_MODELS = [
   {key: 'americano', label: 'Americano', ml: null, base: 10, over10: 8, over50: 6},
   ...['Long Drink', 'Long Drink Estelar', 'Tulipa'].flatMap(label => [200, 300].map(ml => ({
@@ -477,6 +500,11 @@ export default async function handler(req, res) {
       });
     }
 
+    const shippingCpf = deliveryMethod === 'shipping' ? normalizeCpf(address?.cpf) : null;
+    if (deliveryMethod === 'shipping' && !isValidCpf(shippingCpf)) {
+      return res.status(400).json({error: 'Informe um CPF válido para entrega.'});
+    }
+
     const checkoutItems = [];
     const orderItems = [];
 
@@ -684,6 +712,7 @@ export default async function handler(req, res) {
       }`.trim();
 
       shippingAddress = {
+        cpf: shippingCpf,
         cep,
         street: String(
           address.street

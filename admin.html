@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mimbox | Administração</title>
+<link rel="stylesheet" href="/assets/admin-ease.css?v=1">
+<script defer src="/assets/admin-ease.js?v=1"></script>
 <style>
 :root{
   --yellow:#f8d749;
@@ -177,7 +179,7 @@ main{
 .gallery-entry .btn{padding:7px 10px;font-size:12px}
 .gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
 </style>
-<script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=3"></script></head>
+<script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=3"></script><script src="/assets/cpf.js?v=1"></script></head>
 <body>
 
 <section id="loading" class="login">
@@ -206,19 +208,21 @@ main{
     <div class="logo">mimbox.</div>
     <p>Central administrativa</p>
 
-    <nav id="navigation">
+    <button type="button" id="menu-toggle" aria-expanded="false" aria-controls="navigation">☰ Menu do painel</button>
+    <nav id="navigation" aria-label="Áreas do painel">
+      <div class="nav-group"><p>Dia a dia</p>
       <button data-page="dashboard">📊 Dashboard</button>
       <button data-page="pedidos">📦 Pedidos do site</button>
       <button data-page="manual">➕ Pedido manual</button>
+       <button data-page="envios">🚚 Envios</button>
+      <button data-page="acompanhamento">🎁 Acompanhamento Clube</button>
+      <button data-page="clientes">👥 Clientes</button></div>
+      <div class="nav-group"><p>Produtos e site</p>
       <button data-page="produtos">🛍️ Produtos</button>
       <button data-page="personalizados">🥤 Personalizados</button>
        <button data-page="colecoes">🗂️ Coleções</button>
        <button data-page="estoque">📋 Estoque</button>
-       <button data-page="envios">🚚 Envios</button>
-      <button data-page="acompanhamento">🎁 Acompanhamento Clube</button>
-
-      <button data-page="clientes">👥 Clientes</button>
-      <a href="/gerenciar-site.html" style="display:block;border-radius:8px;color:white;padding:13px;text-decoration:none;font-weight:700" onmouseover="this.style.background='var(--blue)'" onmouseout="this.style.background='transparent'">🎨 Gerenciar Site ↗</a>
+      <a href="/gerenciar-site.html">🎨 Textos e imagens do site ↗</a></div>
     </nav>
   </aside>
 
@@ -318,6 +322,8 @@ function field(label,value="",type="text"){
 
   if(type!=="textarea")input.type=type;
   input.value=value??"";
+  input.id="admin-field-"+(field.sequence=(field.sequence||0)+1);
+  title.htmlFor=input.id;
 
   if(type==="number"){
     input.min="0";
@@ -441,7 +447,8 @@ async function checkSession(){
 
     if(data.autenticado===true){
       show("app");
-      openPage(new URLSearchParams(location.search).get("area")==="personalizados" ? "personalizados" : "dashboard");
+      const requested=location.hash.slice(1)||new URLSearchParams(location.search).get("area");
+      openPage(Object.hasOwn(titles,requested)?requested:"dashboard");
     }else{
       show("login-screen");
     }
@@ -624,6 +631,17 @@ function needsAction(p) {
       String(p.status_entrega || "").toLowerCase()
     );
 }
+function appendShippingCpf(area, pedido) {
+  let address = pedido.endereco_entrega;
+  if (typeof address === "string") {
+    try { address = JSON.parse(address); } catch { address = null; }
+  }
+  if (pedido.forma_entrega !== "transportadora" && !address?.cpf) return;
+  const cpf = window.MimboxCPF?.normalize(address?.cpf);
+  area.append(line("CPF do destinatário", cpf && window.MimboxCPF.isValid(cpf)
+    ? window.MimboxCPF.format(cpf) : "Não informado neste pedido"));
+}
+
 function customerOf(p) {
   return Array.isArray(p.clientes) ? p.clientes[0] : p.clientes;
 }
@@ -1005,6 +1023,8 @@ function orders(area){
       line("Andamento",p.status_entrega)
     );
 
+    appendShippingCpf(c, p);
+
     if(Array.isArray(p.itens)){
       for(const item of p.itens){
         c.append(line(
@@ -1341,7 +1361,9 @@ function productGallery(produto = {}) {
     }
   }
 
-  wrap.append(items, files, status, url.wrap, addUrl);
+  const linked=element("details",undefined,"editor-options");linked.append(element("summary","Usar link de uma foto"),url.wrap,addUrl);
+  const fileLabel=element("label","Escolher fotos do computador");files.id="gallery-upload-"+(field.sequence=(field.sequence||0)+1);fileLabel.htmlFor=files.id;
+  wrap.append(items,fileLabel,files,status,linked);
   render();
   return {wrap, uploadPending, getImages: () => [...imagens]};
 }
@@ -1485,11 +1507,13 @@ function products(area){
       if(input.isConnected && !input.hasAttribute('list'))collectionChoices(input);
     });
   }).catch(err=>console.warn("Coleções não carregadas",err));
-  const info=card("Catálogo administrável");
-  info.append(element("p","Aqui você edita as boxes e os planos do Clube registrados no Supabase. Você pode adicionar até 8 fotos por produto, escolher a principal e reorganizar a galeria."));
-  info.append(element("p","Antes de cadastrar um produto que já existe no site, procure-o na lista abaixo para evitar duplicatas.","muted"));
+  const info=card("Seus produtos");
+  info.append(element("p","Encontre um produto para editar ou cadastre um novo. As fotos são preparadas automaticamente antes do envio.","muted"));
+  const createToggle=action("+ Novo produto",()=>{create.hidden=!create.hidden;createToggle.setAttribute("aria-expanded",String(!create.hidden));if(!create.hidden){create.scrollIntoView?.({behavior:"smooth",block:"start"});f.nome.input.focus();}});
+  createToggle.setAttribute("aria-controls","new-product");createToggle.setAttribute("aria-expanded","false");info.append(createToggle);
   area.append(info);
   const create = card("➕ Cadastrar produto");
+  create.id="new-product";create.hidden=true;
   const form = element("form");
   const f = {
     nome: field("Nome do produto"),
@@ -1499,17 +1523,19 @@ function products(area){
     ordem: field("Ordem na vitrine (1 = primeiro)", 0, "number")
   };
   f.ordem.input.step = "1";
-  for (const x of Object.values(f)) form.append(x.wrap);
+  const basic=element("section",undefined,"product-basics");basic.append(element("h3","1. Informações do produto"));
+  for (const key of ["nome","preco","colecao","descricao"]) basic.append(f[key].wrap);
+  form.append(basic);
   f.colecao.input.dataset.collectionField="1";
   const taxonomy=mimboxCategoryField();
-  form.append(taxonomy.wrap);
+  const options=element("details",undefined,"editor-options");options.append(element("summary","Opções de organização e destaque"),f.ordem.wrap,taxonomy.wrap);
   const gallery = productGallery();
-  form.append(gallery.wrap);
+  gallery.wrap.prepend(element("h3","2. Fotos do produto"));form.append(gallery.wrap);
   f.nome.input.required = true;
   f.preco.input.required = true;
   const available = checkbox("Produto disponível", true);
   const featured = checkbox("Produto em destaque", false);
-  form.append(available.wrap, featured.wrap);
+  form.append(available.wrap);options.append(featured.wrap);form.append(options);
   const save = element("button", "Cadastrar produto", "btn");
   save.type = "submit";
   form.append(save);
@@ -1549,15 +1575,24 @@ function products(area){
   create.append(form);
   area.append(create);
 
-  const list = card("✏️ Gerenciar produtos cadastrados");
-  list.append(element("p", "Edite, troque a foto, ordene, oculte ou exclua anúncios. Produtos ocultos continuam no CRM.", "muted"));
+  const list = card("Produtos cadastrados");
+  const search=field("Buscar produto ou coleção","","search");search.input.placeholder="Digite o nome…";
+  const visibility=selectField("Mostrar",[["todos","Todos os produtos"],["visiveis","Disponíveis na loja"],["ocultos","Ocultos"]],"todos");
+  const filters=element("div",undefined,"catalog-filters");filters.append(search.wrap,visibility.wrap);list.append(filters);
+  const count=element("p","","muted");count.setAttribute("role","status");list.append(count);
+  const empty=element("p","Nenhum produto encontrado. Tente outro nome ou filtro.");empty.hidden=true;
+  const rows=[];
+  const filterProducts=()=>{const q=search.input.value.trim().toLocaleLowerCase("pt-BR");let total=0;for(const row of rows){const match=(!q||row.text.includes(q))&&(visibility.input.value==="todos"||(visibility.input.value==="visiveis")===row.available);row.node.hidden=!match;if(match)total++;}count.textContent=total+" de "+rows.length+" produtos";empty.hidden=total!==0;};
+  search.input.addEventListener("input",filterProducts);visibility.input.addEventListener("change",filterProducts);
   area.append(list);
   if (!state.produtos.length) {
+    count.textContent="0 produtos";
     list.append(element("p", "Nenhum produto cadastrado."));
     return;
   }
   for (const p of state.produtos) {
-    const item = element("details", undefined, "item");
+    const item = element("details", undefined, "item product-item");
+    rows.push({node:item,text:(p.nome+" "+(p.colecao||"")).toLocaleLowerCase("pt-BR"),available:!!p.disponivel});
     item.append(element("summary", `${p.nome} — ${money(p.preco)} ${p.disponivel ? "• Disponível" : "• Oculto"}`));
     const inputs = {
       nome: field("Nome", p.nome),
@@ -1567,16 +1602,16 @@ function products(area){
       ordem: field("Ordem na vitrine", p.ordem ?? 0, "number")
     };
     inputs.ordem.input.step = "1";
-    for (const x of Object.values(inputs)) item.append(x.wrap);
+    const basic=element("div",undefined,"product-basics");for(const key of ["nome","preco","colecao","descricao"])basic.append(inputs[key].wrap);item.append(basic);
     inputs.colecao.input.dataset.collectionField="1";
     const existingMeta=mimboxReadMeta(p.descricao);
     const taxonomy=mimboxCategoryField(existingMeta.category,existingMeta.tags);
-    item.append(taxonomy.wrap);
+    const options=element("details",undefined,"editor-options");options.append(element("summary","Opções de organização e destaque"),inputs.ordem.wrap,taxonomy.wrap);
     const gallery = productGallery(p);
     item.append(gallery.wrap);
     const av = checkbox("Disponível", p.disponivel);
     const ft = checkbox("Destaque", p.destaque);
-    item.append(av.wrap, ft.wrap);
+    item.append(av.wrap);options.append(ft.wrap);item.append(options);
     const buttons = element("div", undefined, "row");
     buttons.append(action("Salvar alterações", async () => {
       await gallery.uploadPending();
@@ -1603,14 +1638,15 @@ function products(area){
       await openPage("produtos");
       notify("Produto atualizado com sucesso.");
     }));
-    buttons.append(action("Ocultar anúncio", async () => {
+    const management=element("details",undefined,"editor-options product-management");management.append(element("summary","Ocultar ou excluir anúncio"));
+    management.append(action("Ocultar anúncio", async () => {
       if (!confirm(`Ocultar "${p.nome}" da loja? O cadastro continuará no CRM.`)) return;
       const result = await operations("produto_ocultar", {id: p.id});
       if (!result.ok) throw Error("Não foi possível ocultar o anúncio.");
       await openPage("produtos");
       notify("Produto ocultado.");
     }));
-    buttons.append(action("Excluir anúncio", async () => {
+    management.append(action("Excluir anúncio", async () => {
       if (!confirm(`Excluir DEFINITIVAMENTE o cadastro de "${p.nome}"? Essa ação não pode ser desfeita.`)) return;
       const result = await operations("produto_excluir", {id: p.id});
       if (!result.ok) throw Error("Não foi possível excluir o anúncio.");
@@ -1618,8 +1654,10 @@ function products(area){
       notify("Anúncio excluído do cadastro.");
     }));
     item.append(buttons);
+    item.append(management);
     list.append(item);
   }
+  list.append(empty);filterProducts();
 }
 
 // ESTOQUE
@@ -1801,6 +1839,7 @@ function shipments(area){
     const customer=Array.isArray(p.clientes)?p.clientes[0]:p.clientes;
     const club=clubInfo(p.observacoes);
     const item=card(club?(club.nome||customer?.nome||"Assinante")+" — Clube "+club.meses+" meses":"Pedido "+(p.numero_pedido||p.id));
+    appendShippingCpf(item, p);
     if(club){
       item.append(line("Caixas enviadas",club.enviados+"/"+String(club.meses).padStart(2,"0")));
       item.append(line("Próximo envio",club.enviados>=club.meses?"Assinatura concluída":clubDateLabel(clubDue(club))));

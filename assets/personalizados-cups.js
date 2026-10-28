@@ -107,7 +107,7 @@
     try {
       const response = await fetch('/api/criar-checkout', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
         items: basket.map(i => ({id: i.id, quantity: i.qty})), customer: {name: value('name'), email: value('email'), phone_number: '+55' + digits}, deliveryMethod: value('delivery'),
-        address: {cep, street: value('street'), number: value('number'), neighborhood: value('neighborhood'), city: value('city'), state: value('state').toUpperCase(), complement: value('complement')}, ...(shipping ? {shippingServiceId: quote.id} : {})
+        address: {...(shipping ? {cpf: value('cpf').replace(/\D/g, '')} : {}), cep, street: value('street'), number: value('number'), neighborhood: value('neighborhood'), city: value('city'), state: value('state').toUpperCase(), complement: value('complement')}, ...(shipping ? {shippingServiceId: quote.id} : {})
       })});
       const result = await response.json(); if (!response.ok) throw Error(result.error || 'Não foi possível iniciar o pagamento.');
       const url = new URL(result.url); if (url.protocol !== 'https:') throw Error('Link de pagamento inválido.');
