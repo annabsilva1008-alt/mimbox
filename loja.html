@@ -1021,41 +1021,7 @@ function updateCheckoutFormVisibility() {
 })();
 </script>
 <!-- Mimbox: editor público da página Loja; catálogo e checkout permanecem independentes. -->
-<script id="mimbox-loja-editor-publico">
-(() => {
-  const hero = document.querySelector('main .m-hero');
-  if (!hero) return;
-  const title = hero.querySelector('.m-hero-left h1');
-  const subtitle = hero.querySelector('.m-hero-left p');
-  const button = hero.querySelector('.m-hero-left a');
-  const image = hero.querySelector('.m-hero-photo img');
-  const collections = document.querySelector('#boxes .m-section-heading h2');
-  const secureLink = value => {
-    if (typeof value !== 'string') return null;
-    const v = value.trim();
-    if (v.startsWith('/') && !v.startsWith('//')) return v;
-    if (v.startsWith('#')) return v;
-    try { const u = new URL(v); return u.protocol === 'https:' ? u.href : null; }
-    catch { return null; }
-  };
-  fetch('/api/admin-gerenciar?action=site_publico', {credentials:'omit',cache:'no-store'})
-    .then(r => { if (!r.ok) throw Error('API indisponível'); return r.json(); })
-    .then(data => {
-      if (!data.ok || !data.conteudo) return;
-      const c = data.conteudo;
-      if (title && c.loja_titulo?.trim()) title.textContent = c.loja_titulo.trim();
-      if (subtitle && c.loja_subtitulo?.trim()) subtitle.textContent = c.loja_subtitulo.trim();
-      if (button && c.loja_botao_texto?.trim()) button.textContent = c.loja_botao_texto.trim();
-      const href = secureLink(c.loja_botao_link);
-      if (button && href) button.href = href;
-      const img = secureLink(c.loja_banner_imagem);
-      if (image && img?.startsWith('https://')) image.src = img;
-      // Imagens de produtos e catálogo são gerenciadas pelo cadastro de produtos,
-      // não pelo editor de banners, para não trocar estampas ou preços.
-    })
-    .catch(e => console.warn('Editor da Loja indisponível; mantendo conteúdo original.', e));
-})();
-</script>
+<script id="mimbox-loja-editor-publico" src="/assets/loja-content.js?v=1" defer></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('m-cart-btn'),old=document.getElementById('open-cart'),count=document.getElementById('cart-count'),out=document.getElementById('m-cart-count');if(b&&old)b.addEventListener('click',()=>old.click());if(count&&out){const update=()=>out.textContent=count.textContent;update();new MutationObserver(update).observe(count,{childList:true,characterData:true,subtree:true});}});</script><style id="mimbox-colecoes-corrigidas">
 .collection-grid .product-card[hidden]{display:none!important}
 .m-category-grid{align-items:start}

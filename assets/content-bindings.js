@@ -18,7 +18,7 @@
   const previous={src:el.getAttribute('src'),srcset:el.getAttribute('srcset')};
   const show=()=>{el.hidden=false;const optional=el.closest('[data-cms-optional]');if(optional)optional.hidden=false;const banner=el.closest('[data-cms-banner]');if(banner){banner.classList.add('has-cms-banner');banner.querySelectorAll('[data-cms-fallback]').forEach(x=>x.hidden=true)}};
   el.onload=show;el.onerror=()=>{el.onload=null;el.onerror=null;if(previous.src){el.src=previous.src;if(previous.srcset)el.srcset=previous.srcset;else el.removeAttribute('srcset')}else el.hidden=true};
-  global.mimboxSetImage?global.mimboxSetImage(el,url,1600):el.src=url;
+  if(global.mimboxSetImage)global.mimboxSetImage(el,url,1600);else{el.removeAttribute('srcset');el.src=url;}
   el.dataset.cmsSource=url;if(el.complete&&el.naturalWidth>0)show();
  }
  function phone(value){let digits=String(value||'').replace(/\D/g,'');if(digits.length===10||digits.length===11)digits='55'+digits;return /^\d{12,15}$/.test(digits)?digits:null}

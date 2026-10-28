@@ -17,10 +17,19 @@
       const p = matches[0], price = Number(p.preco);
       if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(p.id) || p.disponivel !== true || !Number.isFinite(price) || price <= 0) continue;
       const link = card.querySelector('[data-model-buy]');
+      const title=card.querySelector('h3'),description=card.querySelector('.mb-custom-model-copy > p:not([data-model-price])'),image=card.querySelector('figure img');
+      const name=String(p.nome||model.name).trim();if(title)title.textContent=name;
+      const text=String(p.descricao||'').replace(/\s*\[\[MIMBOX_CATEGORIA:[^\]\r\n]*\]\]\s*$/i,'').trim();if(description)description.textContent=text;
+      const photo=[...(Array.isArray(p.imagens)?p.imagens:[]),p.imagem_url].find(value=>typeof value==='string'&&/^https:\/\/[^\s]+$/i.test(value));
+      if(image&&photo&&!image.dataset.cmsSource){
+        const previous={src:image.getAttribute('src'),srcset:image.getAttribute('srcset')};
+        image.onerror=()=>{image.onerror=null;if(image.dataset.cmsSource)return;image.src=previous.src;if(previous.srcset)image.srcset=previous.srcset;};
+        if(window.mimboxSetImage)window.mimboxSetImage(image,photo,1600);else{image.removeAttribute('srcset');image.src=photo;}image.alt=name;
+      }
       card.querySelector('[data-model-price]').textContent = price.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) + ' / unidade';
       link.href = 'https://www.mimbox.com.br/produto.html?id=' + encodeURIComponent(p.id);
       link.textContent = 'Comprar personalizado →';
-      link.setAttribute('aria-label', 'Comprar ' + model.name);
+      link.setAttribute('aria-label', 'Comprar ' + name);
       link.removeAttribute('aria-disabled');
       link.removeAttribute('tabindex');
       available++;
