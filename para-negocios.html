@@ -510,7 +510,7 @@ img {
 
 .quote-layout {
   display: grid;
-  grid-template-columns: 43% 57%;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 40px;
   align-items: start;
 }
@@ -539,83 +539,21 @@ img {
   transform: rotate(-3deg);
 }
 
-.quote-form {
+.quote-contact {
+  min-width: 0;
   background: #FFFDF8;
   padding: clamp(24px, 4vw, 45px);
   border: 2px solid var(--ink);
   box-shadow: 8px 8px 0 var(--ink);
 }
-
-.quote-form h3 {
+.quote-contact h3 {
   font-family: "Barlow Condensed", Impact, sans-serif;
-  font-size: 43px;
+  font-size: clamp(30px, 4vw, 43px);
   text-transform: uppercase;
-  margin: 0 0 25px;
+  margin: 0 0 22px;
 }
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.field {
-  margin-bottom: 19px;
-}
-
-.field label {
-  display: block;
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-  margin-bottom: 9px;
-}
-
-.field input,
-.field select,
-.field textarea {
-  display: block;
-  width: 100%;
-  min-height: 49px;
-  border: 2px solid #D7CEBF;
-  border-radius: 0;
-  background: white;
-  padding: 12px 13px;
-  color: var(--ink);
-  font-size: 13px;
-}
-
-.field textarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  outline: 2px solid var(--blue);
-  outline-offset: 1px;
-}
-
-.form-submit {
-  width: 100%;
-  margin-top: 5px;
-}
-
-.form-help {
-  margin: 16px 0 0;
-  color: #6C645B;
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-#form-status {
-  font-size: 12px;
-  line-height: 1.6;
-  margin-top: 14px;
-  color: var(--red);
-  font-weight: 700;
-}
+.quote-contact p { line-height: 1.8; margin: 0 0 24px; }
+.quote-contact-link { width: 100%; white-space: normal; text-align: center; }
 
 /* CTA FINAL */
 
@@ -835,12 +773,11 @@ img {
     font-size: 67px;
   }
 
-  .benefit-grid,
-  .form-row {
+  .benefit-grid {
     grid-template-columns: 1fr;
   }
 
-  .quote-form {
+  .quote-contact {
     padding: 22px;
   }
 
@@ -853,7 +790,7 @@ img {
   }
 }
 </style>
-<title>Brindes personalizados para empresas em São Paulo | Mimbox</title><meta name="description" content="Brindes corporativos, kits e presentes personalizados para clientes, equipes e eventos. Conte sua ideia e peça orçamento à Mimbox, em São Paulo."><meta name="robots" content="index,follow"><link rel="canonical" href="https://www.mimbox.com.br/para-negocios.html"><meta property="og:locale" content="pt_BR"><meta property="og:site_name" content="Mimbox"><meta property="og:type" content="website"><meta property="og:title" content="Brindes personalizados para empresas em São Paulo | Mimbox"><meta property="og:description" content="Brindes corporativos, kits e presentes personalizados para clientes, equipes e eventos. Conte sua ideia e peça orçamento à Mimbox, em São Paulo."><meta property="og:url" content="https://www.mimbox.com.br/para-negocios.html"><meta property="og:image" content="https://www.mimbox.com.br/assets/mimbox-social.webp"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&amp;family=Montserrat:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/mimbox.css?v=4"><script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://www.mimbox.com.br/#organization", "name": "Mimbox", "url": "https://www.mimbox.com.br/", "telephone": "+55-11-95455-6660", "sameAs": ["https://www.instagram.com/mimbox.br/"], "areaServed": {"@type": "Country", "name": "Brasil"}}, {"@type": "WebSite", "@id": "https://www.mimbox.com.br/#website", "url": "https://www.mimbox.com.br/", "name": "Mimbox", "inLanguage": "pt-BR"}, {"@type": "WebPage", "@id": "https://www.mimbox.com.br/para-negocios.html#webpage", "url": "https://www.mimbox.com.br/para-negocios.html", "name": "Brindes personalizados para empresas em São Paulo | Mimbox", "description": "Brindes corporativos, kits e presentes personalizados para clientes, equipes e eventos. Conte sua ideia e peça orçamento à Mimbox, em São Paulo.", "inLanguage": "pt-BR", "isPartOf": {"@id": "https://www.mimbox.com.br/#website"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Início", "item": "https://www.mimbox.com.br/"}, {"@type": "ListItem", "position": 2, "name": "Brindes personalizados para empresas em São Paulo", "item": "https://www.mimbox.com.br/para-negocios.html"}]}]}</script></head>
+<title>Brindes personalizados para empresas em São Paulo | Mimbox</title><meta name="description" content="Brindes corporativos, kits e presentes personalizados para clientes, equipes e eventos. Conte sua ideia e peça orçamento à Mimbox, em São Paulo."><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="https://www.mimbox.com.br/para-negocios.html"><meta property="og:locale" content="pt_BR"><meta property="og:site_name" content="Mimbox"><meta property="og:type" content="website"><meta property="og:title" content="Brindes personalizados para empresas em São Paulo | Mimbox"><meta property="og:description" content="Brindes corporativos, kits e presentes personalizados para clientes, equipes e eventos. Conte sua ideia e peça orçamento à Mimbox, em São Paulo."><meta property="og:url" content="https://www.mimbox.com.br/para-negocios.html"><meta property="og:image" content="https://www.mimbox.com.br/assets/mimbox-social.webp"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&amp;family=Montserrat:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/mimbox.css?v=4"><script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://www.mimbox.com.br/#organization", "name": "Mimbox", "url": "https://www.mimbox.com.br/", "telephone": "+55-11-95455-6660", "sameAs": ["https://www.instagram.com/mimbox.br/"], "areaServed": {"@type": "Country", "name": "Brasil"}}, {"@type": "WebSite", "@id": "https://www.mimbox.com.br/#website", "url": "https://www.mimbox.com.br/", "name": "Mimbox", "inLanguage": "pt-BR"}, {"@type": "WebPage", "@id": "https://www.mimbox.com.br/para-negocios.html#webpage", "url": "https://www.mimbox.com.br/para-negocios.html", "name": "Brindes personalizados para empresas em São Paulo | Mimbox", "description": "Brindes corporativos, kits e presentes personalizados para clientes, equipes e eventos. Conte sua ideia e peça orçamento à Mimbox, em São Paulo.", "inLanguage": "pt-BR", "isPartOf": {"@id": "https://www.mimbox.com.br/#website"}}, {"@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Início", "item": "https://www.mimbox.com.br/"}, {"@type": "ListItem", "position": 2, "name": "Brindes personalizados para empresas em São Paulo", "item": "https://www.mimbox.com.br/para-negocios.html"}]}]}</script></head>
 
 <body class="mb-site mb-para-negocios">
 
@@ -1133,75 +1070,11 @@ img {
       </div>
     </div>
 
-    <form class="quote-form" id="quote-form">
-      <h3>PEÇA SEU ORÇAMENTO ↗</h3>
-
-      <div class="form-row">
-        <div class="field">
-          <label for="nome">Seu nome *</label>
-          <input id="nome" name="nome" type="text" autocomplete="name" placeholder="Como podemos te chamar?" maxlength="100" required>
-        </div>
-
-        <div class="field">
-          <label for="empresa">Empresa *</label>
-          <input id="empresa" name="empresa" type="text" placeholder="Nome da sua empresa" maxlength="120" required>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="field">
-          <label for="telefone">WhatsApp *</label>
-          <input id="telefone" name="telefone" type="tel" autocomplete="tel" placeholder="(11) 99999-9999" maxlength="25" required>
-        </div>
-
-        <div class="field">
-          <label for="email">E-mail</label>
-          <input id="email" name="email" type="email" autocomplete="email" placeholder="voce@empresa.com.br" maxlength="254">
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="produto">O que deseja personalizar? *</label>
-        <select id="produto" name="produto" required>
-          <option value="">Selecione uma opção</option>
-          <option>Copos personalizados</option>
-          <option>Brindes corporativos</option>
-          <option>Kits especiais</option>
-          <option>Produtos para eventos</option>
-          <option>Ainda não sei, preciso de ideias</option>
-          <option>Outro produto</option>
-        </select>
-      </div>
-
-      <div class="form-row">
-        <div class="field">
-          <label for="quantidade">Quantidade aproximada *</label>
-          <input id="quantidade" name="quantidade" type="number" min="1" max="100000" placeholder="Ex.: 50" required>
-        </div>
-
-        <div class="field">
-          <label for="data">Data desejada</label>
-          <input id="data" name="data" type="date">
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="detalhes">Conte um pouco da sua ideia</label>
-        <textarea id="detalhes" name="detalhes" maxlength="1500" placeholder="Qual é a ocasião? Já tem uma arte? Quer incluir a logo da empresa?"></textarea>
-      </div>
-
-      <button class="btn btn-dark form-submit" type="submit">
-        ENVIAR PEDIDO PELO WHATSAPP ↗
-      </button>
-
-      <p class="form-help">
-        Ao clicar, o WhatsApp será aberto com
-        as informações preenchidas. O pedido só
-        será enviado quando você confirmar a mensagem.
-      </p>
-
-      <p id="form-status" role="status" aria-live="polite"></p>
-    </form>
+    <aside class="quote-contact" aria-label="Orçamento para empresas">
+      <h3>VAMOS CONVERSAR? ↗</h3>
+      <p>Fale com a Mimbox pelo WhatsApp para contar sua ideia e conhecer as opções para a sua empresa.</p>
+      <a class="btn btn-dark quote-contact-link" href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox!%20Quero%20conversar%20sobre%20personalizados%20para%20minha%20empresa." target="_blank" rel="noopener noreferrer">CONVERSAR PELO WHATSAPP ↗</a>
+    </aside>
 
   </div>
 </section>
@@ -1219,170 +1092,6 @@ img {
 
 </main>
 
-<script>
-"use strict";
-
-const $ = id => document.getElementById(id);
-
-let whatsapp = "5511954556660";
-
-// Ano automático
-$("year").textContent = new Date().getFullYear();
-
-// Imagens cadastradas no painel
-function setImage(imageId, placeholderId, url) {
-  if (!url || !/^https:\/\/\S+$/i.test(url)) {
-    return;
-  }
-
-  const img = $(imageId);
-  const placeholder = $(placeholderId);
-
-  if (!img) return;
-
-  img.onload = () => {
-    img.hidden = false;
-
-    if (placeholder) {
-      placeholder.hidden = true;
-    }
-  };
-
-  img.onerror = () => {
-    img.hidden = true;
-
-    if (placeholder) {
-      placeholder.hidden = false;
-    }
-  };
-
-  img.src = url;
-}
-
-// Conteúdo dinâmico do Gerenciar Site
-document.addEventListener('mimbox:content',event=>{
- const digits=String(event.detail?.whatsapp||'').replace(/\D/g,'');
- if(/^\d{10,15}$/.test(digits))whatsapp=digits.length<=11?'55'+digits:digits;
-});
-
-// Carregar WhatsApp também das configurações da loja
-async function loadContactConfig() {
-  if (whatsapp) return;
-
-  try {
-    const response = await fetch(
-      "/api/admin-gerenciar?action=site_publico",
-      { cache: "no-store" }
-    );
-
-    if (!response.ok) return;
-
-    const result = await response.json();
-    const number = result.conteudo?.whatsapp;
-
-    if (/^\d{10,15}$/.test(number || "")) {
-      whatsapp = number;
-    }
-  } catch {
-    // O formulário informa caso não haja número.
-  }
-}
-
-// Formulário para WhatsApp
-$("quote-form").addEventListener("submit", async event => {
-  event.preventDefault();
-
-  const status = $("form-status");
-  status.textContent = "";
-
-  const form = event.currentTarget;
-
-  if (!form.reportValidity()) return;
-
-  if (!whatsapp) {
-    await loadContactConfig();
-  }
-
-  if (!whatsapp) {
-    status.textContent =
-      "O WhatsApp da loja ainda não está configurado. " +
-      "Cadastre o número no Gerenciar Site para receber orçamentos.";
-    return;
-  }
-
-  const nome = $("nome").value.trim();
-  const empresa = $("empresa").value.trim();
-  const telefone = $("telefone").value.trim();
-  const email = $("email").value.trim();
-  const produto = $("produto").value;
-  const quantidade = $("quantidade").value;
-  const data = $("data").value;
-  const detalhes = $("detalhes").value.trim();
-
-  const linhas = [
-    "Olá, Mimbox! Quero solicitar um orçamento para minha empresa.",
-    "",
-    "*Nome:* " + nome,
-    "*Empresa:* " + empresa,
-    "*WhatsApp:* " + telefone,
-    "*Produto:* " + produto,
-    "*Quantidade:* " + quantidade
-  ];
-
-  if (email) {
-    linhas.push("*E-mail:* " + email);
-  }
-
-  if (data) {
-    const partes = data.split("-");
-    const dataFormatada =
-      partes.length === 3
-        ? partes[2] + "/" + partes[1] + "/" + partes[0]
-        : data;
-
-    linhas.push("*Data desejada:* " + dataFormatada);
-  }
-
-  if (detalhes) {
-    linhas.push("*Detalhes:* " + detalhes);
-  }
-
-  linhas.push(
-    "",
-    "Gostaria de saber as opções e os valores disponíveis."
-  );
-
-  const url =
-    "https://wa.me/" +
-    whatsapp +
-    "?text=" +
-    encodeURIComponent(linhas.join("\n"));
-
-  const opened = window.open(
-    url,
-    "_blank",
-    "noopener,noreferrer"
-  );
-
-  if (!opened) {
-    status.textContent =
-      "O navegador bloqueou a abertura do WhatsApp. " +
-      "Clique no link abaixo para continuar.";
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "Abrir WhatsApp";
-    link.style.display = "block";
-    link.style.marginTop = "10px";
-    link.style.textDecoration = "underline";
-
-    status.append(link);
-  }
-});
-
-</script>
 
 <footer class="mb-footer"><div class="mb-footer-top"><div><a href="/" class="mb-logo"><img src="/assets/logo.webp" width="210" height="65" loading="lazy" alt="Mimbox.br — início"></a><p>Objetos nada óbvios.<br>Feitos para ter a sua cara.</p></div><nav aria-label="Explore a Mimbox"><strong>Explore</strong><a href="/loja.html">Nossos produtos</a><a href="/personalizados.html">Personalizados</a><a href="/para-negocios.html">Para empresas</a><a href="/sobre.html">Nossa história</a><a href="/blog.html">Blog Mimbox</a></nav><div><strong>Vamos conversar?</strong><a href="https://wa.me/5511954556660" target="_blank" rel="noopener noreferrer" data-cms-contact="whatsapp">WhatsApp · (11) 95455-6660 ↗</a><a id="instagram-link" href="https://www.instagram.com/mimbox.br/" target="_blank" rel="noopener noreferrer" data-cms-contact="instagram">Instagram · @mimbox.br ↗</a><p>São Paulo, SP<br>Enviamos para todo o Brasil.</p></div><div><strong>Compra com tranquilidade</strong><p>Pix e cartão via InfinitePay.<br>Frete calculado pelo CEP.<br>Retirada em São Paulo.</p><a href="/entregas-e-pagamentos.html">Prazos, entrega e pagamento →</a></div></div><div class="mb-footer-bottom"><span>© <span id="year">2026</span> Mimbox · Feito à mão, com personalidade.</span><a href="/privacidade.html">Privacidade</a><span>Pix <span aria-hidden="true">/</span> Cartão <span aria-hidden="true">/</span> InfinitePay</span></div></footer><a class="mb-whatsapp" aria-label="Fale com a Mimbox pelo WhatsApp" href="https://wa.me/5511954556660" target="_blank" rel="noopener noreferrer"><svg width="24" height="24" viewbox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 1a15 15 0 0 0-13 22.5L1 31l7.5-2A15 15 0 1 0 16 1zm0 27a12 12 0 0 1-6-1.6l-.6-.4-4.3 1.1 1.1-4.2-.4-.6A12 12 0 1 1 16 28zm6.5-9c-.4-.2-2.2-1.1-2.6-1.2-.3-.1-.6-.2-.8.2l-1.2 1.4c-.2.2-.4.3-.8.1-2.1-1-3.6-2.4-4.6-4.1-.3-.5.3-.5.9-1.8.1-.2 0-.4 0-.6l-1.2-2.9c-.3-.8-.7-.7-1-.7h-.7c-.2 0-.6.1-.9.5-.3.3-1.2 1.1-1.2 2.8s1.3 3.3 1.5 3.6c.2.2 2.5 3.8 6 5.2 2.2 1 3.1 1 4.2.8.7-.1 2.2-.9 2.5-1.8.3-.9.3-1.6.2-1.7-.1-.2-.3-.3-.7-.5z"></path></svg><span>Fale com a gente</span></a><script src="/assets/mimbox.js?v=4" defer></script><script src="/assets/content-bindings.js?v=4" defer></script></body>
 </html>
