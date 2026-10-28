@@ -4,7 +4,8 @@
   if (typeof original !== 'function' || !window.MimboxCustomModels) return;
   window.products = function (area) {
     original(area);
-    const section = card('Personalizados: compra pelo site');
+    const section = element('details', undefined, 'card editor-options personalized-models-editor');
+    section.append(element('summary', 'Preços e cadastro de outros personalizados'));
     section.append(element('p', 'Defina o preço unitário de cada modelo para liberar a compra online. Fotos, descrição, disponibilidade e preço continuam editáveis na lista de produtos. O WhatsApp será usado para receber a arte após o pagamento.', 'muted'));
     for (const model of window.MimboxCustomModels.models) {
       const matches = state.produtos.filter(p => window.MimboxCustomModels.matches(p, model));
@@ -46,6 +47,6 @@
       };
       section.append(box);
     }
-    area.prepend(section);
+    area.append(section);
   };
 })();

@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mimbox | Administração</title>
-<link rel="stylesheet" href="/assets/admin-ease.css?v=1">
 <script defer src="/assets/admin-ease.js?v=1"></script>
 <style>
 :root{
@@ -179,6 +178,7 @@ main{
 .gallery-entry .btn{padding:7px 10px;font-size:12px}
 .gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
 </style>
+<link rel="stylesheet" href="/assets/admin-ease.css?v=1">
 <script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=3"></script><script src="/assets/cpf.js?v=1"></script></head>
 <body>
 
@@ -1530,7 +1530,7 @@ function products(area){
   const taxonomy=mimboxCategoryField();
   const options=element("details",undefined,"editor-options");options.append(element("summary","Opções de organização e destaque"),f.ordem.wrap,taxonomy.wrap);
   const gallery = productGallery();
-  gallery.wrap.prepend(element("h3","2. Fotos do produto"));form.append(gallery.wrap);
+  gallery.wrap.querySelector("h3").textContent="2. Fotos do produto";form.append(gallery.wrap);
   f.nome.input.required = true;
   f.preco.input.required = true;
   const available = checkbox("Produto disponível", true);
