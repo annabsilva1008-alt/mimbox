@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<script src="/assets/images.js?v=3"></script><script src="/assets/cup-pricing.js?v=1"></script><meta name="theme-color" content="#f8d43a">
+<script src="/assets/images.js?v=3"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/product-variants.js?v=1"></script><link rel="stylesheet" href="/assets/product-variants.css?v=1"><meta name="theme-color" content="#f8d43a">
 <style>
 :root{font-family:Arial,Helvetica,sans-serif;color:#211b1b;background:#fffaf0}
 *{box-sizing:border-box}body{margin:0}a{color:inherit}
@@ -37,6 +37,8 @@ footer{text-align:center;padding:40px 20px}
 <h1 id="name"></h1>
 <div class="price" id="price"></div>
 <p class="description" id="description"></p>
+<fieldset class="mb-variant-options" id="variant-options" hidden><legend id="variant-title">Escolha uma opção</legend><div id="variant-list" class="mb-variant-list"></div><p id="variant-status" class="mb-variant-status" role="status"></p></fieldset>
+<label for="product-quantity" id="quantity-label" hidden>Quantidade <input type="number" id="product-quantity" min="1" max="20" step="1" value="1" style="width:90px;padding:10px;margin:0 0 16px 8px"></label>
 <button class="buy" id="buy" type="button">Comprar agora →</button>
 <p class="note" id="purchase-note">Você será direcionado ao carrinho para escolher entrega e pagamento com segurança.</p><p class="note" id="custom-product-note" hidden>Após pagar na InfinitePay, clique em Continuar para voltar à Mimbox e enviar sua arte pelo WhatsApp com o número do pedido. Envie o arquivo como documento para preservar a qualidade. A produção depende do recebimento e da aprovação da arte.</p>
 </div>
@@ -65,7 +67,7 @@ document.title=name+' | Mimbox';
 document.getElementById('name').textContent=name;
 const cupModel=window.MimboxCups?.cupSpec(p);
 document.getElementById('collection').textContent=cupModel ? 'Copos personalizados · '+window.MimboxCups.cupTitle(cupModel) : p.colecao||'Mimbox · Colecionáveis';
-if(cupModel){document.getElementById('buy').textContent='Escolher quantidade →';document.getElementById('purchase-note').textContent='Escolha a quantidade e veja o desconto na área de Personalizados. Depois, selecione a entrega e pague com segurança.';}
+if(cupModel&&!p.variacoes?.opcoes?.length){document.getElementById('buy').textContent='Escolher quantidade →';document.getElementById('purchase-note').textContent='Escolha a quantidade e veja o desconto na área de Personalizados. Depois, selecione a entrega e pague com segurança.';}
 document.getElementById('custom-product-note').hidden=!/^personalizados(?:\s*[|—·:-]|$)/i.test(String(p.colecao||'').trim());
 document.getElementById('price').textContent=amount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 document.getElementById('description').textContent=String(p.descricao||'').replace(/\s*\[\[MIMBOX_CATEGORIA:[^\]\r\n]*\]\]\s*$/i,'').trim();
@@ -83,14 +85,51 @@ const hero=document.getElementById('hero');
 if(images.length){window.mimboxSetImage(hero,images[0],1100);hero.sizes='(max-width:700px) 90vw,50vw';hero.loading='eager';hero.fetchPriority='high';hero.alt='Foto de '+name}else{hero.style.display='none'}
 const thumbs=document.getElementById('thumbs');
 images.forEach((url,i)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label','Ver foto '+(i+1));const img=document.createElement('img');window.mimboxSetImage(img,url,360);img.sizes='68px';img.loading='lazy';img.alt='Miniatura '+(i+1);b.append(img);b.onclick=()=>window.mimboxSetImage(hero,url,1100);thumbs.append(b)});
+const variants=p.variacoes?.opcoes||[];
+let selectedVariant=null;
+const buy=document.getElementById('buy'),variantStatus=document.getElementById('variant-status');
+const quantityInput=document.getElementById('product-quantity');
+quantityInput.max=String(cupModel?500:20);
+if(variants.length){
+  document.getElementById('variant-options').hidden=false;
+  document.getElementById('quantity-label').hidden=false;
+  document.getElementById('variant-title').textContent=p.variacoes.titulo+' — escolha uma opção';
+  buy.disabled=true;
+  variantStatus.textContent=variants.some(v=>v.disponivel)?'Selecione a opção que você quer comprar.':'Todas as opções estão indisponíveis no momento.';
+  const enabled=variants.filter(v=>v.disponivel),prices=enabled.map(v=>v.preco??amount);
+  if(prices.length)document.getElementById('price').textContent='A partir de '+Math.min(...prices).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const schema=JSON.parse(productSchema.textContent);
+  schema.offers=prices.length?{'@type':'AggregateOffer',url:productCanonical,priceCurrency:'BRL',lowPrice:Math.min(...prices).toFixed(2),highPrice:Math.max(...prices).toFixed(2),offerCount:enabled.length,availability:'https://schema.org/InStock'}:{'@type':'Offer',priceCurrency:'BRL',price:amount.toFixed(2),availability:'https://schema.org/OutOfStock'};
+  productSchema.textContent=JSON.stringify(schema);
+  for(const option of variants){
+    const button=document.createElement('button');button.type='button';button.className='mb-variant-option';button.dataset.variantId=option.id;button.disabled=!option.disponivel;button.setAttribute('aria-pressed','false');
+    if(option.imagem_url){const photo=document.createElement('img');window.mimboxSetImage(photo,option.imagem_url,360);photo.alt='';photo.loading='lazy';button.append(photo);}
+    button.append(document.createTextNode(option.nome));
+    const detail=document.createElement('small');detail.textContent=option.disponivel?(option.preco??amount).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'Indisponível';button.append(detail);
+    button.onclick=()=>{
+      selectedVariant=option;buy.disabled=false;
+      for(const other of document.querySelectorAll('.mb-variant-option'))other.setAttribute('aria-pressed',String(other===button));
+      document.getElementById('price').textContent=(option.preco??amount).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      variantStatus.textContent=p.variacoes.titulo+': '+option.nome;
+      const photo=option.imagem_url||images[0];if(photo){hero.style.display='';window.mimboxSetImage(hero,photo,1100);hero.alt=name+' — '+option.nome;}
+    };
+    document.getElementById('variant-list').append(button);
+  }
+}
 document.getElementById('buy').addEventListener('click',()=>{
 const cup=window.MimboxCups?.cupSpec(p);
-if(cup){location.href='/personalizados.html?copo='+encodeURIComponent(cup.key)+'#copos';return;}
+if(cup&&!variants.length){location.href='/personalizados.html?copo='+encodeURIComponent(cup.key)+'#copos';return;}
+if(variants.length&&!selectedVariant){variantStatus.textContent='Selecione uma opção antes de comprar.';return;}
+const quantity=variants.length?Number(quantityInput.value):1;
+if(!quantityInput.reportValidity()||!Number.isSafeInteger(quantity)||quantity<1)return;
 let cart=[];
 try{const saved=JSON.parse(localStorage.getItem('mimbox-cart-v1')||'[]');if(Array.isArray(saved))cart=saved.filter(x=>x&&x.kind!=='club')}catch{}
-const found=cart.find(x=>String(x.id)===String(p.id));
-if(found){found.qty=Math.min(20,(Number(found.qty)||0)+1);found.image=images[0]||found.image||''}
-else cart.push({id:String(p.id),name,price:amount,qty:1,kind:'box',duration:'',image:images[0]||''});
+const variationId=selectedVariant?.id||'';
+const found=cart.find(x=>String(x.id)===String(p.id)&&String(x.variacao_id||'')===variationId);
+const max=cupModel?500:20;
+if((Number(found?.qty)||0)+quantity>max){variantStatus.textContent='Escolha até '+max+' unidades desta opção por pedido.';return;}
+const data={id:String(p.id),name,price:selectedVariant?.preco??amount,qty:(Number(found?.qty)||0)+quantity,kind:'box',duration:'',image:selectedVariant?.imagem_url||images[0]||'',...(selectedVariant?{variacao_id:selectedVariant.id,variacao_nome:selectedVariant.nome,variacao_titulo:p.variacoes.titulo}:{})};
+if(found)Object.assign(found,data);else cart.push(data);
 localStorage.setItem('mimbox-cart-v1',JSON.stringify(cart));
 location.href='/loja.html?abrirCarrinho=1';
 });

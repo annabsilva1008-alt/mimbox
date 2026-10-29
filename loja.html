@@ -414,7 +414,7 @@ body{background:var(--mpaper)!important;font-family:Montserrat,Arial,sans-serif!
   }
 }
 </style>
-<script src="/assets/cpf.js?v=1"></script></head>
+<script src="/assets/cpf.js?v=1"></script><script src="/assets/product-variants.js?v=1"></script><script src="/assets/cup-pricing.js?v=1"></script></head>
 <body>
 <div class="announcement topbar"><div class="topbar-main"><a href="https://wa.me/5511954556660" rel="noreferrer" target="_blank">☏ (11) 95455-6660</a> <span>✦</span> <a href="https://www.instagram.com/mimbox.br/" rel="noreferrer" target="_blank">◎ @mimbox.br</a></div><div class="shipping-note">Enviamos para todo o Brasil · Criado em São Paulo, feito para surpreender</div></div>
 <header class="m-new-header"><a class="m-brand" href="/"><img alt="Mimbox.br" src="/assets/logo.webp"/></a><nav aria-label="Menu principal"><a href="/">INÍCIO</a><a href="/personalizados.html">PERSONALIZADOS</a><a aria-current="page" href="/loja.html">LOJA</a><a href="/para-negocios.html">PARA EMPRESAS</a><a href="/sobre.html">SOBRE</a></nav><div class="m-head-actions"><a class="m-yellow" href="#boxes">GARANTA A SUA BOX →</a><button id="m-cart-btn" type="button">🛒 <span id="m-cart-count"></span></button></div></header><header class="nav" style="display:none!important">
@@ -541,7 +541,36 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
   const totalQty = () => cart.reduce((sum, item) => sum + item.qty, 0);
   const subtotal = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
+  let catalogReady=false;
+  let catalogFailure=false;
+  const lineKey=item=>String(item.id)+'::'+String(item.variacao_id||'');
+  const isCrm=id=>/^[0-9a-f-]{36}$/i.test(String(id));
+  function refreshCartProducts(){
+    if(!catalogReady)return;
+    const products=window.mimboxPublicProducts||[];
+    const cupCount=cart.reduce((n,item)=>n+(window.MimboxCups?.cupSpec(products.find(p=>String(p.id)===String(item.id)))?Number(item.qty):0),0);
+    for(const item of cart){
+      delete item.catalogError;
+      if(!isCrm(item.id))continue;
+      const p=products.find(p=>String(p.id).toLowerCase()===String(item.id).toLowerCase());
+      try{
+        if(!p||p.disponivel===false)throw Error('Produto indisponível. Remova este item para continuar.');
+        const variant=window.MimboxCatalogRules.selectVariation(p,item.variacao_id);
+        const cup=window.MimboxCups?.cupSpec(p);
+        if(!Number.isSafeInteger(Number(item.qty))||Number(item.qty)<1||Number(item.qty)>(cup?500:20)||cupCount>500)throw Error('Quantidade inválida. Ajuste o carrinho.');
+        item.name=p.nome;item.price=variant?.preco??(cup?window.MimboxCups.cupUnitPrice(cup,cupCount):Number(p.preco));
+        if(!Number.isFinite(item.price)||item.price<=0)throw Error('Preço indisponível.');
+        item.image=variant?.imagem_url||p.imagens?.[0]||p.imagem_url||'';
+        if(variant){item.variacao_nome=variant.nome;item.variacao_titulo=variant.titulo;}
+      }catch(error){item.catalogError=error.message;}
+    }
+    save();
+  }
+  const cartBlocked=()=>cart.some(item=>item.catalogError||isCrm(item.id)&&(!catalogReady||catalogFailure));
+  window.addEventListener('mimbox:catalog-ready',()=>{catalogReady=true;catalogFailure=false;render();});
+  window.addEventListener('mimbox:catalog-error',()=>{catalogFailure=true;render();});
   function render() {
+    refreshCartProducts();
     countEl.textContent = totalQty();
     emptyEl.hidden = cart.length > 0;
     summaryEl.hidden = cart.length === 0;
@@ -563,17 +592,18 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
       const info = document.createElement('div');
       const title = document.createElement('h3'); title.textContent = item.name;
       const kindLabel = document.createElement('div'); kindLabel.className = 'cart-kind-label'; kindLabel.textContent = 'Produto Mimbox';
-      const meta = document.createElement('div'); meta.className = 'cart-item-meta'; meta.textContent = 'Produto personalizado ou coleção Mimbox';
+      const meta = document.createElement('div'); meta.className = 'cart-item-meta'; meta.textContent = item.catalogError || (item.variacao_nome ? (item.variacao_titulo||'Variação')+': '+item.variacao_nome : 'Produto personalizado ou coleção Mimbox');
+      if(item.catalogError){const choose=document.createElement('a');choose.href='/produto.html?id='+encodeURIComponent(item.id);choose.textContent='Escolher novamente →';info.append(choose);}
       const actions = document.createElement('div'); actions.className = 'cart-item-actions';
       const qty = document.createElement('div'); qty.className = 'cart-qty';
-      const minus = document.createElement('button'); minus.type='button'; minus.textContent='−'; minus.setAttribute('aria-label','Diminuir quantidade');
-      minus.addEventListener('click', () => changeQty(item.id, -1));
+      const minus = document.createElement('button'); minus.type='button'; minus.textContent='−'; minus.setAttribute('aria-label','Diminuir quantidade de '+item.name+(item.variacao_nome?' — '+item.variacao_nome:''));
+      minus.addEventListener('click', () => changeQty(lineKey(item), -1));
       const q = document.createElement('span'); q.textContent=item.qty;
-      const plus = document.createElement('button'); plus.type='button'; plus.textContent='+'; plus.setAttribute('aria-label','Aumentar quantidade');
-      plus.addEventListener('click', () => changeQty(item.id, 1));
+      const plus = document.createElement('button'); plus.type='button'; plus.textContent='+'; plus.setAttribute('aria-label','Aumentar quantidade de '+item.name+(item.variacao_nome?' — '+item.variacao_nome:''));
+      plus.addEventListener('click', () => changeQty(lineKey(item), 1));
       qty.append(minus,q,plus);
       const remove = document.createElement('button'); remove.className='cart-remove'; remove.type='button'; remove.textContent='Remover';
-      remove.addEventListener('click', () => { cart=cart.filter(x=>x.id!==item.id); save(); render(); });
+      remove.addEventListener('click', () => { cart=cart.filter(x=>lineKey(x)!==lineKey(item)); invalidateCartQuote(); save(); render(); });
       actions.append(qty,remove);
       info.append(title,kindLabel,meta,actions);
       const price = document.createElement('div'); price.className='cart-item-price'; price.textContent=money(item.price*item.qty);
@@ -584,11 +614,11 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
   }
 
   function changeQty(id, delta) {
-    const item = cart.find(x=>x.id===id);
+    const item = cart.find(x=>lineKey(x)===id);
     if (!item) return;
-    item.qty += delta;
-    if (item.qty <= 0) cart = cart.filter(x=>x.id!==id);
-    save(); render();
+    item.qty = Math.min(500,Number(item.qty)+delta);
+    if (item.qty <= 0) cart = cart.filter(x=>lineKey(x)!==id);
+    invalidateCartQuote();save(); render();
   }
   function openCart() {
     panel.hidden=false; backdrop.hidden=false; document.body.style.overflow='hidden';
@@ -601,17 +631,18 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
     document.getElementById('open-cart').focus();
   }
   function addProduct(button) {
+    if(button.dataset.hasVariants==='1'){window.location.assign('/produto.html?id='+encodeURIComponent(button.dataset.productId));return;}
     const id=button.dataset.productId, name=button.dataset.productName, price=Number(button.dataset.productPrice);
     const kind=button.dataset.productKind || 'box';
     if (kind === 'club') return;
     const duration=button.dataset.productDuration || '';
     if (!id || !name || !Number.isFinite(price) || price <= 0) return;
-    const existing=cart.find(x=>x.id===id);
+    const existing=cart.find(x=>x.id===id&&!x.variacao_id);
     if (existing) existing.qty += 1;
     else cart.push({id,name,price,qty:1,kind,duration,image:button.dataset.productImage||''});
     if (existing && button.dataset.productImage) existing.image=button.dataset.productImage;
     checkoutForm.hidden = true;
-    save(); render(); openCart();
+    invalidateCartQuote();save(); render(); openCart();
   }
 
   // Delegação: funciona também se os botões forem recriados na página.
@@ -624,7 +655,7 @@ Outros dias: <a href="https://wa.me/5511954556660?text=Ol%C3%A1%2C%20Mimbox%21%2
     if (target.closest('#close-cart, #cart-backdrop')) { event.preventDefault(); closeCart(); }
   });
   document.getElementById('continue-shopping').addEventListener('click', () => { closeCart(); document.getElementById('boxes').scrollIntoView({behavior:'smooth'}); });
-  document.getElementById('clear-cart').addEventListener('click', () => { cart=[]; save(); render(); });
+  document.getElementById('clear-cart').addEventListener('click', () => { cart=[]; invalidateCartQuote();save(); render(); });
   const checkoutForm = document.getElementById('cart-checkout-form');
   const checkoutButton = document.getElementById('cart-checkout');
 function updateCheckoutFormVisibility() {
@@ -635,7 +666,8 @@ function updateCheckoutFormVisibility() {
     document.getElementById('checkout-steps').textContent = checkoutStep === 1 ? '1. Pedido  →  2. Recebimento  →  3. Pagamento' : '✓ Pedido  →  2. Recebimento  →  3. Pagamento';
     checkoutButton.hidden = checkoutStep === 2;
     checkoutButton.textContent = 'Continuar para recebimento →';
-    checkoutButton.disabled = cart.length === 0;
+    checkoutButton.disabled = cart.length === 0 || cartBlocked();
+    if(cart.length&&cartBlocked())checkoutButton.textContent=catalogFailure?'Atualize a página para conferir o catálogo':!catalogReady?'Conferindo opções do carrinho…':'Revise as opções indisponíveis acima';
   }
 
   document.getElementById('cart-checkout').addEventListener('click', () => {
@@ -679,6 +711,8 @@ function updateCheckoutFormVisibility() {
   }
   const freightOptions = document.getElementById('freight-options');
   let selectedFreight = null;
+  const cartSignature=()=>JSON.stringify(cart.map(i=>[lineKey(i),i.qty,i.price]));
+  function invalidateCartQuote(){selectedFreight=null;document.getElementById('freight-results').replaceChildren();}
   const originalUpdateDeliveryMethod = updateDeliveryMethod;
   deliveryMethod.addEventListener('change', updateDeliveryMethod);
   updateDeliveryMethod();
@@ -687,14 +721,17 @@ function updateCheckoutFormVisibility() {
     const cep = document.getElementById('checkout-cep').value.replace(/\D/g, '');
     const results = document.getElementById('freight-results');
     if (!/^\d{8}$/.test(cep)) { results.textContent = 'Digite um CEP válido com 8 números.'; return; }
+    if(cartBlocked()){results.textContent='Revise o carrinho antes de calcular o frete.';return;}
+    const quoteCart=cartSignature();
     results.textContent = 'Consultando transportadoras…';
     selectedFreight = null;
     try {
       const response = await fetch('/api/calcular-frete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cep, itemCount: cart.reduce((sum, item) => sum + Number(item.qty || 1), 0), subtotal: subtotal() })
+        body: JSON.stringify({ cep, itemCount: cart.reduce((sum, item) => sum + Number(item.qty || 1), 0), subtotal: subtotal(), ...(cart.every(i=>isCrm(i.id))?{items:cart.map(i=>({id:i.id,quantity:Number(i.qty),...(i.variacao_id?{variacao_id:i.variacao_id}:{})}))}:{}) })
       });
       const data = await response.json();
+      if(quoteCart!==cartSignature())return;
       if (!response.ok) throw new Error(data.error || 'Não foi possível consultar o frete.');
       const options = Array.isArray(data) ? data : (data.opcoes || data.options || data.services || data.quotes || []);
       const valid = options.filter(x => x && !x.error && Number.isFinite(Number(x.valor ?? x.custom_price ?? x.price)));
@@ -704,7 +741,7 @@ function updateCheckoutFormVisibility() {
         const label = document.createElement('label');
         label.style.cssText = 'display:block;padding:10px;border:1px solid #ddd;border-radius:8px;margin:6px 0;cursor:pointer';
         const radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'freight-service'; radio.value = String(option.id ?? i);
-        radio.addEventListener('change', () => { selectedFreight = { id: option.id, cep, name: option.servico ?? option.name, company: option.transportadora ?? option.company?.name }; });
+        radio.addEventListener('change', () => { selectedFreight = { signature:quoteCart, id: option.id, cep, name: option.servico ?? option.name, company: option.transportadora ?? option.company?.name }; });
         const price = Number(option.valor ?? option.custom_price ?? option.price);
         const name = [option.transportadora || option.company?.name || option.company, option.servico || option.name].filter(x => typeof x === 'string').join(' — ');
         const days = option.prazo ?? option.custom_delivery_time ?? option.delivery_time;
@@ -803,9 +840,10 @@ function updateCheckoutFormVisibility() {
     }
 
 
+    refreshCartProducts();
     if (deliveryMethod.value === 'shipping') {
       const currentCep = document.getElementById('checkout-cep').value.replace(/\D/g, '');
-      if (!selectedFreight || selectedFreight.cep !== currentCep) {
+      if (!selectedFreight || selectedFreight.cep !== currentCep || selectedFreight.signature !== cartSignature()) {
         showCheckoutMessage('Calcule o frete e selecione uma transportadora antes de pagar.');
         return;
       }
@@ -815,13 +853,16 @@ function updateCheckoutFormVisibility() {
     submitButton.disabled = true;
     submitButton.textContent = 'Gerando pagamento…';
 
+    refreshCartProducts();
+    if(cartBlocked()){showCheckoutMessage('Revise as opções do carrinho antes de pagar.');submitButton.disabled=false;submitButton.textContent=originalText;return;}
     const valueOf = name => (checkoutForm.elements.namedItem(name)?.value || '').trim();
     const digits = valueOf('customerPhone').replace(/\D/g, '');
     const payload = {
       items: cart.map(item => ({
         id: String(item.id || ''),
         description: String(item.name || ''),
-        quantity: Number(item.qty)
+        quantity: Number(item.qty),
+        ...(item.variacao_id?{variacao_id:String(item.variacao_id)}:{})
       })),
       customer: {
         name: valueOf('customerName'),
@@ -952,11 +993,13 @@ function updateCheckoutFormVisibility() {
     if(amount!==null){const el=info.querySelector('.sample-price');if(el)el.textContent=money(amount);btn.dataset.productPrice=amount.toFixed(2)}
     const desc=info.querySelector('p');if(desc&&p.descricao)desc.textContent=String(p.descricao).replace(/\s*\[\[MIMBOX_CATEGORIA:[^\]\r\n]*\]\]\s*$/i, "").trim();
     btn.dataset.productName=p.nome;
+    btn.dataset.hasVariants=p.variacoes?.opcoes?.length?'1':'0';
     const productImages=[...(Array.isArray(p.imagens)?p.imagens:[]),p.imagem_url].filter(safeImg);
     btn.dataset.productImage=productImages[0]||'';
     // Existing product IDs remain unchanged to preserve checkout mapping.
     if(!card.dataset.legacyProduct && p.id!=null)btn.dataset.productId=String(p.id);
-    btn.disabled=p.disponivel===false;btn.textContent=btn.disabled?'Indisponível':'Adicionar ao carrinho ↗';
+    btn.disabled=p.disponivel===false;btn.textContent=btn.disabled?'Indisponível':p.variacoes?.opcoes?.length?'Escolher opções →':'Adicionar ao carrinho ↗';
+    if(p.variacoes?.opcoes?.length){const prices=p.variacoes.opcoes.filter(v=>v.disponivel).map(v=>v.preco??Number(p.preco));const el=info.querySelector('.sample-price');if(el&&prices.length)el.textContent='A partir de '+money(Math.min(...prices));}
     card.style.opacity=btn.disabled?'.65':'';card.dataset.crmProdutoId=String(p.id??'');
     gallery(card,p);
   }
@@ -981,6 +1024,8 @@ function updateCheckoutFormVisibility() {
       const raw=Array.isArray(data)?data:(Array.isArray(data?.produtos)?data.produtos:(Array.isArray(data?.data)?data.data:null));
       if(!raw)throw Error('Formato inesperado na API de produtos');
       window.mimboxPublicProducts=raw;
+      window.mimboxCatalogCategories=data.categorias||null;
+      window.dispatchEvent(new Event('mimbox:catalog-ready'));
       const all=raw.filter(p=>p&&typeof p.nome==='string'&&p.nome.trim());
       const ativos=all.filter(p=>!isClub(p)&&p.disponivel!==false);
       ativos.sort((a,b)=>(Number(a.ordem)||0)-(Number(b.ordem)||0)||String(a.nome).localeCompare(String(b.nome),'pt-BR'));
@@ -1004,6 +1049,7 @@ function updateCheckoutFormVisibility() {
       catalogLoaded=true;
       loadingNotice.remove();
     }catch(err){
+      window.dispatchEvent(new Event('mimbox:catalog-error'));
       console.error('Falha ao sincronizar catálogo com ADM:',err);
       loadingNotice.textContent='Não foi possível atualizar o catálogo. Tentaremos novamente automaticamente.';
       // Não expor preços ou disponibilidade antigos como se fossem atuais.
@@ -1125,17 +1171,22 @@ function updateCheckoutFormVisibility() {
     return {categories,text:txt,primary};
   }
   function refreshCustomCategories(){
-    const used=new Set();
-    for(const card of grid.querySelectorAll(':scope > .product-card')){
-      const c=group(card).primary;
-      if(c&&!['copos','pratos','boxes','brindes','personalizados'].includes(c))used.add(c);
+    const registry=window.mimboxCatalogCategories;
+    const used=new Map();
+    if(registry){for(const label of registry.nomes)used.set(normalize(label),label);}
+    else{
+      for(const label of ['Copos','Pratos','Boxes','Brindes','Personalizados'])used.set(normalize(label),label);
+      for(const card of grid.querySelectorAll(':scope > .product-card')){const c=group(card).primary;if(c&&!used.has(c))used.set(c,c.charAt(0).toUpperCase()+c.slice(1));}
     }
-    root.querySelectorAll('[data-custom-filter]').forEach(n=>n.remove());
-    for(const c of [...used].sort()){
-      const btn=document.createElement('button');btn.type='button';btn.className='mim-filter';btn.dataset.filter=c;btn.dataset.customFilter='1';btn.textContent=c.charAt(0).toUpperCase()+c.slice(1);
-      btn.addEventListener('click',()=>selectCategory(c));
-      root.querySelector('#mim-product-filters').append(btn);
+    const holder=root.querySelector('#mim-product-filters');
+    holder.querySelectorAll('[data-filter]:not([data-filter="todos"])').forEach(n=>n.remove());
+    if(category!=='todos'&&!used.has(category))category='todos';
+    for(const [c,label] of used){
+      const btn=document.createElement('button');btn.type='button';btn.className='mim-filter';btn.dataset.filter=c;btn.textContent=label;
+      const active=category===c;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));
+      btn.addEventListener('click',()=>selectCategory(c));holder.append(btn);
     }
+    const all=holder.querySelector('[data-filter="todos"]');all.classList.toggle('active',category==='todos');all.setAttribute('aria-pressed',String(category==='todos'));
   }
   function selectCategory(value){
     category=value;expanded=false;
@@ -1162,6 +1213,7 @@ function updateCheckoutFormVisibility() {
     count.textContent=cards.length?(found===0?'Nenhum produto encontrado':limited?'Mostrando 8 de '+found+' produtos':found+' produto'+(found===1?' encontrado':'s encontrados')):'';
   }
   function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})}
+  window.addEventListener('mimbox:catalog-ready',schedule);
   search.addEventListener('input',()=>{expanded=false;schedule()});
   clear.addEventListener('click',()=>{search.value='';expanded=false;search.focus();schedule()});
   filters.forEach(btn=>btn.addEventListener('click',()=>selectCategory(btn.dataset.filter)));

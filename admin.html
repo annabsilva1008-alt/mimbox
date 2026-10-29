@@ -179,7 +179,7 @@ main{
 .gallery-editor{margin:15px 0;padding:15px;border:2px dashed #2456a6;border-radius:12px}
 </style>
 <link rel="stylesheet" href="/assets/admin-ease.css?v=1">
-<script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=3"></script><script src="/assets/cpf.js?v=1"></script></head>
+<script src="/assets/upload-image.js?v=4"></script><script src="/assets/cup-pricing.js?v=1"></script><script src="/assets/personalizados-cups-admin.js?v=3"></script><script src="/assets/cpf.js?v=1"></script><script src="/assets/product-variants.js?v=1"></script><script src="/assets/product-variants-admin.js?v=1"></script><link rel="stylesheet" href="/assets/product-variants.css?v=1"></head>
 <body>
 
 <section id="loading" class="login">
@@ -220,6 +220,7 @@ main{
       <div class="nav-group"><p>Produtos e site</p>
       <button data-page="produtos">🛍️ Produtos</button>
       <button data-page="personalizados">🥤 Personalizados</button>
+       <button data-page="categorias">🏷️ Categorias</button>
        <button data-page="colecoes">🗂️ Coleções</button>
        <button data-page="estoque">📋 Estoque</button>
       <a href="/gerenciar-site.html">🎨 Textos e imagens do site ↗</a></div>
@@ -251,6 +252,7 @@ const state = {
   pedidos: [],
   filtroPedidos: "pagos",
   produtos: [],
+  categorias: {nomes:["Copos","Pratos","Boxes","Brindes","Personalizados"],excluidas:[],revisao:""},
   estoque: [],
   envios: [],
   clientes: []
@@ -263,6 +265,7 @@ const titles = {
   produtos:"Produtos",
   personalizados:"Personalizados",
   colecoes:"Coleções",
+  categorias:"Categorias",
   clubes:"Planos do Mimbox Clube",
   estoque:"Estoque",
   acompanhamento:"Acompanhamento do Clube",
@@ -565,9 +568,10 @@ async function openPage(page){
        state.estoque=data.itens||[];
      }
 
-     if(page==="produtos"||page==="clubes"||page==="colecoes"){
+     if(page==="produtos"||page==="clubes"||page==="colecoes"||page==="categorias"){
       const data=await operations("produtos");
       state.produtos=data.produtos||[];
+      if(data.categorias)state.categorias=data.categorias;
     }
 
     if(page==="acompanhamento"){
@@ -597,6 +601,7 @@ async function openPage(page){
     if(page==="produtos")products(area);
     if(page==="personalizados")window.MimboxCupAdmin.mount(area,{onSaved:produtos=>{state.produtos=produtos}});
     if(page==="colecoes")await collectionsPage(area);
+    if(page==="categorias")await window.MimboxCategoriesPage(area,{element,card,field,action,operations,notify,categories:state.categorias,products:state.produtos,onSaved:value=>{state.categorias=value}});
      if(page==="estoque")stock(area);
      if(page==="envios")shipments(area);
      if(page==="clubes")clubsCatalog(area);
@@ -1039,6 +1044,7 @@ function orders(area){
             1
           )
         ));
+        if(item.variacao) c.append(line(item.variacao.titulo || "Variação",item.variacao.nome));
       }
     }
 
@@ -1493,13 +1499,15 @@ function mimboxCategoryField(category="",tags=[]){
   cat.input.placeholder="Ex.: Copos";
   const datalist=document.createElement("datalist");
   datalist.id="mim-cats-"+Math.random().toString(36).slice(2);
-  for(const value of ["Copos","Pratos","Boxes","Brindes","Personalizados","Decoração","Kits"]){const o=document.createElement("option");o.value=value;datalist.append(o)}
+  for(const value of state.categorias.nomes){const o=document.createElement("option");o.value=value;datalist.append(o)}
   cat.input.setAttribute("list",datalist.id);
   const tagsField=field("Tags adicionais (separadas por vírgula)",tags.join(", "));
   tagsField.input.placeholder="Ex.: Personalizados, Presentes criativos, Humor";
   box.append(cat.wrap,datalist,tagsField.wrap);
   return {wrap:box,category:cat.input,tags:tagsField.input};
 }
+
+function variantEditor(config){return window.MimboxVariantEditor(config,{element,field,checkbox,action,productPhoto,uploadProductPhoto});}
 
 function products(area){
   fetchCollections().then(()=>{
@@ -1535,6 +1543,7 @@ function products(area){
   f.preco.input.required = true;
   const available = checkbox("Produto disponível", true);
   const featured = checkbox("Produto em destaque", false);
+  const variants=variantEditor();form.append(variants.wrap);
   form.append(available.wrap);options.append(featured.wrap);form.append(options);
   const save = element("button", "Cadastrar produto", "btn");
   save.type = "submit";
@@ -1543,7 +1552,9 @@ function products(area){
     event.preventDefault();
     save.disabled = true;
     try {
+      variants.validate();
       await gallery.uploadPending();
+      const variacoes = await variants.prepare();
       const imagens = gallery.getImages();
       const imagem_url = imagens[0] || "";
       const result = await request("/api/admin-salvar-produto", {
@@ -1556,7 +1567,8 @@ function products(area){
           descricao: mimboxWriteMeta(f.descricao.input.value,taxonomy.category.value,taxonomy.tags.value),
           imagem_url,
           disponivel: available.input.checked,
-          destaque: featured.input.checked
+          destaque: featured.input.checked,
+          variacoes
         })
       });
       if (result.produto?.id && imagens.length) {
@@ -1568,7 +1580,7 @@ function products(area){
         await operations("produto_ordem", {id: result.produto.id, ordem});
       }
       await openPage("produtos");
-      notify("Produto cadastrado com sucesso.");
+      notify(result.aviso || "Produto cadastrado com sucesso.", result.variacoes_salvas === false);
     } catch (error) { notify(error.message, true); }
     finally { save.disabled = false; }
   };
@@ -1609,12 +1621,15 @@ function products(area){
     const options=element("details",undefined,"editor-options");options.append(element("summary","Opções de organização e destaque"),inputs.ordem.wrap,taxonomy.wrap);
     const gallery = productGallery(p);
     item.append(gallery.wrap);
+    const variants=variantEditor(p.variacoes);item.append(variants.wrap);
     const av = checkbox("Disponível", p.disponivel);
     const ft = checkbox("Destaque", p.destaque);
     item.append(av.wrap);options.append(ft.wrap);item.append(options);
     const buttons = element("div", undefined, "row");
     buttons.append(action("Salvar alterações", async () => {
+      variants.validate();
       await gallery.uploadPending();
+      const variacoes = await variants.prepare();
       const imagens = gallery.getImages();
       const imagem_url = imagens[0] || "";
       const ordem = Number(inputs.ordem.input.value);
@@ -1629,6 +1644,7 @@ function products(area){
           imagem_url,
           disponivel: av.input.checked,
           destaque: ft.input.checked,
+          variacoes,
           ordem
         }
       });

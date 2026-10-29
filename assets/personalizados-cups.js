@@ -14,6 +14,7 @@
     const p = selected(), spec = rules.cupSpec(p), qty = Number($('cup-quantity').value);
     $('cup-add').disabled = !p || !Number.isSafeInteger(qty) || qty < 1 || qty > rules.CUP_LIMIT;
     if (!p) { $('cup-details').hidden = true; $('cup-selection-price').textContent = 'Carregando modelos disponíveis…'; return; }
+    $('cup-add').textContent=p.variacoes?.opcoes?.length?'Escolher variação →':'Adicionar ao pedido';
     $('cup-details').hidden = false; $('cup-details').href = '/produto.html?id=' + encodeURIComponent(p.id) + '&copos=1';
     const count = basket.reduce((sum, i) => sum + i.qty, 0) + Math.max(0, qty || 0);
     const price = rules.cupUnitPrice(spec, count);
@@ -42,6 +43,7 @@
       });
       const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'mb-text-link'; remove.textContent = 'Remover';
       remove.onclick = () => { basket = basket.filter(i => i.id !== item.id); invalidateQuote(); render(); };
+      if(products.find(p=>p.id===item.id)?.variacoes?.opcoes?.length){const choose=document.createElement('a');choose.href='/produto.html?id='+encodeURIComponent(item.id)+'&copos=1';choose.textContent='Este modelo ganhou opções. Remova-o e escolha a variação →';row.append(choose);}
       row.append(title, detail, qty, remove); list.append(row);
     });
     $('cup-empty').hidden = state.items.length > 0;
@@ -61,6 +63,7 @@
   $('cup-quantity').addEventListener('input', updateSelection);
   $('cup-selection').addEventListener('submit', event => {
     event.preventDefault(); const p = selected(), qty = Number($('cup-quantity').value);
+    if(p?.variacoes?.opcoes?.length){window.location.assign('/produto.html?id='+encodeURIComponent(p.id)+'&copos=1');return;}
     if (!p || !Number.isSafeInteger(qty) || qty < 1 || basket.reduce((n, i) => n + i.qty, 0) + qty > rules.CUP_LIMIT) { $('cup-selection-price').textContent = 'Escolha de 1 a 500 copos no total por pedido.'; return; }
     const existing = basket.find(i => i.id === p.id); if (existing) existing.qty += qty; else basket.push({id: p.id, qty});
     invalidateQuote(); render(); $('cup-order').scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -98,6 +101,7 @@
   });
   $('cup-checkout').addEventListener('submit', async event => {
     event.preventDefault(); const form = $('cup-checkout'), button = $('cup-pay');
+    if(basket.some(i=>products.find(p=>p.id===i.id)?.variacoes?.opcoes?.length)){$('cup-checkout-status').textContent='Há modelos que ganharam variações. Remova-os deste pedido e escolha a opção na página do produto.';return;}
     if (!form.reportValidity() || !basket.length || [...$('cup-cart-items').querySelectorAll('input')].some(input=>!input.reportValidity())) return;
     const value = name => form.elements.namedItem(name).value.trim(), digits = value('phone').replace(/\D/g, '');
     if (!/^\d{10,11}$/.test(digits)) { $('cup-checkout-status').textContent = 'Informe o telefone com DDD.'; return; }
