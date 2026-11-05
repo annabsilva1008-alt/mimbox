@@ -3,8 +3,8 @@
  'use strict';
  const TYPES=new Set(['image/jpeg','image/png','image/webp']);
  const MAX_FILE_BYTES=20*1024*1024;
- const PROFILES={product:{maxEdge:1800,targetBytes:450*1024,maxBytes:950*1024},banner:{maxEdge:1800,targetBytes:550*1024,maxBytes:950*1024}};
- const qualitySteps=[.92,.89,.86];
+ const PROFILES={product:{maxEdge:1400,targetBytes:240*1024,maxBytes:420*1024},banner:{maxEdge:1600,targetBytes:320*1024,maxBytes:480*1024}};
+ const qualitySteps=[.84,.78,.72,.66];
  function profile(options={}){return PROFILES[options.profile||'product']||PROFILES.product}
  function assertFile(file){if(!file||!TYPES.has(file.type)||!file.size)throw Error('Selecione uma imagem JPG, PNG ou WebP.');if(file.size>MAX_FILE_BYTES)throw Error('A foto deve ter até 20 MB antes do ajuste.');}
  function dimensions(width,height,limit){const scale=Math.min(1,limit/Math.max(width,height));return {width:Math.max(1,Math.round(width*scale)),height:Math.max(1,Math.round(height*scale))}}
@@ -12,7 +12,7 @@
  async function render(source,rect,options={}){
   const config=profile(options),longEdge=Math.max(rect.width,rect.height);
   if(!Number.isFinite(longEdge)||rect.width<=0||rect.height<=0)throw Error('As dimensões da foto são inválidas.');
-  const first=Math.min(config.maxEdge,longEdge);const edges=[...new Set([first,1600,1400,1200].filter(n=>n<=first&&n>0))];let fallback=null;
+  const first=Math.min(config.maxEdge,longEdge);const edges=[...new Set([first,1400,1200,960,800].filter(n=>n<=first&&n>0))];let fallback=null;
   for(const edge of edges){
    const size=dimensions(rect.width,rect.height,edge),canvas=document.createElement('canvas');canvas.width=size.width;canvas.height=size.height;
    const context=canvas.getContext('2d',{alpha:true});if(!context)throw Error('Não foi possível preparar a foto neste navegador.');
