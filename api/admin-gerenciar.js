@@ -337,8 +337,8 @@ export default async function handler(req, res) {
       const conteudo = await lerConteudoSite();
 
       res.setHeader(
-        "Cache-Control",
-        "no-store, no-cache, must-revalidate, max-age=0"
+        "Vercel-CDN-Cache-Control",
+        "public, s-maxage=15"
       );
 
       return json(res, 200, {

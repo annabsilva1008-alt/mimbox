@@ -306,6 +306,9 @@ export default async function handler(req, res) {
 
     const cup = product => /^Personalizados — Copos — /.test(String(product.colecao || ''));
     const visible = publico ? (req.query?.personalizados === 'copos' ? catalogo.filter(cup) : catalogo.filter(p => !cup(p) || p.variacoes.opcoes.length > 0)) : catalogo;
+    if (publico) {
+      res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=15");
+    }
     return res.status(200).json({
       sucesso: true,
       produtos: visible,

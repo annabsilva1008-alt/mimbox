@@ -418,7 +418,7 @@ body{background:var(--mpaper)!important;font-family:Montserrat,Arial,sans-serif!
   }
 }
 </style>
-<script src="/assets/cpf.js?v=1"></script><script src="/assets/product-variants.js?v=1"></script><script src="/assets/cup-pricing.js?v=1"></script></head>
+<script src="/assets/images.js?v=3" defer></script><script src="/assets/cpf.js?v=1"></script><script src="/assets/product-variants.js?v=1"></script><script src="/assets/cup-pricing.js?v=1"></script></head>
 <body>
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MGB7K8JL" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -969,14 +969,28 @@ function updateCheckoutFormVisibility() {
     const oldImg=art.querySelector('img');
     const fallback=oldImg?.getAttribute('src')||'';
     art.replaceChildren();art.classList.add('mimbox-gallery');
-    const img=document.createElement('img');img.src=unique[0];img.alt='Foto 1 de '+unique.length+' — '+p.nome;
+    const img=document.createElement('img');img.alt='Foto 1 de '+unique.length+' — '+p.nome;
     img.loading='lazy';img.decoding='async';img.className='mimbox-product-photo';
-    img.addEventListener('error',()=>{if(fallback&&!img.dataset.fallback){img.dataset.fallback='1';img.src=fallback}else img.style.visibility='hidden'});
+    let source;
+    function setPhoto(url){
+      source=url;
+      const optimized=window.mimboxImage?.(url,480)||url;
+      if(img.getAttribute('src')!==optimized)img.src=optimized;
+    }
+    img.addEventListener('error',()=>{
+      if(img.getAttribute('src')!==source&&img.dataset.fallback!=='1'){
+        img.src=source;
+      }else if(fallback&&img.getAttribute('src')!==fallback&&!img.dataset.fallback){
+        img.dataset.fallback='1';
+        img.src=fallback;
+      }else img.style.visibility='hidden';
+    });
+    setPhoto(unique[0]);
     art.append(img);
     let index=0,timer=null,visible=false;
     const count=document.createElement('span');count.className='mimbox-gallery-count';art.append(count);
     const zoom=document.createElement('button');zoom.type='button';zoom.className='mimbox-gallery-zoom';zoom.setAttribute('aria-label','Ampliar fotos de '+p.nome);zoom.textContent='⤢';art.append(zoom);
-    function show(i){index=(i+unique.length)%unique.length;img.style.visibility='visible';img.removeAttribute('data-fallback');img.src=unique[index];img.alt='Foto '+(index+1)+' de '+unique.length+' — '+p.nome;count.textContent=(index+1)+' / '+unique.length}
+    function show(i){index=(i+unique.length)%unique.length;img.style.visibility='visible';img.removeAttribute('data-fallback');setPhoto(unique[index]);img.alt='Foto '+(index+1)+' de '+unique.length+' — '+p.nome;count.textContent=(index+1)+' / '+unique.length}
     function stop(){if(timer){clearInterval(timer);timer=null}}
     function start(){if(!reducedMotion&&unique.length>1&&visible&&!timer&&!document.hidden&&!activeModal){timer=setInterval(()=>show(index+1),5500)}}
     function manual(delta){show(index+delta);stop();start()}
@@ -1026,7 +1040,7 @@ function updateCheckoutFormVisibility() {
   grid.insertAdjacentElement('afterend',loadingNotice);
   async function sync(){
     try{
-      const res=await fetch('/api/admin-produtos?publico=1',{cache:'no-store',credentials:'same-origin'});
+      const res=await fetch('/api/admin-produtos?publico=1',{credentials:'same-origin'});
       if(!res.ok)throw Error('Catálogo HTTP '+res.status);
       const data=await res.json();
       const raw=Array.isArray(data)?data:(Array.isArray(data?.produtos)?data.produtos:(Array.isArray(data?.data)?data.data:null));
@@ -1071,7 +1085,7 @@ function updateCheckoutFormVisibility() {
       setTimeout(sync,20000);
     }
   }
-  sync();
+  document.addEventListener('DOMContentLoaded',sync,{once:true});
 })();
 </script>
 <!-- Mimbox: editor público da página Loja; catálogo e checkout permanecem independentes. -->
